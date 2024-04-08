@@ -28,20 +28,21 @@ export async function createFlawInfo(flawInfo:any,options:any){
     const sourceFile = resultArray.files.source_file.file
 
     //flow length
-    const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
-    const flowLength = flowArray.length
+    //const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
+    //const flowLength = flowArray.length
 
-    if (options.DEBUG == 'true'){
+/*     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
         console.log('createFlawInfo.ts')
         console.log('Flow length: '+flowLength)
         console.log('#######- DEBUG MODE -#######')
-    }
+    } */
     
 
     let flows:any = []
 
-    if (flowLength > 0){
+    if (resultArray.stack_dumps.stack_dump[0].Frame){
+        const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
         flowArray.forEach((element: any) => {
             if (element.SourceFile == sourceFile && element.VarNames != undefined){
 

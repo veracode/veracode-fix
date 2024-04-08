@@ -42946,16 +42946,17 @@ function createFlawInfo(flawInfo, options) {
         }
         const sourceFile = resultArray.files.source_file.file;
         //flow length
-        const flowArray = resultArray.stack_dumps.stack_dump[0].Frame;
-        const flowLength = flowArray.length;
-        if (options.DEBUG == 'true') {
-            console.log('#######- DEBUG MODE -#######');
-            console.log('createFlawInfo.ts');
-            console.log('Flow length: ' + flowLength);
-            console.log('#######- DEBUG MODE -#######');
-        }
+        //const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
+        //const flowLength = flowArray.length
+        /*     if (options.DEBUG == 'true'){
+                console.log('#######- DEBUG MODE -#######')
+                console.log('createFlawInfo.ts')
+                console.log('Flow length: '+flowLength)
+                console.log('#######- DEBUG MODE -#######')
+            } */
         let flows = [];
-        if (flowLength > 0) {
+        if (resultArray.stack_dumps.stack_dump[0].Frame) {
+            const flowArray = resultArray.stack_dumps.stack_dump[0].Frame;
             flowArray.forEach((element) => {
                 if (element.SourceFile == sourceFile && element.VarNames != undefined) {
                     if (options.DEBUG == 'true') {
