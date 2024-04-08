@@ -136,18 +136,37 @@ async function run() {
         }
         
 
-        if ( options.cwe != null && jsonFindings[i].cwe_id == options.cwe ){
+        if ( options.cwe != null ){
             console.log('Only run Fix for CWE: '+options.cwe)
-            if (await checkCWE(initialFlawInfo, options) == true){
+            const cweList = options.cwe.split(',')
+            const cweListLength = cweList.length
+            let j = 0
+            for (j = 0; j < cweListLength; j++) {
+                if (parseInt(cweList[j]) == initialFlawInfo.cweID){
+                    if (await checkCWE(initialFlawInfo, options) == true){
 
-                const choosePlatform = await selectPlatfrom(credentials)
-                const tar = await createTar(initialFlawInfo,options)
-                //const uploadTar = await upload(choosePlatform, tar, options)
-                //const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
+                        const choosePlatform = await selectPlatfrom(credentials)
+                        const tar = await createTar(initialFlawInfo,options)
+                        const uploadTar = await upload(choosePlatform, tar, options)
+                        const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
+
+                        console.log('Fix results:')
+                        console.log(checkFixResults)
+
+                if (options.prComment == 'true'){
+                    console.log('PR Comment')
+                    const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
+                }
+                    }
+                    else {
+                        console.log('CWE '+initialFlawInfo.cweID+' is not supported '+options.language)
+                    }
+                }
+                else {
+                    console.log('CWE '+initialFlawInfo.cweID+' is not in the list of CWEs to fix')
+                }
             }
-            else {
-                console.log('CWE '+initialFlawInfo.cweID+' is not supported '+options.language)
-            }
+            
         }
         else {
             console.log('Run Fix for all CWEs')

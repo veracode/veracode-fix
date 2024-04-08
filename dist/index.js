@@ -43135,7 +43135,7 @@ function createPRComment(results, options, flawInfo) {
         const data = JSON.parse(resultsFile);
         console.log('Reviewing issueID: ' + flawInfo.issuedID);
         const resultArray = data.findings.find((issueId) => issueId.issue_id == flawInfo.issuedID);
-        const flawWED = resultArray.cwe_id;
+        const flawCWEID = resultArray.cwe_id;
         const flawSeverity = resultArray.severity;
         const issueType = resultArray.issue_type;
         const display_text = resultArray.display_text;
@@ -43144,12 +43144,14 @@ function createPRComment(results, options, flawInfo) {
         const functionName = resultArray.files.source_file.function_name;
         //crete comment body
         let commentBody = '';
-        commentBody = commentBody + '<pre>Veracode Fix - Fix Suggestions<br>';
+        commentBody = commentBody + '<pre><b>Veracode Fix - Fix Suggestions';
+        commentBody = commentBody + 'for CWE ' + flawCWEID + '<br>';
+        commentBody = commentBody + 'on file ' + sourceFile + '</b><br>';
         commentBody = commentBody + 'Veracode STATIC Finding:<br>';
         commentBody = commentBody + '--------------------------------<br>';
         commentBody = commentBody + '<details><summary>STATIC Finding</summary><p>';
         commentBody = commentBody + 'Issue ID: ' + flawInfo.issuedID + '<br>';
-        commentBody = commentBody + 'CWE ID: ' + flawWED + '<br>';
+        commentBody = commentBody + 'CWE ID: ' + flawCWEID + '<br>';
         commentBody = commentBody + 'Severity: ' + flawSeverity + '<br>';
         commentBody = commentBody + 'Issue Type: ' + issueType + '<br>';
         commentBody = commentBody + 'Display Text: ' + display_text + '<br>';
@@ -43356,16 +43358,32 @@ function run() {
                 console.log(initialFlawInfo);
                 console.log('#######- DEBUG MODE -#######');
             }
-            if (options.cwe != null && jsonFindings[i].cwe_id == options.cwe) {
+            if (options.cwe != null) {
                 console.log('Only run Fix for CWE: ' + options.cwe);
-                if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
-                    const choosePlatform = yield selectPlatfrom(credentials);
-                    const tar = yield createTar(initialFlawInfo, options);
-                    //const uploadTar = await upload(choosePlatform, tar, options)
-                    //const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
-                }
-                else {
-                    console.log('CWE ' + initialFlawInfo.cweID + ' is not supported ' + options.language);
+                const cweList = options.cwe.split(',');
+                const cweListLength = cweList.length;
+                let j = 0;
+                for (j = 0; j < cweListLength; j++) {
+                    if (parseInt(cweList[j]) == initialFlawInfo.cweID) {
+                        if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                            const choosePlatform = yield selectPlatfrom(credentials);
+                            const tar = yield createTar(initialFlawInfo, options);
+                            const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
+                            const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                            console.log('Fix results:');
+                            console.log(checkFixResults);
+                            if (options.prComment == 'true') {
+                                console.log('PR Comment');
+                                const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                            }
+                        }
+                        else {
+                            console.log('CWE ' + initialFlawInfo.cweID + ' is not supported ' + options.language);
+                        }
+                    }
+                    else {
+                        console.log('CWE ' + initialFlawInfo.cweID + ' is not in the list of CWEs to fix');
+                    }
                 }
             }
             else {

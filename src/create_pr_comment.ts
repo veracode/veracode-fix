@@ -14,7 +14,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     const data = JSON.parse(resultsFile)
     console.log('Reviewing issueID: '+flawInfo.issuedID)
     const resultArray = data.findings.find((issueId: any) => issueId.issue_id == flawInfo.issuedID)
-    const flawWED = resultArray.cwe_id
+    const flawCWEID = resultArray.cwe_id
     const flawSeverity = resultArray.severity
     const issueType = resultArray.issue_type
     const display_text = resultArray.display_text
@@ -24,12 +24,14 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
 
     //crete comment body
     let commentBody = ''
-    commentBody = commentBody+'<pre>Veracode Fix - Fix Suggestions<br>'
+    commentBody = commentBody+'<pre><b>Veracode Fix - Fix Suggestions'
+    commentBody = commentBody+'for CWE '+flawCWEID+'<br>'
+    commentBody = commentBody+'on file '+sourceFile+'</b><br>'
     commentBody = commentBody+'Veracode STATIC Finding:<br>'
     commentBody = commentBody+'--------------------------------<br>'
     commentBody = commentBody+'<details><summary>STATIC Finding</summary><p>'
     commentBody = commentBody+'Issue ID: '+flawInfo.issuedID+'<br>'
-    commentBody = commentBody+'CWE ID: '+flawWED+'<br>'
+    commentBody = commentBody+'CWE ID: '+flawCWEID+'<br>'
     commentBody = commentBody+'Severity: '+flawSeverity+'<br>'
     commentBody = commentBody+'Issue Type: '+issueType+'<br>'
     commentBody = commentBody+'Display Text: '+display_text+'<br>'
