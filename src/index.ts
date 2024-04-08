@@ -118,7 +118,7 @@ async function run() {
 
     //loop through json file
     let i = 0
-    for (i = 0; i <= flawCount; i++) {
+    for (i = 0; i < flawCount; i++) {
 
         const initialFlawInfo = {
             resultsFile: options.file,

@@ -43342,7 +43342,7 @@ function run() {
         console.log('Number of flaws: ' + flawCount);
         //loop through json file
         let i = 0;
-        for (i = 0; i <= flawCount; i++) {
+        for (i = 0; i < flawCount; i++) {
             const initialFlawInfo = {
                 resultsFile: options.file,
                 issuedID: jsonFindings[i].issue_id,
