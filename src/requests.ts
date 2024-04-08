@@ -59,7 +59,8 @@ export async function upload(platform:any, tar:any, options:any) {
 
 
 export async function checkFix(platform:any, projectId:any, options:any) {
-    await makeRequest(platform, projectId, options);
+    const results = await makeRequest(platform, projectId, options);
+    return results;
 }
 
 async function makeRequest(platform:any, projectId:any, options:any) {
@@ -80,65 +81,26 @@ async function makeRequest(platform:any, projectId:any, options:any) {
         console.log('#######- DEBUG MODE -#######')
     }
 
-/*     const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results', {
+    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results', {
         headers: {
             'Authorization': authHeader,
             'Content-Type': 'application/json'
         }
-    }) */
+    })
 
-    const headers = {
-        Authorization: authHeader,
-        'Content-Type': 'application/json'
-      };
-
-    const appUrl = 'https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results';
-    //const response = await fetch(appUrl, { headers });
-
-   
-    await fetch(appUrl, { headers })
-        .then(async response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-          
-          // Parse as text
-          return response.text()
-
-        })
-        .then(async data => {
-          console.log('Response data:')
-          console.log(data);
-          if ( !data || data == ''){
-              console.log('Response is empty. Retrying in 10 seconds.');
-              console.log('Response:')
-              console.log(data);
-              await new Promise(resolve => setTimeout(resolve, 10000));
-              await makeRequest(platform, projectId, options);
-        } else {
-                console.log('Fixes fetched successfully');
-                console.log('Response:')
-                console.log(data);
-                return data;
-            }
-        })
-        .catch(error => {
-          console.error('Fetch error:', error);
-        });
-
-
-
-
-/*     if (!data || data.length == 0) {
+     if (!response.data) {
         console.log('Response is empty. Retrying in 10 seconds.');
-        console.log('Response:')
-        console.log(data);
         await new Promise(resolve => setTimeout(resolve, 10000));
-        await makeRequest(platform, projectId, options);
+        return await makeRequest(platform, projectId, options);
     } else {
         console.log('Fixes fetched successfully');
-        console.log('Response:')
-        console.log(data);
-        return data;
-    } */
+        if (options.DEBUG == 'true'){
+            console.log('#######- DEBUG MODE -#######')
+            console.log('requests.ts - cehckFix')
+            console.log('Response:')
+            console.log(response.data);
+            console.log('#######- DEBUG MODE -#######')
+        }
+        return response.data;
+    }
 }

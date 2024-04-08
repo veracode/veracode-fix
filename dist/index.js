@@ -43375,61 +43375,11 @@ function run() {
                     const tar = yield createTar(initialFlawInfo, options);
                     const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                     const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                    const exampleFixResults = [
-                        '--- src/main/java/com/veracode/verademo/controller/UserController.java\n' +
-                            '+++ src/main/java/com/veracode/verademo/controller/UserController.java\n' +
-                            '@@ -50,6 +50,7 @@\n' +
-                            ' import com.veracode.verademo.utils.Constants;\n' +
-                            ' import com.veracode.verademo.utils.User;\n' +
-                            ' import com.veracode.verademo.utils.UserFactory;\n' +
-                            '+import java.util.*;\n' +
-                            ' \n' +
-                            ' /**\n' +
-                            '  * @author johnadmin\n' +
-                            '@@ -249,8 +250,11 @@\n' +
-                            ' \n' +
-                            ` \t\t\tString sql = "SELECT password_hint FROM users WHERE username = '" + username + "'";\n` +
-                            ' \t\t\tlogger.info(sql);\n' +
-                            '+\t\t\tSet<String> whitelistUsername = new HashSet<>(Arrays.asList("item1", "item2", "item3"));\n' +
-                            '+\t\t\tif (!username.matches("\\\\w+(\\\\s*\\\\.\\\\s*\\\\w+)*") && !whitelistUsername.contains(username))\n' +
-                            '+\t\t\t    throw new IllegalArgumentException();\n' +
-                            ' \t\t\tStatement statement = connect.createStatement();\n' +
-                            ' \t\t\tResultSet result = statement.executeQuery(sql);\n' +
-                            ' \t\t\tif (result.first()) {\n' +
-                            ' \t\t\t\tString password= result.getString("password_hint");\n' +
-                            ` \t\t\t\tString formatString = "Username '" + username + "' has password: %.2s%s";\n`,
-                        '--- src/main/java/com/veracode/verademo/controller/UserController.java\n' +
-                            '+++ src/main/java/com/veracode/verademo/controller/UserController.java\n' +
-                            '@@ -50,6 +50,7 @@\n' +
-                            ' import com.veracode.verademo.utils.Constants;\n' +
-                            ' import com.veracode.verademo.utils.User;\n' +
-                            ' import com.veracode.verademo.utils.UserFactory;\n' +
-                            '+import java.util.*;\n' +
-                            ' \n' +
-                            ' /**\n' +
-                            '  * @author johnadmin\n' +
-                            '@@ -249,8 +250,13 @@\n' +
-                            ' \n' +
-                            ` \t\t\tString sql = "SELECT password_hint FROM users WHERE username = '" + username + "'";\n` +
-                            ' \t\t\tlogger.info(sql);\n' +
-                            '-\t\t\tStatement statement = connect.createStatement();\n' +
-                            '-\t\t\tResultSet result = statement.executeQuery(sql);\n' +
-                            '+\t\t\tSet<String> whitelistUsername = new HashSet<>(Arrays.asList("item1", "item2", "item3"));\n' +
-                            '+\t\t\tif (!username.matches("\\\\w+(\\\\s*\\\\.\\\\s*\\\\w+)*") && !whitelistUsername.contains(username))\n' +
-                            '+\t\t\t    throw new IllegalArgumentException();\n' +
-                            '+\n' +
-                            '+\t\t\tPreparedStatement statement = connect.prepareStatement(sql);\n' +
-                            '+\n' +
-                            '+\t\t\tResultSet result = statement.executeQuery();\n' +
-                            ' \t\t\tif (result.first()) {\n' +
-                            ' \t\t\t\tString password= result.getString("password_hint");\n' +
-                            ` \t\t\t\tString formatString = "Username '" + username + "' has password: %.2s%s";\n`
-                    ];
                     console.log('Fix results:');
-                    console.log(exampleFixResults);
+                    console.log(checkFixResults);
                     if (options.prComment == 'true') {
                         console.log('PR Comment');
-                        const prComment = yield (0, create_pr_comment_1.createPRComment)(exampleFixResults, options, initialFlawInfo);
+                        const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
                     }
                 }
                 else {
@@ -43518,7 +43468,8 @@ function upload(platform, tar, options) {
 exports.upload = upload;
 function checkFix(platform, projectId, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield makeRequest(platform, projectId, options);
+        const results = yield makeRequest(platform, projectId, options);
+        return results;
     });
 }
 exports.checkFix = checkFix;
@@ -43539,58 +43490,28 @@ function makeRequest(platform, projectId, options) {
             console.log(authHeader);
             console.log('#######- DEBUG MODE -#######');
         }
-        /*     const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results', {
-                headers: {
-                    'Authorization': authHeader,
-                    'Content-Type': 'application/json'
-                }
-            }) */
-        const headers = {
-            Authorization: authHeader,
-            'Content-Type': 'application/json'
-        };
-        const appUrl = 'https://' + platform.apiUrl + '/fix/v1/project/' + projectId + '/results';
-        //const response = await fetch(appUrl, { headers });
-        yield fetch(appUrl, { headers })
-            .then((response) => __awaiter(this, void 0, void 0, function* () {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+        const response = yield axios_1.default.get('https://' + platform.apiUrl + '/fix/v1/project/' + projectId + '/results', {
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
             }
-            // Parse as text
-            return response.text();
-        }))
-            .then((data) => __awaiter(this, void 0, void 0, function* () {
-            console.log('Response data:');
-            console.log(data);
-            if (!data || data == '') {
-                console.log('Response is empty. Retrying in 10 seconds.');
-                console.log('Response:');
-                console.log(data);
-                yield new Promise(resolve => setTimeout(resolve, 10000));
-                yield makeRequest(platform, projectId, options);
-            }
-            else {
-                console.log('Fixes fetched successfully');
-                console.log('Response:');
-                console.log(data);
-                return data;
-            }
-        }))
-            .catch(error => {
-            console.error('Fetch error:', error);
         });
-        /*     if (!data || data.length == 0) {
-                console.log('Response is empty. Retrying in 10 seconds.');
-                console.log('Response:')
-                console.log(data);
-                await new Promise(resolve => setTimeout(resolve, 10000));
-                await makeRequest(platform, projectId, options);
-            } else {
-                console.log('Fixes fetched successfully');
-                console.log('Response:')
-                console.log(data);
-                return data;
-            } */
+        if (!response.data) {
+            console.log('Response is empty. Retrying in 10 seconds.');
+            yield new Promise(resolve => setTimeout(resolve, 10000));
+            return yield makeRequest(platform, projectId, options);
+        }
+        else {
+            console.log('Fixes fetched successfully');
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('requests.ts - cehckFix');
+                console.log('Response:');
+                console.log(response.data);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            return response.data;
+        }
     });
 }
 

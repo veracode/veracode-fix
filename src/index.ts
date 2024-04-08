@@ -158,63 +158,12 @@ async function run() {
                 const uploadTar = await upload(choosePlatform, tar, options)
                 const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
 
-                const exampleFixResults = [
-                    '--- src/main/java/com/veracode/verademo/controller/UserController.java\n' +
-                      '+++ src/main/java/com/veracode/verademo/controller/UserController.java\n' +
-                      '@@ -50,6 +50,7 @@\n' +
-                      ' import com.veracode.verademo.utils.Constants;\n' +
-                      ' import com.veracode.verademo.utils.User;\n' +
-                      ' import com.veracode.verademo.utils.UserFactory;\n' +
-                      '+import java.util.*;\n' +
-                      ' \n' +
-                      ' /**\n' +
-                      '  * @author johnadmin\n' +
-                      '@@ -249,8 +250,11 @@\n' +
-                      ' \n' +
-                      ` \t\t\tString sql = "SELECT password_hint FROM users WHERE username = '" + username + "'";\n` +
-                      ' \t\t\tlogger.info(sql);\n' +
-                      '+\t\t\tSet<String> whitelistUsername = new HashSet<>(Arrays.asList("item1", "item2", "item3"));\n' +
-                      '+\t\t\tif (!username.matches("\\\\w+(\\\\s*\\\\.\\\\s*\\\\w+)*") && !whitelistUsername.contains(username))\n' +
-                      '+\t\t\t    throw new IllegalArgumentException();\n' +
-                      ' \t\t\tStatement statement = connect.createStatement();\n' +
-                      ' \t\t\tResultSet result = statement.executeQuery(sql);\n' +
-                      ' \t\t\tif (result.first()) {\n' +
-                      ' \t\t\t\tString password= result.getString("password_hint");\n' +
-                      ` \t\t\t\tString formatString = "Username '" + username + "' has password: %.2s%s";\n`,
-                    '--- src/main/java/com/veracode/verademo/controller/UserController.java\n' +
-                      '+++ src/main/java/com/veracode/verademo/controller/UserController.java\n' +
-                      '@@ -50,6 +50,7 @@\n' +
-                      ' import com.veracode.verademo.utils.Constants;\n' +
-                      ' import com.veracode.verademo.utils.User;\n' +
-                      ' import com.veracode.verademo.utils.UserFactory;\n' +
-                      '+import java.util.*;\n' +
-                      ' \n' +
-                      ' /**\n' +
-                      '  * @author johnadmin\n' +
-                      '@@ -249,8 +250,13 @@\n' +
-                      ' \n' +
-                      ` \t\t\tString sql = "SELECT password_hint FROM users WHERE username = '" + username + "'";\n` +
-                      ' \t\t\tlogger.info(sql);\n' +
-                      '-\t\t\tStatement statement = connect.createStatement();\n' +
-                      '-\t\t\tResultSet result = statement.executeQuery(sql);\n' +
-                      '+\t\t\tSet<String> whitelistUsername = new HashSet<>(Arrays.asList("item1", "item2", "item3"));\n' +
-                      '+\t\t\tif (!username.matches("\\\\w+(\\\\s*\\\\.\\\\s*\\\\w+)*") && !whitelistUsername.contains(username))\n' +
-                      '+\t\t\t    throw new IllegalArgumentException();\n' +
-                      '+\n' +
-                      '+\t\t\tPreparedStatement statement = connect.prepareStatement(sql);\n' +
-                      '+\n' +
-                      '+\t\t\tResultSet result = statement.executeQuery();\n' +
-                      ' \t\t\tif (result.first()) {\n' +
-                      ' \t\t\t\tString password= result.getString("password_hint");\n' +
-                      ` \t\t\t\tString formatString = "Username '" + username + "' has password: %.2s%s";\n`
-                  ]
-
                 console.log('Fix results:')
-                console.log(exampleFixResults)
+                console.log(checkFixResults)
 
                 if (options.prComment == 'true'){
                     console.log('PR Comment')
-                    const prComment = await createPRComment(exampleFixResults, options, initialFlawInfo)
+                    const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
                 }
             }
             else {
