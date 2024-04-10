@@ -62,7 +62,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         const commentID:any = context.payload.pull_request?.number
 
         
-
+        //add PR Comment
         try {
             const octokit = github.getOctokit(token);
 
@@ -73,6 +73,37 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
                 body: commentBody,
             });
             core.info('Adding scan results as comment to PR #'+commentID)
+        } catch (error:any) {
+            core.info(error);
+        }
+
+        //add code suggestion to check annotation
+        try {
+            const octokit = github.getOctokit(token);
+
+            const { data: comment } = await octokit.rest.checks.create({
+                owner: repo[0],
+                repo: repo[1],
+                name: 'Veracode Flaw Annotation',
+                head_sha: context.sha,
+                status: 'completed',
+                conclusion: 'failure',
+                output: {
+                    title: 'Veracode Flaw Annotation',
+                    summary: 'Veracode Flaw Annotation',
+                    text: 'Veracode Flaw Annotation',
+                    annotations: [
+                        {
+                            path: sourceFile,
+                            start_line: sourceLine,
+                            end_line: sourceLine,
+                            annotation_level: 'failure',
+                            message: 'Veracode Flaw Annotation',
+                        },
+                    ],
+                },
+            });
+            core.info('Adding scan results as annotation to PR #'+commentID)
         } catch (error:any) {
             core.info(error);
         }
