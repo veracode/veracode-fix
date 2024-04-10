@@ -43145,24 +43145,22 @@ function createPRComment(results, options, flawInfo) {
         const sourceLineEnd = sourceLine + 5;
         const functionName = resultArray.files.source_file.function_name;
         const repositoryEnv = process.env;
-        console.log('environment variables');
-        console.log(repositoryEnv);
         //crete comment body
         let commentBody = '';
-        commentBody = commentBody + '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)<br>';
+        commentBody = commentBody + '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n';
         commentBody = commentBody + '> [!CAUTION]\n';
         commentBody = commentBody + '***Breaking Flaw identified in code!***<br>';
-        commentBody = commentBody + 'https://github.com/' + repositoryEnv.GITHUB_REPOSITORY + '/blob/' + repositoryEnv.GITHUB_WORKFLOW_SHA + '/src/main/java/com/veracode/verademo/commands/IgnoreCommand.java#L' + sourceLineStart + '-L' + sourceLineEnd + '<br>';
-        commentBody = commentBody + '<br>';
+        commentBody = commentBody + 'https://github.com/' + repositoryEnv.GITHUB_REPOSITORY + '/blob/' + repositoryEnv.GITHUB_WORKFLOW_SHA + '/src/main/java/com/veracode/verademo/commands/IgnoreCommand.java#L' + sourceLineStart + '-L' + sourceLineEnd + '\n';
+        commentBody = commentBody + '\n';
         commentBody = commentBody + '> [!CAUTION]\n';
-        commentBody = commentBody + '<br>CWE: ' + flawCWEID + ' ' + issueType + '<br>Severity: ' + flawSeverity + '<br>';
-        commentBody = commentBody + display_text + '<br>';
-        commentBody = commentBody + '<br>';
+        commentBody = commentBody + 'CWE: ' + flawCWEID + ' ' + issueType + '<br>Severity: ' + flawSeverity + '\n';
+        commentBody = commentBody + display_text + '\n';
+        commentBody = commentBody + '\n';
         commentBody = commentBody + '```diff\n';
         //commentBody = commentBody+'<br>'
         commentBody = commentBody + results[0] + '\n';
         //commentBody = commentBody+'<br>'
-        commentBody = commentBody + '```';
+        commentBody = commentBody + '\n```';
         console.log('Comment body');
         console.log(commentBody);
         core.info('check if we run on a pull request');
