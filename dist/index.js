@@ -43148,18 +43148,18 @@ function createPRComment(results, options, flawInfo) {
         //crete comment body
         let commentBody = '';
         commentBody = commentBody + '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)<br>';
-        commentBody = commentBody + '> [!CAUTION]';
+        commentBody = commentBody + '>[!CAUTION]';
         commentBody = commentBody + '***Breaking Flaw identified in code!***<br>';
-        commentBody = commentBody + 'https://github.com/julz0815/test-action/blob/ced1fb232c158fccd1e1b366671c0a6968ee66fc/src/main/java/com/veracode/verademo/commands/IgnoreCommand.java#L40-L52<br>';
+        commentBody = commentBody + 'https://github.com/' + repositoryEnv.GITHUB_REPOSITORY + '/blob/' + repositoryEnv.GITHUB_WORKFLOW_SHA + '/src/main/java/com/veracode/verademo/commands/IgnoreCommand.java#L40-L52<br>';
         commentBody = commentBody + '<br>';
-        commentBody = commentBody + '> [!CAUTION]';
-        commentBody = commentBody + 'CWE: ' + flawCWEID + ' - Severity: ' + flawSeverity + '<br>';
+        commentBody = commentBody + '>[!CAUTION]';
+        commentBody = commentBody + '<br>CWE: ' + flawCWEID + ' ' + issueType + '<br>Severity: ' + flawSeverity + '<br>';
         commentBody = commentBody + display_text + '<br>';
         commentBody = commentBody + '<br>';
         commentBody = commentBody + '```diff';
-        commentBody = commentBody + '<br>';
+        //commentBody = commentBody+'<br>'
         commentBody = commentBody + results[0];
-        commentBody = commentBody + '<br>';
+        //commentBody = commentBody+'<br>'
         commentBody = commentBody + '```';
         console.log('Comment body');
         console.log(commentBody);
