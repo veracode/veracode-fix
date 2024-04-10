@@ -12,7 +12,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     //find the correct flaw info from json inout file
     const resultsFile = fs.readFileSync(flawInfo.resultsFile, 'utf8')
     const data = JSON.parse(resultsFile)
-    const flawFile = fs.readFileSync('falwInfo', 'utf8')
+    const flawFile = fs.readFileSync('flawInfo', 'utf8')
     const flawData = JSON.parse(flawFile)
     console.log('Reviewing issueID: '+flawInfo.issuedID)
     const resultArray = data.findings.find((issueId: any) => issueId.issue_id == flawInfo.issuedID)

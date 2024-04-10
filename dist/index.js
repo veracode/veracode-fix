@@ -43133,7 +43133,7 @@ function createPRComment(results, options, flawInfo) {
         //find the correct flaw info from json inout file
         const resultsFile = fs_1.default.readFileSync(flawInfo.resultsFile, 'utf8');
         const data = JSON.parse(resultsFile);
-        const flawFile = fs_1.default.readFileSync('falwInfo', 'utf8');
+        const flawFile = fs_1.default.readFileSync('flawInfo', 'utf8');
         const flawData = JSON.parse(flawFile);
         console.log('Reviewing issueID: ' + flawInfo.issuedID);
         const resultArray = data.findings.find((issueId) => issueId.issue_id == flawInfo.issuedID);
