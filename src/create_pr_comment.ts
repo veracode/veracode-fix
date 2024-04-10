@@ -18,7 +18,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     const flawSeverity = resultArray.severity
     const issueType = resultArray.issue_type
     const display_text = resultArray.display_text
-    const sourceFile = resultArray.files.source_file.file
+    const sourceFile = flawInfo.source_file
     const sourceLine = resultArray.files.source_file.line
     const sourceLineStart = sourceLine-5
     const sourceLineEnd = sourceLine+5
@@ -31,7 +31,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     commentBody = commentBody+'> [!CAUTION]\n'
     commentBody = commentBody+'***Breaking Flaw identified in code!***\n'
     commentBody = commentBody+'\n'
-    commentBody = commentBody+'https://github.com/'+repositoryEnv.GITHUB_REPOSITORY+'/blob/'+repositoryEnv.GITHUB_WORKFLOW_SHA+sourceFile+'#L'+sourceLineStart+'-L'+sourceLineEnd+'\n'
+    commentBody = commentBody+'https://github.com/'+repositoryEnv.GITHUB_REPOSITORY+'/blob/'+repositoryEnv.GITHUB_WORKFLOW_SHA+'/'+sourceFile+'#L'+sourceLineStart+'-L'+sourceLineEnd+'\n'
     commentBody = commentBody+'\n'
     commentBody = commentBody+'> [!CAUTION]\n'
     commentBody = commentBody+'CWE: '+flawCWEID+' '+issueType+'<br>Severity: '+flawSeverity+'\n'
