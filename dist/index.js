@@ -43149,7 +43149,7 @@ function createPRComment(results, options, flawInfo) {
         let commentBody = '';
         commentBody = commentBody + '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n';
         commentBody = commentBody + '> [!CAUTION]\n';
-        commentBody = commentBody + '***Breaking Flaw identified in code!***<br>';
+        commentBody = commentBody + '***Breaking Flaw identified in code!***\n';
         commentBody = commentBody + 'https://github.com/' + repositoryEnv.GITHUB_REPOSITORY + '/blob/' + repositoryEnv.GITHUB_WORKFLOW_SHA + '/src/main/java/com/veracode/verademo/commands/IgnoreCommand.java#L' + sourceLineStart + '-L' + sourceLineEnd + '\n';
         commentBody = commentBody + '\n';
         commentBody = commentBody + '> [!CAUTION]\n';
