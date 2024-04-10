@@ -153,10 +153,10 @@ async function run() {
                         console.log('Fix results:')
                         console.log(checkFixResults)
 
-                if (options.prComment == 'true'){
-                    console.log('PR Comment')
-                    const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
-                }
+                        if (options.prComment == 'true'){
+                            console.log('PR Comment')
+                            const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
+                        }
                     }
                     else {
                         console.log('CWE '+initialFlawInfo.cweID+' is not supported '+options.language)
