@@ -43141,7 +43141,7 @@ function createPRComment(results, options, flawInfo) {
         const flawSeverity = resultArray.severity;
         const issueType = resultArray.issue_type;
         const display_text = resultArray.display_text;
-        const sourceFile = flawData.source_file;
+        const sourceFile = flawData.sourceFile;
         const sourceLine = resultArray.files.source_file.line;
         const sourceLineStart = sourceLine - 5;
         const sourceLineEnd = sourceLine + 5;
