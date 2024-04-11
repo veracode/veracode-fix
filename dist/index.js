@@ -43192,42 +43192,37 @@ function createPRComment(results, options, flawInfo) {
                 core.info(error);
             }
             //add code suggestion to check annotation
-            try {
-                const octokit = github.getOctokit(token);
-                const annotationBody = {
-                    owner: repo[0],
-                    repo: repo[1],
-                    name: 'Veracode Flaw Annotation',
-                    head_sha: process.env.GITHUB_SHA,
-                    check_run_id: process.env.GITHUB_RUN_ID,
-                    status: 'completed',
-                    conclusion: 'failure',
-                    output: {
-                        title: 'Veracode Flaw Annotation',
-                        summary: 'Veracode Flaw Annotation',
-                        text: 'Veracode Flaw Annotation',
-                        annotations: [
-                            {
-                                path: sourceFile,
-                                start_line: sourceLine,
-                                end_line: sourceLine,
-                                annotation_level: 'failure',
-                                message: 'Veracode Flaw Annotation',
-                            },
-                        ],
-                    }
-                };
-                console.log('Annotation body');
-                console.log(annotationBody);
-                const response = yield octokit.rest.checks.update({
-                    annotationBody,
-                });
-                core.info('Adding scan results as annotation to PR #' + commentID);
-                console.log(response);
-            }
-            catch (error) {
-                core.info(error);
-            }
+            const octokit = github.getOctokit(token);
+            const annotationBody = {
+                owner: repo[0],
+                repo: repo[1],
+                name: 'Veracode Flaw Annotation',
+                head_sha: process.env.GITHUB_SHA,
+                check_run_id: process.env.GITHUB_RUN_ID,
+                status: 'completed',
+                conclusion: 'failure',
+                output: {
+                    title: 'Veracode Flaw Annotation',
+                    summary: 'Veracode Flaw Annotation',
+                    text: 'Veracode Flaw Annotation',
+                    annotations: [
+                        {
+                            path: sourceFile,
+                            start_line: sourceLine,
+                            end_line: sourceLine,
+                            annotation_level: 'failure',
+                            message: 'Veracode Flaw Annotation',
+                        },
+                    ],
+                }
+            };
+            console.log('Annotation body');
+            console.log(annotationBody);
+            const response = yield octokit.rest.checks.update({
+                annotationBody,
+            });
+            core.info('Adding scan results as annotation to PR #' + commentID);
+            console.log(response);
         }
         else {
             core.info('We are not running on a pull request');

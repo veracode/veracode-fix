@@ -78,7 +78,6 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         }
 
         //add code suggestion to check annotation
-        try {
             const octokit = github.getOctokit(token);
 
             const annotationBody = {
@@ -113,9 +112,6 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
             });
             core.info('Adding scan results as annotation to PR #'+commentID)
             console.log(response)
-        } catch (error:any) {
-            core.info(error);
-        }
     }
     else {
         core.info('We are not running on a pull request')
