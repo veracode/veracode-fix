@@ -8,6 +8,8 @@ import { createPRComment } from './create_pr_comment';
 
 let credentials:any = {}
 
+console.log(process.env)
+
 const vid = core.getInput('vid', {required: true} );
 //const vid = process.env.vid
 credentials['vid'] = vid
