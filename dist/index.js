@@ -43198,7 +43198,7 @@ function createPRComment(results, options, flawInfo) {
                     owner: repo[0],
                     repo: repo[1],
                     name: 'Veracode Flaw Annotation',
-                    head_sha: context.sha,
+                    check_run_id: process.env.GITHUB_RUN_ID,
                     status: 'completed',
                     conclusion: 'failure',
                     output: {
@@ -43281,7 +43281,6 @@ const core = __importStar(__nccwpck_require__(5127));
 const check_cwe_support_1 = __nccwpck_require__(6123);
 const create_pr_comment_1 = __nccwpck_require__(3849);
 let credentials = {};
-console.log(process.env);
 const vid = core.getInput('vid', { required: true });
 //const vid = process.env.vid
 credentials['vid'] = vid;
