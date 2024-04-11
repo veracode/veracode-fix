@@ -43194,7 +43194,7 @@ function createPRComment(results, options, flawInfo) {
             //add code suggestion to check annotation
             try {
                 const octokit = github.getOctokit(token);
-                const { data: comment } = yield octokit.rest.checks.update({
+                const annotationBody = {
                     owner: repo[0],
                     repo: repo[1],
                     name: 'Veracode Flaw Annotation',
@@ -43215,9 +43215,15 @@ function createPRComment(results, options, flawInfo) {
                                 message: 'Veracode Flaw Annotation',
                             },
                         ],
-                    },
+                    }
+                };
+                console.log('Annotation body');
+                console.log(annotationBody);
+                const { data: comment } = yield octokit.rest.checks.update({
+                    annotationBody,
                 });
                 core.info('Adding scan results as annotation to PR #' + commentID);
+                console.log(comment);
             }
             catch (error) {
                 core.info(error);

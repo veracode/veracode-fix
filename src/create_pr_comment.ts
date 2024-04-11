@@ -81,7 +81,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         try {
             const octokit = github.getOctokit(token);
 
-            const { data: comment } = await octokit.rest.checks.update({
+            const annotationBody = {
                 owner: repo[0],
                 repo: repo[1],
                 name: 'Veracode Flaw Annotation',
@@ -102,9 +102,17 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
                             message: 'Veracode Flaw Annotation',
                         },
                     ],
-                },
+                }
+            }
+
+            console.log('Annotation body')
+            console.log(annotationBody)
+
+            const { data: comment } = await octokit.rest.checks.update({
+                annotationBody,
             });
             core.info('Adding scan results as annotation to PR #'+commentID)
+            console.log(comment)
         } catch (error:any) {
             core.info(error);
         }
