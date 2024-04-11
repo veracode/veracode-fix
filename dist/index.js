@@ -43223,7 +43223,7 @@ function createPRComment(results, options, flawInfo) {
                     annotationBody,
                 });
                 core.info('Adding scan results as annotation to PR #' + commentID);
-                console.log(comment);
+                console.log(data);
             }
             catch (error) {
                 core.info(error);

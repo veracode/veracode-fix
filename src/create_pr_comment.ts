@@ -112,7 +112,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
                 annotationBody,
             });
             core.info('Adding scan results as annotation to PR #'+commentID)
-            console.log(comment)
+            console.log(data)
         } catch (error:any) {
             core.info(error);
         }
