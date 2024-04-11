@@ -85,6 +85,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
                 owner: repo[0],
                 repo: repo[1],
                 name: 'Veracode Flaw Annotation',
+                head_sha: process.env.GITHUB_SHA,
                 check_run_id: process.env.GITHUB_RUN_ID,
                 status: 'completed',
                 conclusion: 'failure',
