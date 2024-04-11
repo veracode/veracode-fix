@@ -43228,7 +43228,7 @@ function createPRComment(results, options, flawInfo) {
             };
             console.log('Annotation body');
             console.log(annotationBody);
-            const response = yield octokit.request('UPDATE /repos/' + repo[0] + '/' + repo[1] + '/+process.env.GITHUB_RUN_ID', annotationBody);
+            const response = yield octokit.request('UPDATE /repos/' + repo[0] + '/' + repo[1] + '/' + process.env.GITHUB_RUN_ID, annotationBody);
             core.info('Adding scan results as annotation to PR #' + commentID);
             console.log(response);
         }
