@@ -89,7 +89,8 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         }
 
         //add code suggestion to check annotation
-        const octokit = github.getOctokit(token);
+        const access_token = core.getInput("access_token")
+        const octokit = github.getOctokit(access_token);
 
             const annotationBody = {
                 owner: repo[0],
