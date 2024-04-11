@@ -43127,8 +43127,13 @@ const fs_1 = __importDefault(__nccwpck_require__(7147));
 function createPRComment(results, options, flawInfo) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
-        console.log('Results 0 to work with');
-        console.log(results[0]);
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('create_pr_comment.ts - createPRComment()');
+            console.log('Results 0 to work with');
+            console.log(results[0]);
+            console.log('#######- DEBUG MODE -#######');
+        }
         //get more information from the flawInfo
         //find the correct flaw info from json inout file
         const resultsFile = fs_1.default.readFileSync(flawInfo.resultsFile, 'utf8');
@@ -43164,8 +43169,13 @@ function createPRComment(results, options, flawInfo) {
         commentBody = commentBody + results[0] + '\n';
         //commentBody = commentBody+'<br>'
         commentBody = commentBody + '\n```';
-        console.log('Comment body');
-        console.log(commentBody);
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('create_pr_comment.ts - createPRComment()');
+            console.log('Comment body');
+            console.log(commentBody);
+            console.log('#######- DEBUG MODE -#######');
+        }
         core.info('check if we run on a pull request');
         let pullRequest = process.env.GITHUB_REF;
         console.log(pullRequest);
@@ -43218,9 +43228,7 @@ function createPRComment(results, options, flawInfo) {
             };
             console.log('Annotation body');
             console.log(annotationBody);
-            const response = yield octokit.rest.checks.update({
-                annotationBody,
-            });
+            const response = yield octokit.request('UPDATE /repos/' + repo[0] + '/' + repo[1] + '/+process.env.GITHUB_RUN_ID', annotationBody);
             core.info('Adding scan results as annotation to PR #' + commentID);
             console.log(response);
         }

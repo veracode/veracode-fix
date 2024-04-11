@@ -5,8 +5,13 @@ import fs from 'fs';
 
 export async function createPRComment(results:any, options:any, flawInfo:any){
 
-    console.log('Results 0 to work with')
-    console.log(results[0])
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('create_pr_comment.ts - createPRComment()')
+        console.log('Results 0 to work with')
+        console.log(results[0])
+        console.log('#######- DEBUG MODE -#######')
+    }
 
     //get more information from the flawInfo
     //find the correct flaw info from json inout file
@@ -45,8 +50,14 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     //commentBody = commentBody+'<br>'
     commentBody = commentBody+'\n```'
 
-    console.log('Comment body')
-    console.log(commentBody)
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('create_pr_comment.ts - createPRComment()')
+        console.log('Comment body')
+        console.log(commentBody)
+        console.log('#######- DEBUG MODE -#######')
+    }
+    
 
     core.info('check if we run on a pull request')
     let pullRequest = process.env.GITHUB_REF
@@ -78,7 +89,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         }
 
         //add code suggestion to check annotation
-            const octokit = github.getOctokit(token);
+        const octokit = github.getOctokit(token);
 
             const annotationBody = {
                 owner: repo[0],
@@ -107,9 +118,9 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
             console.log('Annotation body')
             console.log(annotationBody)
 
-            const response = await octokit.rest.checks.update({
+            const response = await octokit.request('UPDATE /repos/'+repo[0]+'/'+repo[1]+'/+process.env.GITHUB_RUN_ID',
                 annotationBody,
-            });
+            );
             core.info('Adding scan results as annotation to PR #'+commentID)
             console.log(response)
     }
