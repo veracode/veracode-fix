@@ -81,7 +81,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         try {
             const octokit = github.getOctokit(token);
 
-            const { data: comment } = await octokit.rest.checks.create({
+            const { data: comment } = await octokit.rest.checks.update({
                 owner: repo[0],
                 repo: repo[1],
                 name: 'Veracode Flaw Annotation',
