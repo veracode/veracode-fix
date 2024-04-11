@@ -43219,11 +43219,11 @@ function createPRComment(results, options, flawInfo) {
                 };
                 console.log('Annotation body');
                 console.log(annotationBody);
-                const { data: comment } = yield octokit.rest.checks.update({
+                const response = yield octokit.rest.checks.update({
                     annotationBody,
                 });
                 core.info('Adding scan results as annotation to PR #' + commentID);
-                console.log(data);
+                console.log(response);
             }
             catch (error) {
                 core.info(error);
@@ -43393,6 +43393,7 @@ function run() {
                 console.log(initialFlawInfo);
                 console.log('#######- DEBUG MODE -#######');
             }
+            console.log('#############################\n\n');
             if (options.cwe != null) {
                 console.log('Only run Fix for CWE: ' + options.cwe);
                 const cweList = options.cwe.split(',');
@@ -43405,8 +43406,6 @@ function run() {
                             const tar = yield createTar(initialFlawInfo, options);
                             const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                             const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                            console.log('Fix results:');
-                            console.log(checkFixResults);
                             if (options.prComment == 'true') {
                                 console.log('PR Comment');
                                 const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
@@ -43429,8 +43428,6 @@ function run() {
                     const tar = yield createTar(initialFlawInfo, options);
                     const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                     const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                    console.log('Fix results:');
-                    console.log(checkFixResults);
                     if (options.prComment == 'true') {
                         console.log('PR Comment');
                         const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);

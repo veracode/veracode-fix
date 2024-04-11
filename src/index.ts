@@ -136,6 +136,7 @@ async function run() {
             console.log('#######- DEBUG MODE -#######')
         }
         
+        console.log('#############################\n\n')
 
         if ( options.cwe != null ){
             console.log('Only run Fix for CWE: '+options.cwe)
@@ -150,9 +151,6 @@ async function run() {
                         const tar = await createTar(initialFlawInfo,options)
                         const uploadTar = await upload(choosePlatform, tar, options)
                         const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
-
-                        console.log('Fix results:')
-                        console.log(checkFixResults)
 
                         if (options.prComment == 'true'){
                             console.log('PR Comment')
@@ -177,9 +175,6 @@ async function run() {
                 const tar = await createTar(initialFlawInfo,options)
                 const uploadTar = await upload(choosePlatform, tar, options)
                 const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
-
-                console.log('Fix results:')
-                console.log(checkFixResults)
 
                 if (options.prComment == 'true'){
                     console.log('PR Comment')

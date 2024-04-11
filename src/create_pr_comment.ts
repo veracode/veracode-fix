@@ -108,11 +108,11 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
             console.log('Annotation body')
             console.log(annotationBody)
 
-            const { data: comment } = await octokit.rest.checks.update({
+            const response = await octokit.rest.checks.update({
                 annotationBody,
             });
             core.info('Adding scan results as annotation to PR #'+commentID)
-            console.log(data)
+            console.log(response)
         } catch (error:any) {
             core.info(error);
         }
