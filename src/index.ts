@@ -89,8 +89,14 @@ async function createTar(initialFlawInfo:any, options:any){
     const filepath = flawInfo.sourceFile
 
     fs.accessSync(filepath, fs.constants.F_OK);
-    console.log('File '+filepath+' exists');
 
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('index.ts')
+        console.log('File '+filepath+' exists');
+        console.log('#######- DEBUG MODE -#######')
+    }
+    
     fs.writeFileSync('flawInfo', JSON.stringify(flawInfo))
 
     try {
@@ -140,7 +146,12 @@ async function run() {
 
         if ( options.cwe != null ){
             console.log('Only run Fix for CWE: '+options.cwe)
-            const cweList = options.cwe.split(',')
+            let cweList = [];
+            if (options.cwe.includes(',')) {
+                cweList = options.cwe.split(',');
+            } else {
+                cweList = [options.cwe];
+            }
             const cweListLength = cweList.length
             let j = 0
             for (j = 0; j < cweListLength; j++) {
@@ -153,7 +164,7 @@ async function run() {
                         const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
 
                         if (options.prComment == 'true'){
-                            console.log('PR Comment')
+                            console.log('PR commenting is enabled')
                             const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
                         }
                     }
@@ -177,7 +188,7 @@ async function run() {
                 const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
 
                 if (options.prComment == 'true'){
-                    console.log('PR Comment')
+                    console.log('PR commenting is enabled')
                     const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
                 }
             }

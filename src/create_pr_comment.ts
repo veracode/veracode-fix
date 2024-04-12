@@ -10,6 +10,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         console.log('create_pr_comment.ts - createPRComment()')
         console.log('Results 0 to work with')
         console.log(results[0])
+        console.log('Reviewing issueID: '+flawInfo.issuedID)
         console.log('#######- DEBUG MODE -#######')
     }
 
@@ -19,7 +20,6 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     const data = JSON.parse(resultsFile)
     const flawFile = fs.readFileSync('flawInfo', 'utf8')
     const flawData = JSON.parse(flawFile)
-    console.log('Reviewing issueID: '+flawInfo.issuedID)
     const resultArray = data.findings.find((issueId: any) => issueId.issue_id == flawInfo.issuedID)
     const flawCWEID = resultArray.cwe_id
     const flawSeverity = resultArray.severity
@@ -61,7 +61,14 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
 
     core.info('check if we run on a pull request')
     let pullRequest = process.env.GITHUB_REF
-    console.log(pullRequest)
+
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('create_pr_comment.ts - createPRComment()')
+        console.log(pullRequest)
+        console.log('#######- DEBUG MODE -#######')
+    }
+    
     let isPR:any = pullRequest?.indexOf("pull")
 
     if ( isPR >= 1 ){
@@ -87,7 +94,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         } catch (error:any) {
             core.info(error);
         }
-
+/*
         //add code suggestion to check annotation
         const access_token = core.getInput("access_token")
         const octokit = github.getOctokit(access_token);
@@ -119,11 +126,13 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
             console.log('Annotation body')
             console.log(annotationBody)
 
-            const response = await octokit.request('CREATE /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+process.env.GITHUB_RUN_ID,
+            const response = await octokit.request('UPDATE /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+process.env.GITHUB_RUN_ID,
                 annotationBody,
             );
             core.info('Adding scan results as annotation to PR #'+commentID)
             console.log(response)
+
+*/
     }
     else {
         core.info('We are not running on a pull request')

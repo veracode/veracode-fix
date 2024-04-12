@@ -43132,6 +43132,7 @@ function createPRComment(results, options, flawInfo) {
             console.log('create_pr_comment.ts - createPRComment()');
             console.log('Results 0 to work with');
             console.log(results[0]);
+            console.log('Reviewing issueID: ' + flawInfo.issuedID);
             console.log('#######- DEBUG MODE -#######');
         }
         //get more information from the flawInfo
@@ -43140,7 +43141,6 @@ function createPRComment(results, options, flawInfo) {
         const data = JSON.parse(resultsFile);
         const flawFile = fs_1.default.readFileSync('flawInfo', 'utf8');
         const flawData = JSON.parse(flawFile);
-        console.log('Reviewing issueID: ' + flawInfo.issuedID);
         const resultArray = data.findings.find((issueId) => issueId.issue_id == flawInfo.issuedID);
         const flawCWEID = resultArray.cwe_id;
         const flawSeverity = resultArray.severity;
@@ -43178,7 +43178,12 @@ function createPRComment(results, options, flawInfo) {
         }
         core.info('check if we run on a pull request');
         let pullRequest = process.env.GITHUB_REF;
-        console.log(pullRequest);
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('create_pr_comment.ts - createPRComment()');
+            console.log(pullRequest);
+            console.log('#######- DEBUG MODE -#######');
+        }
         let isPR = pullRequest === null || pullRequest === void 0 ? void 0 : pullRequest.indexOf("pull");
         if (isPR >= 1) {
             core.info("This run is part of a PR, should add some PR comment");
@@ -43201,37 +43206,45 @@ function createPRComment(results, options, flawInfo) {
             catch (error) {
                 core.info(error);
             }
-            //add code suggestion to check annotation
-            const access_token = core.getInput("access_token");
-            const octokit = github.getOctokit(access_token);
-            const annotationBody = {
-                owner: repo[0],
-                repo: repo[1],
-                name: 'Veracode Flaw Annotation',
-                head_sha: process.env.GITHUB_SHA,
-                check_run_id: process.env.GITHUB_RUN_ID,
-                status: 'completed',
-                conclusion: 'failure',
-                output: {
-                    title: 'Veracode Flaw Annotation',
-                    summary: 'Veracode Flaw Annotation',
-                    text: 'Veracode Flaw Annotation',
-                    annotations: [
-                        {
-                            path: sourceFile,
-                            start_line: sourceLine,
-                            end_line: sourceLine,
-                            annotation_level: 'failure',
-                            message: 'Veracode Flaw Annotation',
-                        },
-                    ],
-                }
-            };
-            console.log('Annotation body');
-            console.log(annotationBody);
-            const response = yield octokit.request('CREATE /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + process.env.GITHUB_RUN_ID, annotationBody);
-            core.info('Adding scan results as annotation to PR #' + commentID);
-            console.log(response);
+            /*
+                    //add code suggestion to check annotation
+                    const access_token = core.getInput("access_token")
+                    const octokit = github.getOctokit(access_token);
+            
+                        const annotationBody = {
+                            owner: repo[0],
+                            repo: repo[1],
+                            name: 'Veracode Flaw Annotation',
+                            head_sha: process.env.GITHUB_SHA,
+                            check_run_id: process.env.GITHUB_RUN_ID,
+                            status: 'completed',
+                            conclusion: 'failure',
+                            output: {
+                                title: 'Veracode Flaw Annotation',
+                                summary: 'Veracode Flaw Annotation',
+                                text: 'Veracode Flaw Annotation',
+                                annotations: [
+                                    {
+                                        path: sourceFile,
+                                        start_line: sourceLine,
+                                        end_line: sourceLine,
+                                        annotation_level: 'failure',
+                                        message: 'Veracode Flaw Annotation',
+                                    },
+                                ],
+                            }
+                        }
+            
+                        console.log('Annotation body')
+                        console.log(annotationBody)
+            
+                        const response = await octokit.request('UPDATE /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+process.env.GITHUB_RUN_ID,
+                            annotationBody,
+                        );
+                        core.info('Adding scan results as annotation to PR #'+commentID)
+                        console.log(response)
+            
+            */
         }
         else {
             core.info('We are not running on a pull request');
@@ -43357,7 +43370,12 @@ function createTar(initialFlawInfo, options) {
         }
         const filepath = flawInfo.sourceFile;
         fs_1.default.accessSync(filepath, fs_1.default.constants.F_OK);
-        console.log('File ' + filepath + ' exists');
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('index.ts');
+            console.log('File ' + filepath + ' exists');
+            console.log('#######- DEBUG MODE -#######');
+        }
         fs_1.default.writeFileSync('flawInfo', JSON.stringify(flawInfo));
         try {
             const tarball = tar_1.default.create({
@@ -43400,7 +43418,13 @@ function run() {
             console.log('#############################\n\n');
             if (options.cwe != null) {
                 console.log('Only run Fix for CWE: ' + options.cwe);
-                const cweList = options.cwe.split(',');
+                let cweList = [];
+                if (options.cwe.includes(',')) {
+                    cweList = options.cwe.split(',');
+                }
+                else {
+                    cweList = [options.cwe];
+                }
                 const cweListLength = cweList.length;
                 let j = 0;
                 for (j = 0; j < cweListLength; j++) {
@@ -43411,7 +43435,7 @@ function run() {
                             const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                             const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
                             if (options.prComment == 'true') {
-                                console.log('PR Comment');
+                                console.log('PR commenting is enabled');
                                 const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
                             }
                         }
@@ -43433,7 +43457,7 @@ function run() {
                     const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                     const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
                     if (options.prComment == 'true') {
-                        console.log('PR Comment');
+                        console.log('PR commenting is enabled');
                         const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
                     }
                 }
