@@ -43416,7 +43416,7 @@ function run() {
                 console.log('#######- DEBUG MODE -#######');
             }
             console.log('#############################\n\n');
-            if (options.cwe != null) {
+            if (options.cwe != undefined) {
                 console.log('Only run Fix for CWE: ' + options.cwe);
                 let cweList = [];
                 if (options.cwe.includes(',')) {
