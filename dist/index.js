@@ -42955,7 +42955,7 @@ function createFlawInfo(flawInfo, options) {
                 console.log('#######- DEBUG MODE -#######')
             } */
         let flows = [];
-        if (typeof resultArray.stack_dumps === 'object' && resultArray.stack_dumps.stack_dump && Array.isArray(resultArray.stack_dumps.stack_dump) && resultArray.stack_dumps.stack_dump.length > 0) {
+        if (resultArray.stack_dumps.length > 0) {
             const flowArray = resultArray.stack_dumps.stack_dump[0].Frame;
             flowArray.forEach((element) => {
                 if (element.SourceFile == sourceFile && element.VarNames != undefined) {
