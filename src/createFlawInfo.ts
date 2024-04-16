@@ -41,7 +41,7 @@ export async function createFlawInfo(flawInfo:any,options:any){
 
     let flows:any = []
 
-    if (resultArray.stack_dumps.stack_dump[0].Frame != undefined){
+    if ( resultArray.stack_dumps.stack_dump[0].Frame != undefined && resultArray.stack_dumps != undefined ){
         const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
         flowArray.forEach((element: any) => {
             if (element.SourceFile == sourceFile && element.VarNames != undefined){
