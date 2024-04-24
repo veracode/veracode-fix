@@ -18,6 +18,10 @@ inputs:
     description: 'Results file from Veracode'
     required: false
     default: 'results.json'
+  fixType:
+    description: 'Fix type'
+    required: true
+    default: 'batch'
   cwe:
     description: 'CWE to fix'
     required: false
@@ -39,6 +43,10 @@ inputs:
     required: false
   prComment:
     description: 'Create comments for fixes on PRs'
+    required: false
+    default: 'false'
+  createPR:
+    description: 'Create PRs for fixes'
     required: false
     default: 'false'
     

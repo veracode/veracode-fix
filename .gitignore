@@ -4,3 +4,5 @@ node_modules/*
 data*
 /src/main/*
 flawinfo
+app/*
+app.tar.gz

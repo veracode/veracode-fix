@@ -14,7 +14,8 @@ export async function createFlawInfo(flawInfo:any,options:any){
     const resultsFile = fs.readFileSync(flawInfo.resultsFile, 'utf8')
     const data = JSON.parse(resultsFile)
     console.log('Reviewing issueID: '+flawInfo.issuedID)
-    const resultArray = data.findings.find((issueId: any) => issueId.issue_id == flawInfo.issuedID)
+    //const resultArray = data.findings.find((issueId: any) => issueId.issue_id == flawInfo.issuedID)
+    const resultArray = data.findings.find((issue:any) => issue.issue_id == flawInfo.issuedID && issue.files.source_file.file == flawInfo.sourceFile);
 
 
     if (options.DEBUG == 'true'){
@@ -27,54 +28,61 @@ export async function createFlawInfo(flawInfo:any,options:any){
     
     const sourceFile = resultArray.files.source_file.file
 
-    //flow length
-    //const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
-    //const flowLength = flowArray.length
-
-/*     if (options.DEBUG == 'true'){
-        console.log('#######- DEBUG MODE -#######')
-        console.log('createFlawInfo.ts')
-        console.log('Flow length: '+flowLength)
-        console.log('#######- DEBUG MODE -#######')
-    } */
-    
-
     let flows:any = []
 
-    if ( resultArray.stack_dumps.length > 0 ){
-        const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
-        flowArray.forEach((element: any) => {
-            if (element.SourceFile == sourceFile && element.VarNames != undefined){
+    //console.log('StackDumbs: ')
+    //console.log(resultArray.stack_dumps)
+    
 
-                if (options.DEBUG == 'true'){
-                    console.log('#######- DEBUG MODE -#######')
-                    console.log('createFlawInfo.ts')
-                    console.log('Flow element: ')
-                    console.log(element)
-                    console.log('#######- DEBUG MODE -#######')
-                }
+    if ( resultArray.stack_dumps.stack_dump ){
+        //console.log('StackDumbs length: '+resultArray.stack_dumps.stack_dump.length)
 
-                let flow = { 
-                    "expression": element.VarNames,
-                    "region": {
-                        "startLine": parseInt(element.SourceLine)+1,
-                        "endLine": parseInt(element.SourceLine)+1,
+        if ( resultArray.stack_dumps.stack_dump.length > 0 ){
+            const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
+            flowArray.forEach(async (element: any) => {
+                if (element.SourceFile == sourceFile && element.VarNames != undefined){
+
+                    if (options.DEBUG == 'true'){
+                        console.log('#######- DEBUG MODE -#######')
+                        console.log('createFlawInfo.ts')
+                        console.log('Flow element: ')
+                        console.log(element)
+                        console.log('#######- DEBUG MODE -#######')
                     }
-                }
-                //add flow to flows array
-                flows.push(flow)
-            
-            }
-        });
 
-        if (options.DEBUG == 'true'){
-            console.log('#######- DEBUG MODE -#######')
-            console.log('createFlawInfo.ts')
-            console.log('Flows:')
-            console.log(flows)
-            console.log('#######- DEBUG MODE -#######')
+                    let flow = { 
+                        "expression": element.VarNames,
+                        "region": {
+                            "startLine": parseInt(element.SourceLine)+1,
+                            "endLine": parseInt(element.SourceLine)+1,
+                        }
+                    }
+                    //add flow to flows array
+                    flows.push(flow)
+                
+                }
+            });
+
+            if (options.DEBUG == 'true'){
+                console.log('#######- DEBUG MODE -#######')
+                console.log('createFlawInfo.ts')
+                console.log('Flows:')
+                console.log(flows)
+                console.log('#######- DEBUG MODE -#######')
+            }
+            
         }
-        
+        else {
+            let flow = { 
+                "expression": "",
+                "region": {
+                    "startLine": resultArray.files.source_file.line,
+                    "endLine": resultArray.files.source_file.line,
+                }
+            }
+            flows.push(flow)
+            console.log('No flows 1')
+        }
     }
     else {
         let flow = { 
@@ -84,11 +92,12 @@ export async function createFlawInfo(flawInfo:any,options:any){
                 "endLine": resultArray.files.source_file.line,
             }
         }
-        console.log('No flows')
+        flows.push(flow)
+        console.log('No flows 2')
     }
 
     //rewrite path
-    function replacePath (rewrite:any, path:any){
+    async function replacePath (rewrite:any, path:any){
         const replaceValues = rewrite.split(":")
         const newPath = path.replace(replaceValues[0],replaceValues[1])
 
@@ -120,7 +129,7 @@ export async function createFlawInfo(flawInfo:any,options:any){
 
 
         if( filename.includes(orgPath1[0])) {
-            filepath = replacePath(options.source_base_path_1, filename)
+            filepath = await replacePath(options.source_base_path_1, filename)
 
             if (options.DEBUG == 'true'){
                 console.log('#######- DEBUG MODE -#######')
@@ -131,7 +140,7 @@ export async function createFlawInfo(flawInfo:any,options:any){
             }
         }
         else if (filename.includes(orgPath2[0])){
-            filepath = replacePath(options.source_base_path_2, filename)
+            filepath = await replacePath(options.source_base_path_2, filename)
 
             if (options.DEBUG == 'true'){
                 console.log('#######- DEBUG MODE -#######')
@@ -142,7 +151,7 @@ export async function createFlawInfo(flawInfo:any,options:any){
             }
         }
         else if (filename.includes(orgPath3[0])){
-            filepath = replacePath(options.source_base_path_3, filename)
+            filepath = await replacePath(options.source_base_path_3, filename)
 
             if (options.DEBUG == 'true'){
                 console.log('#######- DEBUG MODE -#######')

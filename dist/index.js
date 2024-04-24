@@ -42936,7 +42936,8 @@ function createFlawInfo(flawInfo, options) {
         const resultsFile = fs_1.default.readFileSync(flawInfo.resultsFile, 'utf8');
         const data = JSON.parse(resultsFile);
         console.log('Reviewing issueID: ' + flawInfo.issuedID);
-        const resultArray = data.findings.find((issueId) => issueId.issue_id == flawInfo.issuedID);
+        //const resultArray = data.findings.find((issueId: any) => issueId.issue_id == flawInfo.issuedID)
+        const resultArray = data.findings.find((issue) => issue.issue_id == flawInfo.issuedID && issue.files.source_file.file == flawInfo.sourceFile);
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('createFlawInfo.ts');
@@ -42945,44 +42946,51 @@ function createFlawInfo(flawInfo, options) {
             console.log('#######- DEBUG MODE -#######');
         }
         const sourceFile = resultArray.files.source_file.file;
-        //flow length
-        //const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
-        //const flowLength = flowArray.length
-        /*     if (options.DEBUG == 'true'){
-                console.log('#######- DEBUG MODE -#######')
-                console.log('createFlawInfo.ts')
-                console.log('Flow length: '+flowLength)
-                console.log('#######- DEBUG MODE -#######')
-            } */
         let flows = [];
-        if (resultArray.stack_dumps.length > 0) {
-            const flowArray = resultArray.stack_dumps.stack_dump[0].Frame;
-            flowArray.forEach((element) => {
-                if (element.SourceFile == sourceFile && element.VarNames != undefined) {
-                    if (options.DEBUG == 'true') {
-                        console.log('#######- DEBUG MODE -#######');
-                        console.log('createFlawInfo.ts');
-                        console.log('Flow element: ');
-                        console.log(element);
-                        console.log('#######- DEBUG MODE -#######');
-                    }
-                    let flow = {
-                        "expression": element.VarNames,
-                        "region": {
-                            "startLine": parseInt(element.SourceLine) + 1,
-                            "endLine": parseInt(element.SourceLine) + 1,
+        //console.log('StackDumbs: ')
+        //console.log(resultArray.stack_dumps)
+        if (resultArray.stack_dumps.stack_dump) {
+            //console.log('StackDumbs length: '+resultArray.stack_dumps.stack_dump.length)
+            if (resultArray.stack_dumps.stack_dump.length > 0) {
+                const flowArray = resultArray.stack_dumps.stack_dump[0].Frame;
+                flowArray.forEach((element) => __awaiter(this, void 0, void 0, function* () {
+                    if (element.SourceFile == sourceFile && element.VarNames != undefined) {
+                        if (options.DEBUG == 'true') {
+                            console.log('#######- DEBUG MODE -#######');
+                            console.log('createFlawInfo.ts');
+                            console.log('Flow element: ');
+                            console.log(element);
+                            console.log('#######- DEBUG MODE -#######');
                         }
-                    };
-                    //add flow to flows array
-                    flows.push(flow);
+                        let flow = {
+                            "expression": element.VarNames,
+                            "region": {
+                                "startLine": parseInt(element.SourceLine) + 1,
+                                "endLine": parseInt(element.SourceLine) + 1,
+                            }
+                        };
+                        //add flow to flows array
+                        flows.push(flow);
+                    }
+                }));
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('createFlawInfo.ts');
+                    console.log('Flows:');
+                    console.log(flows);
+                    console.log('#######- DEBUG MODE -#######');
                 }
-            });
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('createFlawInfo.ts');
-                console.log('Flows:');
-                console.log(flows);
-                console.log('#######- DEBUG MODE -#######');
+            }
+            else {
+                let flow = {
+                    "expression": "",
+                    "region": {
+                        "startLine": resultArray.files.source_file.line,
+                        "endLine": resultArray.files.source_file.line,
+                    }
+                };
+                flows.push(flow);
+                console.log('No flows 1');
             }
         }
         else {
@@ -42993,20 +43001,23 @@ function createFlawInfo(flawInfo, options) {
                     "endLine": resultArray.files.source_file.line,
                 }
             };
-            console.log('No flows');
+            flows.push(flow);
+            console.log('No flows 2');
         }
         //rewrite path
         function replacePath(rewrite, path) {
-            const replaceValues = rewrite.split(":");
-            const newPath = path.replace(replaceValues[0], replaceValues[1]);
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('createFlawInfo.ts');
-                console.log('Value 1:' + replaceValues[0] + ' Value 2: ' + replaceValues[1] + ' old path: ' + path);
-                console.log('new Path:' + newPath);
-                console.log('#######- DEBUG MODE -#######');
-            }
-            return newPath;
+            return __awaiter(this, void 0, void 0, function* () {
+                const replaceValues = rewrite.split(":");
+                const newPath = path.replace(replaceValues[0], replaceValues[1]);
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('createFlawInfo.ts');
+                    console.log('Value 1:' + replaceValues[0] + ' Value 2: ' + replaceValues[1] + ' old path: ' + path);
+                    console.log('new Path:' + newPath);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                return newPath;
+            });
         }
         const filename = resultArray.files.source_file.file;
         let filepath;
@@ -43021,7 +43032,7 @@ function createFlawInfo(flawInfo, options) {
                 console.log('#######- DEBUG MODE -#######');
             }
             if (filename.includes(orgPath1[0])) {
-                filepath = replacePath(options.source_base_path_1, filename);
+                filepath = yield replacePath(options.source_base_path_1, filename);
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
                     console.log('createFlawInfo.ts');
@@ -43031,7 +43042,7 @@ function createFlawInfo(flawInfo, options) {
                 }
             }
             else if (filename.includes(orgPath2[0])) {
-                filepath = replacePath(options.source_base_path_2, filename);
+                filepath = yield replacePath(options.source_base_path_2, filename);
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
                     console.log('createFlawInfo.ts');
@@ -43041,7 +43052,7 @@ function createFlawInfo(flawInfo, options) {
                 }
             }
             else if (filename.includes(orgPath3[0])) {
-                filepath = replacePath(options.source_base_path_3, filename);
+                filepath = yield replacePath(options.source_base_path_3, filename);
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
                     console.log('createFlawInfo.ts');
@@ -43284,194 +43295,45 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const requests_1 = __nccwpck_require__(3222);
-const createFlawInfo_1 = __nccwpck_require__(4155);
-const fs_1 = __importDefault(__nccwpck_require__(7147));
-const tar_1 = __importDefault(__nccwpck_require__(8728));
 const core = __importStar(__nccwpck_require__(5127));
-const check_cwe_support_1 = __nccwpck_require__(6123);
-const create_pr_comment_1 = __nccwpck_require__(3849);
+const run_single_1 = __nccwpck_require__(4855);
+const run_batch_1 = __nccwpck_require__(6108);
 let credentials = {};
-const vid = core.getInput('vid', { required: true });
-//const vid = process.env.vid
-credentials['vid'] = vid;
-const vkey = core.getInput('vkey', { required: true });
-//const vkey = process.env.vkey
-credentials['vkey'] = vkey;
 let options = {};
-const cwe = core.getInput('cwe', { required: false });
-options['cwe'] = cwe;
-const inputFile = core.getInput('inputFile', { required: true });
-//const inputFile = process.env.inputFile
-options['file'] = inputFile;
-const source_base_path_1 = core.getInput('source_base_path_1', { required: false });
-//const source_base_path_1 = process.env.source_base_path_1
-options['source_base_path_1'] = source_base_path_1;
-const source_base_path_2 = core.getInput('source_base_path_2', { required: false });
-//const source_base_path_2 = process.env.source_base_path_2
-options['source_base_path_2'] = source_base_path_2;
-const source_base_path_3 = core.getInput('source_base_path_3', { required: false });
-options['source_base_path_3'] = source_base_path_3;
-const debugValue = core.getInput('debug', { required: false });
-//const debugValue = process.env.debugValue
-options['DEBUG'] = debugValue;
-const language = core.getInput('language', { required: false });
-//const language = process.env.language
-options['language'] = language;
-const prComment = core.getInput('prComment', { required: false });
-//const prComment = process.env.prComment
-options['prComment'] = prComment;
-function selectPlatfrom(creds) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d;
-        let requestParameters = {};
-        if (creds.vid.startsWith('vera01ei-')) {
-            requestParameters = {
-                apiUrl: 'api.veracode.eu',
-                cleanedID: (_b = (_a = creds.vid) === null || _a === void 0 ? void 0 : _a.replace('vera01ei-', '')) !== null && _b !== void 0 ? _b : '',
-                cleanedKEY: (_d = (_c = creds.vkey) === null || _c === void 0 ? void 0 : _c.replace('vera01es-', '')) !== null && _d !== void 0 ? _d : ''
-            };
-            console.log('Region: EU');
-        }
-        else {
-            requestParameters = {
-                apiUrl: 'api.veracode.com',
-                cleanedID: creds.vid,
-                cleanedKEY: creds.vkey
-            };
-            console.log('Region: US');
-        }
-        return requestParameters;
-    });
+function getInputOrEnv(name, required) {
+    let value = core.getInput(name, { required: false });
+    if (!value) {
+        value = process.env[name] || '';
+    }
+    if (required == true && !value) {
+        console.log(`Required input not provided: ${name}`);
+    }
+    return value;
 }
-function createTar(initialFlawInfo, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        console.log('Creating tarball');
-        const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-        if (options.DEBUG == 'true') {
-            console.log('#######- DEBUG MODE -#######');
-            console.log('index.ts');
-            console.log('flawInfo on index.ts:');
-            console.log(JSON.stringify(flawInfo));
-            console.log('#######- DEBUG MODE -#######');
-        }
-        const filepath = flawInfo.sourceFile;
-        fs_1.default.accessSync(filepath, fs_1.default.constants.F_OK);
-        if (options.DEBUG == 'true') {
-            console.log('#######- DEBUG MODE -#######');
-            console.log('index.ts');
-            console.log('File ' + filepath + ' exists');
-            console.log('#######- DEBUG MODE -#######');
-        }
-        fs_1.default.writeFileSync('flawInfo', JSON.stringify(flawInfo));
-        try {
-            const tarball = tar_1.default.create({
-                gzip: true,
-                file: 'data.tar.gz'
-            }, ['flawInfo', filepath]);
-            console.error('Tar is created');
-            return tarball;
-        }
-        catch (err) {
-            // File does not exist
-            console.error('Tar cannot be created');
-        }
-    });
+credentials['vid'] = getInputOrEnv('vid', true);
+credentials['vkey'] = getInputOrEnv('vkey', true);
+options['cwe'] = getInputOrEnv('cwe', false);
+options['file'] = getInputOrEnv('inputFile', true);
+options['fixType'] = getInputOrEnv('fixType', true);
+options['source_base_path_1'] = getInputOrEnv('source_base_path_1', false);
+options['source_base_path_2'] = getInputOrEnv('source_base_path_2', false);
+options['source_base_path_3'] = getInputOrEnv('source_base_path_3', false);
+options['DEBUG'] = getInputOrEnv('debug', false);
+options['language'] = getInputOrEnv('language', false);
+options['prComment'] = getInputOrEnv('prComment', false);
+options['createPR'] = getInputOrEnv('createPR', false);
+options['token'] = getInputOrEnv('token', false);
+if (options.fixType == 'batch') {
+    console.log('Running Batch Fix');
+    (0, run_batch_1.runBatch)(options, credentials);
 }
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        //read json file
-        const jsonRead = fs_1.default.readFileSync(options.file, 'utf8');
-        const jsonData = JSON.parse(jsonRead);
-        const jsonFindings = jsonData.findings;
-        const flawCount = jsonFindings.length;
-        console.log('Number of flaws: ' + flawCount);
-        //loop through json file
-        let i = 0;
-        for (i = 0; i < flawCount; i++) {
-            const initialFlawInfo = {
-                resultsFile: options.file,
-                issuedID: jsonFindings[i].issue_id,
-                cweID: parseInt(jsonFindings[i].cwe_id),
-                language: options.language,
-            };
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('index.ts - run()');
-                console.log('Initial Flaw Info');
-                console.log(initialFlawInfo);
-                console.log('#######- DEBUG MODE -#######');
-            }
-            console.log('#############################\n\n');
-            if (options.cwe != '') {
-                console.log('Only run Fix for CWE: ' + options.cwe);
-                let cweList = [];
-                if (options.cwe.includes(',')) {
-                    cweList = options.cwe.split(',');
-                }
-                else {
-                    cweList = [options.cwe];
-                }
-                const cweListLength = cweList.length;
-                let j = 0;
-                for (j = 0; j < cweListLength; j++) {
-                    if (parseInt(cweList[j]) == initialFlawInfo.cweID) {
-                        if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
-                            const choosePlatform = yield selectPlatfrom(credentials);
-                            const tar = yield createTar(initialFlawInfo, options);
-                            const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
-                            const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                            if (options.prComment == 'true') {
-                                console.log('PR commenting is enabled');
-                                const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
-                            }
-                        }
-                        else {
-                            console.log('CWE ' + initialFlawInfo.cweID + ' is not supported ' + options.language);
-                        }
-                    }
-                    else {
-                        console.log('CWE ' + initialFlawInfo.cweID + ' is not in the list of CWEs to fix');
-                    }
-                }
-            }
-            else {
-                console.log('Run Fix for all CWEs');
-                if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
-                    console.log('CWE ' + initialFlawInfo.cweID + ' is supported for ' + options.language);
-                    const choosePlatform = yield selectPlatfrom(credentials);
-                    const tar = yield createTar(initialFlawInfo, options);
-                    const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
-                    const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                    if (options.prComment == 'true') {
-                        console.log('PR commenting is enabled');
-                        const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
-                    }
-                }
-                else {
-                    console.log('CWE ' + initialFlawInfo.cweID + ' is NOT supported for ' + options.language);
-                }
-            }
-            i++;
-        }
-    });
+else if (options.fixType == 'single') {
+    console.log('Running Single Fix');
+    (0, run_single_1.runSingle)(options, credentials);
 }
-run();
-function foreach(jsonFindings, arg1) {
-    throw new Error('Function not implemented.');
+else {
+    console.log('no Fix Type selected');
 }
 
 
@@ -43495,11 +43357,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.checkFix = exports.upload = void 0;
+exports.pullBatchFixResults = exports.checkFixBatch = exports.checkFix = exports.uploadBatch = exports.upload = void 0;
 const axios_1 = __importDefault(__nccwpck_require__(2223));
 const auth_1 = __nccwpck_require__(6980);
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const form_data_1 = __importDefault(__nccwpck_require__(5676));
+const select_platform_1 = __nccwpck_require__(4709);
 function upload(platform, tar, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const fileBuffer = fs_1.default.readFileSync('data.tar.gz');
@@ -43545,6 +43408,52 @@ function upload(platform, tar, options) {
     });
 }
 exports.upload = upload;
+function uploadBatch(credentials, tar, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
+        const fileBuffer = fs_1.default.readFileSync('app.tar.gz');
+        const formData = new form_data_1.default();
+        formData.append('data', fileBuffer, 'app.tar.gz');
+        formData.append('name', 'data');
+        const authHeader = yield (0, auth_1.calculateAuthorizationHeader)({
+            id: platform.cleanedID,
+            key: platform.cleanedKEY,
+            host: platform.apiUrl,
+            url: '/fix/v1/project/batch_upload',
+            method: 'POST',
+        });
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('requests.ts - upload');
+            console.log('Formdata created');
+            console.log(formData);
+            console.log('ViD: ' + platform.cleanedID + ' Key: ' + platform.cleanedKEY + ' Host: ' + platform.apiUrl + ' URL: fix/v1/project/batch_upload' + ' Method: POST');
+            console.log('Auth header created');
+            console.log(authHeader);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        console.log('Uploading app.tar.gz to Veracode');
+        const response = yield axios_1.default.post('https://' + platform.apiUrl + '/fix/v1/project/batch_upload', formData, {
+            headers: Object.assign({ 'Authorization': authHeader }, formData.getHeaders())
+        });
+        if (response.status != 200) {
+            console.log('Error uploading data');
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('requests.ts - upload');
+                console.log(response.data);
+                console.log('#######- DEBUG MODE -#######');
+            }
+        }
+        else {
+            console.log('Data uploaded successfully');
+            console.log('Project ID is:');
+            console.log(response.data);
+            return response.data;
+        }
+    });
+}
+exports.uploadBatch = uploadBatch;
 function checkFix(platform, projectId, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const results = yield makeRequest(platform, projectId, options);
@@ -43593,6 +43502,541 @@ function makeRequest(platform, projectId, options) {
         }
     });
 }
+function checkFixBatch(platform, projectId, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield new Promise(resolve => setTimeout(resolve, 2000));
+        const results = yield makeRequestBatch(platform, projectId, options);
+        return results;
+    });
+}
+exports.checkFixBatch = checkFixBatch;
+function makeRequestBatch(credentials, projectId, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
+        const authHeader = yield (0, auth_1.calculateAuthorizationHeader)({
+            id: platform.cleanedID,
+            key: platform.cleanedKEY,
+            host: platform.apiUrl,
+            url: '/fix/v1/project/' + projectId + '/batch_status',
+            method: 'GET',
+        });
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('requests.ts - makeRequestBatch');
+            console.log('ViD: ' + platform.cleanedID + ' Key: ' + platform.cleanedKEY + ' Host: ' + platform.apiUrl + ' URL: /fix/v1/project/' + projectId + '/results' + ' Method: POST');
+            console.log('Auth header created');
+            console.log(authHeader);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        const response = yield axios_1.default.get('https://' + platform.apiUrl + '/fix/v1/project/' + projectId + '/batch_status', {
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.data) {
+            console.log('Response is empty. Something went wrong. No fixes generarted. ');
+            return 0;
+        }
+        else {
+            console.log('Status fetched successfully');
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('requests.ts - makeRequestBatch');
+                console.log('Response:');
+                console.log(response.data);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            if (response.data.hasMore == true) {
+                console.log('More fixes are being generated. Retrying in 10 seconds.');
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('requests.ts - makeRequestBatch');
+                    console.log('Response:');
+                    console.log(response.data);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                yield new Promise(resolve => setTimeout(resolve, 10000));
+                return yield makeRequestBatch(credentials, projectId, options);
+            }
+            else {
+                return 1;
+            }
+        }
+    });
+}
+function pullBatchFixResults(credentials, projectId, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield new Promise(resolve => setTimeout(resolve, 2000));
+        const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
+        const authHeader = yield (0, auth_1.calculateAuthorizationHeader)({
+            id: platform.cleanedID,
+            key: platform.cleanedKEY,
+            host: platform.apiUrl,
+            url: '/fix/v1/project/' + projectId + '/batch_results',
+            method: 'GET',
+        });
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('requests.ts - pullBatchFixResults');
+            console.log('ViD: ' + platform.cleanedID + ' Key: ' + platform.cleanedKEY + ' Host: ' + platform.apiUrl + ' URL: /fix/v1/project/' + projectId + '/results' + ' Method: POST');
+            console.log('Auth header created');
+            console.log(authHeader);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        const response = yield axios_1.default.get('https://' + platform.apiUrl + '/fix/v1/project/' + projectId + '/batch_results', {
+            headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.data) {
+            console.log('Response is empty. Something went wrong. No fixes generarted. ');
+            return 0;
+        }
+        else {
+            console.log('Fixes fetched successfully');
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('requests.ts - pullBatchFixResults');
+                console.log('Response:');
+                console.log(response.data);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            return response.data;
+        }
+    });
+}
+exports.pullBatchFixResults = pullBatchFixResults;
+
+
+/***/ }),
+
+/***/ 6108:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.runBatch = void 0;
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const createFlawInfo_1 = __nccwpck_require__(4155);
+const check_cwe_support_1 = __nccwpck_require__(6123);
+const requests_1 = __nccwpck_require__(3222);
+const child_process_1 = __nccwpck_require__(2081);
+const github = __importStar(__nccwpck_require__(3134));
+function runBatch(options, credentials) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        //read json file
+        const jsonRead = fs_1.default.readFileSync(options.file, 'utf8');
+        const jsonData = JSON.parse(jsonRead);
+        const jsonFindings = jsonData.findings;
+        const flawCount = jsonFindings.length;
+        console.log('Number of flaws: ' + flawCount);
+        //loop through json file and create a new array
+        let i = 0;
+        let flawArray = {};
+        for (i = 0; i < flawCount; i++) {
+            //create a new array per source file
+            let sourceFile = jsonFindings[i].files.source_file.file;
+            if (!flawArray[sourceFile]) {
+                flawArray[sourceFile] = [];
+            }
+            flawArray[sourceFile].push(jsonFindings[i]);
+        }
+        //loop through the new array per source file and find fixable flaws, supported CWE's and CWE's to be fixed
+        let sourceFiles = Object.keys(flawArray);
+        const sourceFilesCount = sourceFiles.length;
+        console.log('Number of source files with flaws: ' + sourceFilesCount);
+        for (let i = 0; i < sourceFilesCount; i++) {
+            console.log('#############################\n\n');
+            let sourceFile = sourceFiles[i];
+            console.log('Source file with flaws:', sourceFile);
+            let j = 0;
+            let flawCount = flawArray[sourceFile].length;
+            console.log('Number of flaws for ' + sourceFile + ': ' + flawCount);
+            for (j = 0; j < flawCount; j++) {
+                const initialFlawInfo = {
+                    resultsFile: options.file,
+                    issuedID: flawArray[sourceFile][j].issue_id,
+                    cweID: parseInt(flawArray[sourceFile][j].cwe_id),
+                    language: options.language,
+                    sourceFile: sourceFile,
+                };
+                if (options.cwe != '') {
+                    console.log('Fix only for CWE: ' + options.cwe);
+                    //get CWE list input
+                    let cweList = [];
+                    if (options.cwe.includes(',')) {
+                        cweList = options.cwe.split(',');
+                    }
+                    else {
+                        cweList = [options.cwe];
+                    }
+                    if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
+                        console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is in the list of CWEs to fix, creating flaw info');
+                        if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                            const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                            console.log('Flaw Info:', flawInfo);
+                            //write flaw info and source file
+                            const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
+                            const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
+                            console.log('Writing flaw to: app/' + flawFoldername + '/' + flawFilenane);
+                            fs_1.default.mkdirSync('app/flaws/' + flawFoldername, { recursive: true });
+                            fs_1.default.writeFileSync('app/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
+                            if (fs_1.default.existsSync('app/' + flawInfo.sourceFile)) {
+                                console.log('File exists nothing to do');
+                            }
+                            else {
+                                console.log('File does not exist, copying file');
+                                let str = flawInfo.sourceFile;
+                                let lastSlashIndex = str.lastIndexOf('/');
+                                let strBeforeLastSlash = str.substring(0, lastSlashIndex);
+                                if (!fs_1.default.existsSync('app/' + strBeforeLastSlash)) {
+                                    console.log('Destination directory does not exist lest create it');
+                                    fs_1.default.mkdirSync('app/' + strBeforeLastSlash, { recursive: true });
+                                }
+                                fs_1.default.copyFileSync(flawInfo.sourceFile, 'app/' + flawInfo.sourceFile);
+                            }
+                        }
+                        else {
+                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + options.language);
+                        }
+                    }
+                    else {
+                        console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not in the list of CWEs to fix');
+                    }
+                }
+                else {
+                    console.log('Fix for all CWEs');
+                    if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                        const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                        //write flaw info and source file
+                        const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
+                        const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
+                        console.log('Writing flaw to: app/flaws/' + flawFoldername + '/' + flawFilenane);
+                        fs_1.default.mkdirSync('app/flaws/' + flawFoldername, { recursive: true });
+                        fs_1.default.writeFileSync('app/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
+                        if (fs_1.default.existsSync('app/' + flawInfo.sourceFile)) {
+                            console.log('File exists nothing to do');
+                        }
+                        else {
+                            console.log('File does not exist, copying file');
+                            let str = flawInfo.sourceFile;
+                            let lastSlashIndex = str.lastIndexOf('/');
+                            let strBeforeLastSlash = str.substring(0, lastSlashIndex);
+                            if (!fs_1.default.existsSync('app/' + strBeforeLastSlash)) {
+                                console.log('Destination directory does not exist lest create it');
+                                fs_1.default.mkdirSync('app/' + strBeforeLastSlash, { recursive: true });
+                            }
+                            fs_1.default.copyFileSync(flawInfo.sourceFile, 'app/' + flawInfo.sourceFile);
+                        }
+                    }
+                    else {
+                        console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + options.language);
+                    }
+                }
+            }
+        }
+        ;
+        //create the tar after all files are created and copied
+        // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
+        const tarball = (0, child_process_1.execSync)('tar -czf app.tar.gz -C app .');
+        console.log('Tar is created');
+        const projectID = yield (0, requests_1.uploadBatch)(credentials, 'app.tar.gz', options);
+        console.log('Project ID is: ' + projectID);
+        const checkBatchFixStatus = yield (0, requests_1.checkFixBatch)(credentials, projectID, options);
+        if (checkBatchFixStatus == 1) {
+            console.log('Batch Fixs are ready to be reviewed');
+            const batchFixResults = yield (0, requests_1.pullBatchFixResults)(credentials, projectID, options);
+            if (batchFixResults == 0) {
+                console.log('Something went wrong, no fixes generated');
+            }
+            else {
+                console.log('Fixs pulled from batch fix');
+                console.log(batchFixResults);
+                //working with results
+                if (options.prComment == 'true') {
+                    console.log('PR commenting is enabled');
+                    //create PR comment
+                    //const batchFixResultsCount = batchFixResults.results.length
+                    const batchFixResultsCount = Object.keys(batchFixResults.results).length;
+                    console.log('Number of files with fixes: ' + batchFixResultsCount);
+                    let commentBody;
+                    for (let i = 0; i < batchFixResultsCount; i++) {
+                        let keys = Object.keys(batchFixResults.results);
+                        console.log('Creating PR comment for ' + keys[i]);
+                        commentBody = 'Fixes for ' + keys[i] + ':\n\n';
+                        commentBody = commentBody + 'Falws found for this file:\n\n';
+                        const flawsCount = batchFixResults.results[keys[i]].flaws.length;
+                        for (let j = 0; j < flawsCount; j++) {
+                            commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' in line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
+                        }
+                        commentBody = commentBody + 'Fix:\n\n';
+                        commentBody = commentBody + '```diff\n';
+                        commentBody = commentBody + batchFixResults.results[keys[i]].patch[0];
+                        commentBody = commentBody + '\n```';
+                        console.log('PR Comment: ' + commentBody);
+                        console.log('check if we run on a pull request');
+                        let pullRequest = process.env.GITHUB_REF;
+                        let isPR = pullRequest === null || pullRequest === void 0 ? void 0 : pullRequest.indexOf("pull");
+                        if (isPR >= 1) {
+                            console.log("This run is part of a PR, should add some PR comment");
+                            const context = github.context;
+                            const repository = process.env.GITHUB_REPOSITORY;
+                            const token = options.token;
+                            const repo = repository.split("/");
+                            const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+                            try {
+                                const octokit = github.getOctokit(token);
+                                const { data: comment } = yield octokit.rest.issues.createComment({
+                                    owner: repo[0],
+                                    repo: repo[1],
+                                    issue_number: commentID,
+                                    body: commentBody,
+                                });
+                                console.log('Adding scan results as comment to PR #' + commentID);
+                            }
+                            catch (error) {
+                                console.log(error);
+                            }
+                        }
+                        else {
+                            console.log('We are not running on a pull request');
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            console.log('Batch Fix failed');
+        }
+    });
+}
+exports.runBatch = runBatch;
+
+
+/***/ }),
+
+/***/ 4855:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.runSingle = void 0;
+const requests_1 = __nccwpck_require__(3222);
+const createFlawInfo_1 = __nccwpck_require__(4155);
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const tar_1 = __importDefault(__nccwpck_require__(8728));
+const check_cwe_support_1 = __nccwpck_require__(6123);
+const create_pr_comment_1 = __nccwpck_require__(3849);
+const select_platform_1 = __nccwpck_require__(4709);
+function runSingle(options, credentials) {
+    return __awaiter(this, void 0, void 0, function* () {
+        //read json file
+        const jsonRead = fs_1.default.readFileSync(options.file, 'utf8');
+        const jsonData = JSON.parse(jsonRead);
+        const jsonFindings = jsonData.findings;
+        const flawCount = jsonFindings.length;
+        console.log('Number of flaws: ' + flawCount);
+        //loop through json file
+        let i = 0;
+        for (i = 0; i < flawCount; i++) {
+            const initialFlawInfo = {
+                resultsFile: options.file,
+                issuedID: jsonFindings[i].issue_id,
+                cweID: parseInt(jsonFindings[i].cwe_id),
+                language: options.language,
+            };
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('run_single.ts - runSingle()');
+                console.log('Initial Flaw Info');
+                console.log(initialFlawInfo);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            console.log('#############################\n\n');
+            if (options.cwe != '') {
+                console.log('Only run Fix for CWE: ' + options.cwe);
+                let cweList = [];
+                if (options.cwe.includes(',')) {
+                    cweList = options.cwe.split(',');
+                }
+                else {
+                    cweList = [options.cwe];
+                }
+                const cweListLength = cweList.length;
+                let j = 0;
+                for (j = 0; j < cweListLength; j++) {
+                    if (parseInt(cweList[j]) == initialFlawInfo.cweID) {
+                        if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                            const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
+                            const tar = yield createTar(initialFlawInfo, options);
+                            const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
+                            const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                            if (options.prComment == 'true') {
+                                console.log('PR commenting is enabled');
+                                const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                            }
+                        }
+                        else {
+                            console.log('CWE ' + initialFlawInfo.cweID + ' is not supported ' + options.language);
+                        }
+                    }
+                    else {
+                        console.log('CWE ' + initialFlawInfo.cweID + ' is not in the list of CWEs to fix');
+                    }
+                }
+            }
+            else {
+                console.log('Run Fix for all CWEs');
+                if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                    console.log('CWE ' + initialFlawInfo.cweID + ' is supported for ' + options.language);
+                    const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
+                    const tar = yield createTar(initialFlawInfo, options);
+                    const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
+                    const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                    if (options.prComment == 'true') {
+                        console.log('PR commenting is enabled');
+                        const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                    }
+                }
+                else {
+                    console.log('CWE ' + initialFlawInfo.cweID + ' is NOT supported for ' + options.language);
+                }
+            }
+            i++;
+        }
+    });
+}
+exports.runSingle = runSingle;
+function createTar(initialFlawInfo, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log('Creating tarball');
+        const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('run_single.ts');
+            console.log('flawInfo on run_single.ts:');
+            console.log(JSON.stringify(flawInfo));
+            console.log('#######- DEBUG MODE -#######');
+        }
+        const filepath = flawInfo.sourceFile;
+        fs_1.default.accessSync(filepath, fs_1.default.constants.F_OK);
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('run_single.ts');
+            console.log('File ' + filepath + ' exists');
+            console.log('#######- DEBUG MODE -#######');
+        }
+        fs_1.default.writeFileSync('flawInfo', JSON.stringify(flawInfo));
+        try {
+            const tarball = tar_1.default.create({
+                gzip: true,
+                file: 'data.tar.gz'
+            }, ['flawInfo', filepath]);
+            console.error('Tar is created');
+            return tarball;
+        }
+        catch (err) {
+            // File does not exist
+            console.error('Tar cannot be created');
+        }
+    });
+}
+
+
+/***/ }),
+
+/***/ 4709:
+/***/ (function(__unused_webpack_module, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.selectPlatfrom = void 0;
+function selectPlatfrom(creds) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b, _c, _d;
+        let requestParameters = {};
+        if (creds.vid.startsWith('vera01ei-')) {
+            requestParameters = {
+                apiUrl: 'api.veracode.eu',
+                cleanedID: (_b = (_a = creds.vid) === null || _a === void 0 ? void 0 : _a.replace('vera01ei-', '')) !== null && _b !== void 0 ? _b : '',
+                cleanedKEY: (_d = (_c = creds.vkey) === null || _c === void 0 ? void 0 : _c.replace('vera01es-', '')) !== null && _d !== void 0 ? _d : ''
+            };
+            console.log('Region: EU');
+        }
+        else {
+            requestParameters = {
+                apiUrl: 'api.veracode.com',
+                cleanedID: creds.vid,
+                cleanedKEY: creds.vkey
+            };
+            console.log('Region: US');
+        }
+        return requestParameters;
+    });
+}
+exports.selectPlatfrom = selectPlatfrom;
 
 
 /***/ }),
@@ -43642,6 +44086,14 @@ module.exports = require("async_hooks");
 
 "use strict";
 module.exports = require("buffer");
+
+/***/ }),
+
+/***/ 2081:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("child_process");
 
 /***/ }),
 
