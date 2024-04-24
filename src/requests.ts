@@ -232,7 +232,7 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
 
 export async function pullBatchFixResults(credentials:any, projectId:any, options:any) {
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
     const platform:any = await selectPlatfrom(credentials)
 

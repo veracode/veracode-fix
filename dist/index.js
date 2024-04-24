@@ -43567,7 +43567,7 @@ function makeRequestBatch(credentials, projectId, options) {
 }
 function pullBatchFixResults(credentials, projectId, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield new Promise(resolve => setTimeout(resolve, 2000));
+        yield new Promise(resolve => setTimeout(resolve, 5000));
         const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
         const authHeader = yield (0, auth_1.calculateAuthorizationHeader)({
             id: platform.cleanedID,
