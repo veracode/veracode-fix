@@ -100,16 +100,15 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
             const octokit = github.getOctokit(token);
 
             const { data: comment } = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+commentID+'/comments', {
-                owner: repo[0],
-                repo: repo[1],
-                pull_number: commentID,
                 body: results[0],
                 commit_id: commitID,
                 path: sourceFile,
+                position: sourceLine,
+                side: 'RIGHT',
+                line: sourceLine,
                 start_line: sourceLine,
                 start_side: 'RIGHT',
-                line: 2,
-                side: 'RIGHT',
+                subject_type: 'file',
                 headers: {
                   'X-GitHub-Api-Version': '2022-11-28'
                 }
