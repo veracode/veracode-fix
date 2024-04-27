@@ -25,6 +25,7 @@ export async function runSingle(options: any, credentials: any) {
             issuedID: jsonFindings[i].issue_id,
             cweID: parseInt(jsonFindings[i].cwe_id),
             language: options.language,
+            sourceFile: jsonFindings[i].files.source_file.file,
         }
 
         if (options.DEBUG == 'true'){
