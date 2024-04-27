@@ -43221,7 +43221,7 @@ function createPRComment(results, options, flawInfo) {
             try {
                 const octokit = github.getOctokit(token);
                 const { data: comment } = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + commentID + '/comments', {
-                    body: results[0],
+                    body: '```suggestion\n' + results[0] + '\n```',
                     commit_id: commitID,
                     path: sourceFile,
                     position: sourceLine,
