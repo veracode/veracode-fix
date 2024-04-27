@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import { runSingle } from './run_single';
 import { runBatch } from './run_batch';
-import { t } from 'tar';
 
 let credentials:any = {}
 let options:any = {}

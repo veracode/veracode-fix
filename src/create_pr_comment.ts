@@ -78,6 +78,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         const token = core.getInput("token")
         const repo = repository.split("/");
         const commentID:any = context.payload.pull_request?.number
+        const commitID = context.payload.pull_request?.head.sha
 
         
         //add PR Comment
@@ -94,6 +95,35 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         } catch (error:any) {
             core.info(error);
         }
+
+        try {
+            const octokit = github.getOctokit(token);
+
+            const { data: comment } = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+commentID+'/comments', {
+                owner: repo[0],
+                repo: repo[1],
+                pull_number: commentID,
+                body: results[0],
+                commit_id: commitID,
+                path: sourceFile,
+                start_line: sourceLine,
+                start_side: 'RIGHT',
+                line: 2,
+                side: 'RIGHT',
+                headers: {
+                  'X-GitHub-Api-Version': '2022-11-28'
+                }
+              })
+            console.log('Adding scan results as review to PR #'+commentID)
+        } catch (error:any) {
+            console.log(error);
+        }
+
+
+
+
+
+
 /*
         //add code suggestion to check annotation
         const access_token = core.getInput("access_token")
@@ -175,6 +205,7 @@ export async function createPRCommentBatch(batchFixResults:any, options:any){
             const token = options.token
             const repo = repository.split("/");
             const commentID:any = context.payload.pull_request?.number
+            const commitID = context.payload.pull_request?.head.sha
 
             try {
                 const octokit = github.getOctokit(token);
@@ -189,6 +220,10 @@ export async function createPRCommentBatch(batchFixResults:any, options:any){
             } catch (error:any) {
                 console.log(error);
             }
+
+            
+
+
         }
         else {
             console.log('We are not running on a pull request')

@@ -43137,7 +43137,7 @@ const github = __importStar(__nccwpck_require__(3134));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 function createPRComment(results, options, flawInfo) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a;
+        var _a, _b;
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('create_pr_comment.ts - createPRComment()');
@@ -43203,6 +43203,7 @@ function createPRComment(results, options, flawInfo) {
             const token = core.getInput("token");
             const repo = repository.split("/");
             const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+            const commitID = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
             //add PR Comment
             try {
                 const octokit = github.getOctokit(token);
@@ -43216,6 +43217,28 @@ function createPRComment(results, options, flawInfo) {
             }
             catch (error) {
                 core.info(error);
+            }
+            try {
+                const octokit = github.getOctokit(token);
+                const { data: comment } = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + commentID + '/comments', {
+                    owner: repo[0],
+                    repo: repo[1],
+                    pull_number: commentID,
+                    body: results[0],
+                    commit_id: commitID,
+                    path: sourceFile,
+                    start_line: sourceLine,
+                    start_side: 'RIGHT',
+                    line: 2,
+                    side: 'RIGHT',
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                console.log('Adding scan results as review to PR #' + commentID);
+            }
+            catch (error) {
+                console.log(error);
             }
             /*
                     //add code suggestion to check annotation
@@ -43265,7 +43288,7 @@ function createPRComment(results, options, flawInfo) {
 exports.createPRComment = createPRComment;
 function createPRCommentBatch(batchFixResults, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a;
+        var _a, _b;
         const batchFixResultsCount = Object.keys(batchFixResults.results).length;
         console.log('Number of files with fixes: ' + batchFixResultsCount);
         let commentBody;
@@ -43293,6 +43316,7 @@ function createPRCommentBatch(batchFixResults, options) {
                 const token = options.token;
                 const repo = repository.split("/");
                 const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+                const commitID = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
                 try {
                     const octokit = github.getOctokit(token);
                     const { data: comment } = yield octokit.rest.issues.createComment({
