@@ -3,6 +3,7 @@ import { createFlawInfo } from './createFlawInfo';
 import { checkCWE } from './check_cwe_support';
 import tarModule from 'tar';
 import { uploadBatch, checkFixBatch, pullBatchFixResults } from './requests'
+import { createPRCommentBatch } from './create_pr_comment'
 import { execSync }  from 'child_process';
 import * as github from '@actions/github'
 
@@ -163,63 +164,26 @@ export async function runBatch( options:any, credentials:any){
             //working with results
             if (options.prComment == 'true'){
                 console.log('PR commenting is enabled')
-                //create PR comment
-                //const batchFixResultsCount = batchFixResults.results.length
+
+                createPRCommentBatch(batchFixResults, options)
+            }
+
+            if ( options.codeSuggestion == 'ture' ){
+                console.log('Code suggestion is enabled')
+
                 const batchFixResultsCount = Object.keys(batchFixResults.results).length;
 
                 console.log('Number of files with fixes: '+batchFixResultsCount)
                 let commentBody:any
                 for (let i = 0; i < batchFixResultsCount; i++) {
                     let keys = Object.keys(batchFixResults.results);
-                    console.log('Creating PR comment for '+keys[i])
-                    
-                    commentBody = 'Fixes for '+keys[i]+':\n\n'
-                    commentBody = commentBody +'Falws found for this file:\n\n'
-                    const flawsCount = batchFixResults.results[keys[i]].flaws.length
-                    for (let j = 0; j < flawsCount; j++) {
-                        commentBody = commentBody +'CWE '+batchFixResults.results[keys[i]].flaws[j].CWEId+' in line '+batchFixResults.results[keys[i]].flaws[j].line+' for issue '+batchFixResults.results[keys[i]].flaws[j].issueId+'\n'
-                    }
-                    commentBody = commentBody + 'Fix:\n\n'
-                    commentBody = commentBody + '```diff\n'
-                    commentBody = commentBody + batchFixResults.results[keys[i]].patch[0]
-                    commentBody = commentBody + '\n```'
+                    console.log('Creating suggestions for '+keys[i])
 
-                    console.log('PR Comment: '+commentBody)
-
-                    console.log('check if we run on a pull request')
-                    let pullRequest = process.env.GITHUB_REF
-
-                    let isPR:any = pullRequest?.indexOf("pull")
-
-                    if ( isPR >= 1 ){
-                        console.log("This run is part of a PR, should add some PR comment")
-                        const context = github.context
-                        const repository:any = process.env.GITHUB_REPOSITORY
-                        const token = options.token
-                        const repo = repository.split("/");
-                        const commentID:any = context.payload.pull_request?.number
-
-                        try {
-                            const octokit = github.getOctokit(token);
-                
-                            const { data: comment } = await octokit.rest.issues.createComment({
-                                owner: repo[0],
-                                repo: repo[1],
-                                issue_number: commentID,
-                                body: commentBody,
-                            });
-                            console.log('Adding scan results as comment to PR #'+commentID)
-                        } catch (error:any) {
-                            console.log(error);
-                        }
-                    }
-                    else {
-                        console.log('We are not running on a pull request')
-                    }
-                    
+                    //const codeSuggestion = addCodeSuggestion(batchFixResults, keys[i], options)
                 }
-
             }
+
+
         }
     }
     else {

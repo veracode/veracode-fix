@@ -43131,7 +43131,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createPRComment = void 0;
+exports.createPRCommentBatch = exports.createPRComment = void 0;
 const core = __importStar(__nccwpck_require__(5127));
 const github = __importStar(__nccwpck_require__(3134));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
@@ -43263,6 +43263,57 @@ function createPRComment(results, options, flawInfo) {
     });
 }
 exports.createPRComment = createPRComment;
+function createPRCommentBatch(batchFixResults, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        const batchFixResultsCount = Object.keys(batchFixResults.results).length;
+        console.log('Number of files with fixes: ' + batchFixResultsCount);
+        let commentBody;
+        for (let i = 0; i < batchFixResultsCount; i++) {
+            let keys = Object.keys(batchFixResults.results);
+            console.log('Creating PR comment for ' + keys[i]);
+            commentBody = 'Fixes for ' + keys[i] + ':\n\n';
+            commentBody = commentBody + 'Falws found for this file:\n\n';
+            const flawsCount = batchFixResults.results[keys[i]].flaws.length;
+            for (let j = 0; j < flawsCount; j++) {
+                commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' in line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
+            }
+            commentBody = commentBody + 'Fix:\n\n';
+            commentBody = commentBody + '```diff\n';
+            commentBody = commentBody + batchFixResults.results[keys[i]].patch[0];
+            commentBody = commentBody + '\n```';
+            console.log('PR Comment: ' + commentBody);
+            console.log('check if we run on a pull request');
+            let pullRequest = process.env.GITHUB_REF;
+            let isPR = pullRequest === null || pullRequest === void 0 ? void 0 : pullRequest.indexOf("pull");
+            if (isPR >= 1) {
+                console.log("This run is part of a PR, should add some PR comment");
+                const context = github.context;
+                const repository = process.env.GITHUB_REPOSITORY;
+                const token = options.token;
+                const repo = repository.split("/");
+                const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+                try {
+                    const octokit = github.getOctokit(token);
+                    const { data: comment } = yield octokit.rest.issues.createComment({
+                        owner: repo[0],
+                        repo: repo[1],
+                        issue_number: commentID,
+                        body: commentBody,
+                    });
+                    console.log('Adding scan results as comment to PR #' + commentID);
+                }
+                catch (error) {
+                    console.log(error);
+                }
+            }
+            else {
+                console.log('We are not running on a pull request');
+            }
+        }
+    });
+}
+exports.createPRCommentBatch = createPRCommentBatch;
 
 
 /***/ }),
@@ -43617,29 +43668,6 @@ exports.pullBatchFixResults = pullBatchFixResults;
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43658,11 +43686,10 @@ const fs_1 = __importDefault(__nccwpck_require__(7147));
 const createFlawInfo_1 = __nccwpck_require__(4155);
 const check_cwe_support_1 = __nccwpck_require__(6123);
 const requests_1 = __nccwpck_require__(3222);
+const create_pr_comment_1 = __nccwpck_require__(3849);
 const child_process_1 = __nccwpck_require__(2081);
-const github = __importStar(__nccwpck_require__(3134));
 function runBatch(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a;
         //read json file
         const jsonRead = fs_1.default.readFileSync(options.file, 'utf8');
         const jsonData = JSON.parse(jsonRead);
@@ -43794,52 +43821,17 @@ function runBatch(options, credentials) {
                 //working with results
                 if (options.prComment == 'true') {
                     console.log('PR commenting is enabled');
-                    //create PR comment
-                    //const batchFixResultsCount = batchFixResults.results.length
+                    (0, create_pr_comment_1.createPRCommentBatch)(batchFixResults, options);
+                }
+                if (options.codeSuggestion == 'ture') {
+                    console.log('Code suggestion is enabled');
                     const batchFixResultsCount = Object.keys(batchFixResults.results).length;
                     console.log('Number of files with fixes: ' + batchFixResultsCount);
                     let commentBody;
                     for (let i = 0; i < batchFixResultsCount; i++) {
                         let keys = Object.keys(batchFixResults.results);
-                        console.log('Creating PR comment for ' + keys[i]);
-                        commentBody = 'Fixes for ' + keys[i] + ':\n\n';
-                        commentBody = commentBody + 'Falws found for this file:\n\n';
-                        const flawsCount = batchFixResults.results[keys[i]].flaws.length;
-                        for (let j = 0; j < flawsCount; j++) {
-                            commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' in line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
-                        }
-                        commentBody = commentBody + 'Fix:\n\n';
-                        commentBody = commentBody + '```diff\n';
-                        commentBody = commentBody + batchFixResults.results[keys[i]].patch[0];
-                        commentBody = commentBody + '\n```';
-                        console.log('PR Comment: ' + commentBody);
-                        console.log('check if we run on a pull request');
-                        let pullRequest = process.env.GITHUB_REF;
-                        let isPR = pullRequest === null || pullRequest === void 0 ? void 0 : pullRequest.indexOf("pull");
-                        if (isPR >= 1) {
-                            console.log("This run is part of a PR, should add some PR comment");
-                            const context = github.context;
-                            const repository = process.env.GITHUB_REPOSITORY;
-                            const token = options.token;
-                            const repo = repository.split("/");
-                            const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
-                            try {
-                                const octokit = github.getOctokit(token);
-                                const { data: comment } = yield octokit.rest.issues.createComment({
-                                    owner: repo[0],
-                                    repo: repo[1],
-                                    issue_number: commentID,
-                                    body: commentBody,
-                                });
-                                console.log('Adding scan results as comment to PR #' + commentID);
-                            }
-                            catch (error) {
-                                console.log(error);
-                            }
-                        }
-                        else {
-                            console.log('We are not running on a pull request');
-                        }
+                        console.log('Creating suggestions for ' + keys[i]);
+                        //const codeSuggestion = addCodeSuggestion(batchFixResults, keys[i], options)
                     }
                 }
             }
