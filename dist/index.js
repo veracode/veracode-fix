@@ -46618,8 +46618,8 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
         });
         try {
             console.log('Check run update started');
-            console.log('Start line: ' + flawInfo.sourceLine);
-            const end_line = flawInfo.sourceLine + 20;
+            console.log('Start line: ' + flawInfo.line);
+            const end_line = flawInfo.line + 20;
             console.log('End line: ' + end_line);
             const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
                 status: 'in_progress',
@@ -46630,7 +46630,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                     annotations: [
                         {
                             path: flawInfo.sourceFile,
-                            start_line: flawInfo.sourceLine,
+                            start_line: flawInfo.line,
                             end_line: end_line,
                             annotation_level: 'warning',
                             title: 'Securityy findings',
