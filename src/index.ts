@@ -44,6 +44,7 @@ if (options.prComment == 'true'){
         //create a check run
         let checkRunID = createCheckRun(options)
         options['checkRunID'] = checkRunID
+        console.log('Check Run ID is: '+checkRunID)
     }
 }
 

@@ -47382,6 +47382,7 @@ if (options.prComment == 'true') {
         //create a check run
         let checkRunID = (0, checkRun_1.createCheckRun)(options);
         options['checkRunID'] = checkRunID;
+        console.log('Check Run ID is: ' + checkRunID);
     }
 }
 if (options.fixType == 'batch') {
