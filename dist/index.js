@@ -46617,8 +46617,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
             auth: token
         });
         try {
-            console.log(fixResults);
-            console.log(flawInfo);
+            console.log('Check run update started');
             const end_line = flawInfo.sourceLine + 20;
             const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
                 owner: repo[0],
@@ -46677,7 +46676,7 @@ function updateCheckRunClose(options, checkRunID) {
                     accept: 'application/vnd.github.v3+json',
                 }
             });
-            console.log('Check run closed - updated');
+            console.log('Check run closed');
             console.log(response);
         }
         catch (error) {
@@ -47915,9 +47914,9 @@ function runSingle(options, credentials) {
                                 const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
                                 //need flawinfo again
                                 const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                                console.log('Check Run ID is: ' + checkRunID);
+                                console.log('Check Run ID is: ' + options.checkRunID);
                                 console.log('Update Check Run with PR Comment');
-                                const checkRunUpate = (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
                             }
                         }
                         else {
