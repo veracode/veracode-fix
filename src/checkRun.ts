@@ -78,6 +78,7 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
         console.log('Check run updated')
         console.log(response)
     } catch (error:any) {
+        console.log(error.request)
         console.log(error.response)
         core.info(error);
     }
@@ -106,9 +107,7 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
             }
         });
         console.log('Check run closed')
-        console.log(response)
     } catch (error:any) {
-        console.log(error.request)
         console.log(error.response)
         core.info(error);
     }

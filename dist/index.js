@@ -46645,6 +46645,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
             console.log(response);
         }
         catch (error) {
+            console.log(error.request);
             console.log(error.response);
             core.info(error);
         }
@@ -46672,10 +46673,8 @@ function updateCheckRunClose(options, checkRunID) {
                 }
             });
             console.log('Check run closed');
-            console.log(response);
         }
         catch (error) {
-            console.log(error.request);
             console.log(error.response);
             core.info(error);
         }
