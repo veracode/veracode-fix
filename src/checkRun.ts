@@ -54,9 +54,6 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
         console.log('Check run update started')
         const end_line = flawInfo.sourceLine + 20
         const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
-            owner: repo[0],
-            repo: repo[1],
-            check_run_id: options.checkRunID,
             status: 'in_progress',
             output: {
                 title: 'Veracode Autofix suggestions',
@@ -70,7 +67,7 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
                     message: 'Fix this security finding',
                     raw_details: commentBody,
                     start_line: flawInfo.sourceLine,
-                    end_line: 2
+                    end_line: end_line
                     }
                 ]
             },
@@ -79,8 +76,9 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
             }
         })
         console.log('Check run updated')
-        console.log(response.data)
+        console.log(response)
     } catch (error:any) {
+        console.log(error.response)
         core.info(error);
     }
 }
@@ -101,9 +99,6 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
 
     try {
         const response = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+checkRunID+'/conclusions', {
-            owner: repo[0],
-            repo: repo[1],
-            check_run_id: checkRunID,
             status: 'completed',
             conclusion: 'success',
             headers: {
@@ -113,6 +108,7 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
         console.log('Check run closed')
         console.log(response)
     } catch (error:any) {
+        console.log(error.response)
         core.info(error);
     }
 }

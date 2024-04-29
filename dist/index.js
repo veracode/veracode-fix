@@ -46620,9 +46620,6 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
             console.log('Check run update started');
             const end_line = flawInfo.sourceLine + 20;
             const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
-                owner: repo[0],
-                repo: repo[1],
-                check_run_id: options.checkRunID,
                 status: 'in_progress',
                 output: {
                     title: 'Veracode Autofix suggestions',
@@ -46636,7 +46633,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                             message: 'Fix this security finding',
                             raw_details: commentBody,
                             start_line: flawInfo.sourceLine,
-                            end_line: 2
+                            end_line: end_line
                         }
                     ]
                 },
@@ -46645,9 +46642,10 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                 }
             });
             console.log('Check run updated');
-            console.log(response.data);
+            console.log(response);
         }
         catch (error) {
+            console.log(error.response);
             core.info(error);
         }
     });
@@ -46667,9 +46665,6 @@ function updateCheckRunClose(options, checkRunID) {
         });
         try {
             const response = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + checkRunID + '/conclusions', {
-                owner: repo[0],
-                repo: repo[1],
-                check_run_id: checkRunID,
                 status: 'completed',
                 conclusion: 'success',
                 headers: {
@@ -46680,6 +46675,7 @@ function updateCheckRunClose(options, checkRunID) {
             console.log(response);
         }
         catch (error) {
+            console.log(error.response);
             core.info(error);
         }
     });
