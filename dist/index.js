@@ -47953,9 +47953,9 @@ function runSingle(options, credentials) {
             console.log('PR commenting is enabled');
             if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
                 console.log('This is a PR - check run should be closed');
-                console.log('Check Run ID is: ' + checkRunID);
+                console.log('Check Run ID is: ' + options.checkRunID);
                 //create a check run
-                const checkRun = yield (0, checkRun_1.updateCheckRunClose)(options, checkRunID);
+                const checkRun = yield (0, checkRun_1.updateCheckRunClose)(options, options.checkRunID);
             }
         }
     });

@@ -117,9 +117,9 @@ export async function runSingle(options: any, credentials: any) {
         console.log('PR commenting is enabled')
         if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
             console.log('This is a PR - check run should be closed')
-            console.log('Check Run ID is: '+checkRunID)
+            console.log('Check Run ID is: '+options.checkRunID)
             //create a check run
-            const checkRun = await updateCheckRunClose(options, checkRunID)
+            const checkRun = await updateCheckRunClose(options, options.checkRunID)
         }
     }
     
