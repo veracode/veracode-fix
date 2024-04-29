@@ -46625,7 +46625,6 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                 repo: repo[1],
                 check_run_id: options.checkRunID,
                 status: 'in_progress',
-                conclusion: 'success',
                 output: {
                     title: 'Veracode Autofix suggestions',
                     summary: 'Will create Veracode Autofix suggestions as PR comments',
@@ -46646,7 +46645,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                     'X-GitHub-Api-Version': '2022-11-28'
                 }
             });
-            console.log('Check run closed - updated');
+            console.log('Check run updated');
             console.log(response.data);
         }
         catch (error) {
@@ -47916,6 +47915,8 @@ function runSingle(options, credentials) {
                                 const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
                                 //need flawinfo again
                                 const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                                console.log('Check Run ID is: ' + checkRunID);
+                                console.log('Update Check Run with PR Comment');
                                 const checkRunUpate = (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
                             }
                         }

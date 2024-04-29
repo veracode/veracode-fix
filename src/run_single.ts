@@ -76,6 +76,8 @@ export async function runSingle(options: any, credentials: any) {
                             const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
                             //need flawinfo again
                             const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                            console.log('Check Run ID is: '+checkRunID)
+                            console.log('Update Check Run with PR Comment')
                             const checkRunUpate = updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
                         }
                     }

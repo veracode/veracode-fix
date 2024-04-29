@@ -62,7 +62,6 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
             repo: repo[1],
             check_run_id: options.checkRunID,
             status: 'in_progress',
-            conclusion: 'success',
             output: {
                 title: 'Veracode Autofix suggestions',
                 summary: 'Will create Veracode Autofix suggestions as PR comments',
@@ -83,7 +82,7 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
             'X-GitHub-Api-Version': '2022-11-28'
             }
         })
-        console.log('Check run closed - updated')
+        console.log('Check run updated')
         console.log(response.data)
     } catch (error:any) {
         core.info(error);
