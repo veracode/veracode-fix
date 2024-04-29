@@ -46664,7 +46664,7 @@ function updateCheckRunClose(options, checkRunID) {
             auth: token
         });
         try {
-            const response = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + checkRunID + '/conclusions', {
+            const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + checkRunID, {
                 status: 'completed',
                 conclusion: 'success',
                 headers: {
@@ -46675,6 +46675,7 @@ function updateCheckRunClose(options, checkRunID) {
             console.log(response);
         }
         catch (error) {
+            console.log(error.request);
             console.log(error.response);
             core.info(error);
         }

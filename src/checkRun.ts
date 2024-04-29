@@ -98,7 +98,7 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
     })
 
     try {
-        const response = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+checkRunID+'/conclusions', {
+        const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+checkRunID, {
             status: 'completed',
             conclusion: 'success',
             headers: {
@@ -108,6 +108,7 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
         console.log('Check run closed')
         console.log(response)
     } catch (error:any) {
+        console.log(error.request)
         console.log(error.response)
         core.info(error);
     }
