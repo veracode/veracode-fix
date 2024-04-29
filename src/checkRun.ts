@@ -31,7 +31,6 @@ export async function createCheckRun(options:any) {
             }
         })
         console.log('Check run created')
-        console.log(response.data)
         return response.data.id
     } catch (error:any) {
         core.info(error);
@@ -106,16 +105,17 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
     })
 
     try {
-        const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+checkRunID, {
+        const response = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+checkRunID+'/conclusions', {
             owner: repo[0],
             repo: repo[1],
             check_run_id: checkRunID,
-            status: 'completed',
-            conclusion: 'success',
             headers: {
-            'X-GitHub-Api-Version': '2022-11-28'
-            }
-        })
+                accept: 'application/vnd.github.v3+json',
+            },
+            data: {
+                conclusion: 'success',
+            },
+        });
         console.log('Check run closed - updated')
         console.log(response.data)
     } catch (error:any) {

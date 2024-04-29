@@ -46596,7 +46596,6 @@ function createCheckRun(options) {
                 }
             });
             console.log('Check run created');
-            console.log(response.data);
             return response.data.id;
         }
         catch (error) {
@@ -46669,15 +46668,16 @@ function updateCheckRunClose(options, checkRunID) {
             auth: token
         });
         try {
-            const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + checkRunID, {
+            const response = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + checkRunID + '/conclusions', {
                 owner: repo[0],
                 repo: repo[1],
                 check_run_id: checkRunID,
-                status: 'completed',
-                conclusion: 'success',
                 headers: {
-                    'X-GitHub-Api-Version': '2022-11-28'
-                }
+                    accept: 'application/vnd.github.v3+json',
+                },
+                data: {
+                    conclusion: 'success',
+                },
             });
             console.log('Check run closed - updated');
             console.log(response.data);
@@ -47974,7 +47974,8 @@ function runSingle(options, credentials) {
         if (options.prComment == 'true') {
             console.log('PR commenting is enabled');
             if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
-                console.log('This is a PR - create a check run');
+                console.log('This is a PR - check run should be closed');
+                console.log('Check Run ID is: ' + checkRunID);
                 //create a check run
                 const checkRun = yield (0, checkRun_1.updateCheckRunClose)(options, checkRunID);
             }
