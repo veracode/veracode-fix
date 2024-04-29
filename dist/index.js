@@ -46669,7 +46669,7 @@ function updateCheckRunClose(options, checkRunID) {
             auth: token
         });
         try {
-            const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/{check_run_id}', {
+            const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + checkRunID, {
                 owner: repo[0],
                 repo: repo[1],
                 check_run_id: checkRunID,
@@ -47105,12 +47105,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createPRCommentBatch = exports.createPRComment = void 0;
-const core = __importStar(__nccwpck_require__(5127));
 const github = __importStar(__nccwpck_require__(3134));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 function createPRComment(results, options, flawInfo) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b;
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('create_pr_comment.ts - createPRComment()');
@@ -47153,108 +47151,96 @@ function createPRComment(results, options, flawInfo) {
         commentBody = commentBody + results[0] + '\n';
         //commentBody = commentBody+'<br>'
         commentBody = commentBody + '\n```';
-        if (options.DEBUG == 'true') {
-            console.log('#######- DEBUG MODE -#######');
-            console.log('create_pr_comment.ts - createPRComment()');
-            console.log('Comment body');
-            console.log(commentBody);
-            console.log('#######- DEBUG MODE -#######');
-        }
-        core.info('check if we run on a pull request');
-        let pullRequest = process.env.GITHUB_REF;
-        if (options.DEBUG == 'true') {
-            console.log('#######- DEBUG MODE -#######');
-            console.log('create_pr_comment.ts - createPRComment()');
-            console.log(pullRequest);
-            console.log('#######- DEBUG MODE -#######');
-        }
-        let isPR = pullRequest === null || pullRequest === void 0 ? void 0 : pullRequest.indexOf("pull");
-        if (isPR >= 1) {
-            core.info("This run is part of a PR, should add some PR comment");
-            const context = github.context;
-            const repository = process.env.GITHUB_REPOSITORY;
-            const token = core.getInput("token");
-            const repo = repository.split("/");
-            const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
-            const commitID = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
-            //add PR Comment
-            try {
-                const octokit = github.getOctokit(token);
-                const { data: comment } = yield octokit.rest.issues.createComment({
-                    owner: repo[0],
-                    repo: repo[1],
-                    issue_number: commentID,
-                    body: commentBody,
-                });
-                core.info('Adding scan results as comment to PR #' + commentID);
+        return commentBody;
+        /* move to checkRunUpdate
+        
+            if (options.DEBUG == 'true'){
+                console.log('#######- DEBUG MODE -#######')
+                console.log('create_pr_comment.ts - createPRComment()')
+                console.log('Comment body')
+                console.log(commentBody)
+                console.log('#######- DEBUG MODE -#######')
             }
-            catch (error) {
-                core.info(error);
-            }
-            try {
-                const octokit = github.getOctokit(token);
-                const { data: comment } = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + commentID + '/comments', {
-                    body: '```suggestion\n' + results[0] + '\n```',
-                    commit_id: commitID,
-                    path: sourceFile,
-                    position: sourceLine,
-                    side: 'RIGHT',
-                    line: sourceLine,
-                    start_line: sourceLine,
-                    start_side: 'RIGHT',
-                    subject_type: 'file',
-                    headers: {
-                        'X-GitHub-Api-Version': '2022-11-28'
-                    }
-                });
-                console.log('Adding scan results as review to PR #' + commentID);
-            }
-            catch (error) {
-                console.log(error);
-            }
-            /*
-                    //add code suggestion to check annotation
-                    const access_token = core.getInput("access_token")
-                    const octokit = github.getOctokit(access_token);
             
-                        const annotationBody = {
-                            owner: repo[0],
-                            repo: repo[1],
-                            name: 'Veracode Flaw Annotation',
-                            head_sha: process.env.GITHUB_SHA,
-                            check_run_id: process.env.GITHUB_RUN_ID,
-                            status: 'completed',
-                            conclusion: 'failure',
-                            output: {
-                                title: 'Veracode Flaw Annotation',
-                                summary: 'Veracode Flaw Annotation',
-                                text: 'Veracode Flaw Annotation',
-                                annotations: [
-                                    {
-                                        path: sourceFile,
-                                        start_line: sourceLine,
-                                        end_line: sourceLine,
-                                        annotation_level: 'failure',
-                                        message: 'Veracode Flaw Annotation',
-                                    },
-                                ],
+        
+            core.info('check if we run on a pull request')
+            let pullRequest = process.env.GITHUB_REF
+        
+            if (options.DEBUG == 'true'){
+                console.log('#######- DEBUG MODE -#######')
+                console.log('create_pr_comment.ts - createPRComment()')
+                console.log(pullRequest)
+                console.log('#######- DEBUG MODE -#######')
+            }
+            
+            let isPR:any = pullRequest?.indexOf("pull")
+        
+            if ( isPR >= 1 ){
+                core.info("This run is part of a PR, should add some PR comment")
+                const context = github.context
+                const repository:any = process.env.GITHUB_REPOSITORY
+                const token = core.getInput("token")
+                const repo = repository.split("/");
+                const commentID:any = context.payload.pull_request?.number
+                const commitID = context.payload.pull_request?.head.sha
+        
+                
+                //add PR Comment
+                try {
+                    const octokit = github.getOctokit(token);
+        
+                    const { data: comment } = await octokit.rest.issues.createComment({
+                        owner: repo[0],
+                        repo: repo[1],
+                        issue_number: commentID,
+                        body: commentBody,
+                    });
+                    core.info('Adding scan results as comment to PR #'+commentID)
+                } catch (error:any) {
+                    core.info(error);
+                }
+        
+                //find out if the files part of the commits on the PR. If not comment on the last commit of the file
+        
+        //        if ( findCommitID(sourefile, options ) == commitID) {
+                    //file was chnaged on the commit of this PR
+        
+                    try {
+                        const octokit = github.getOctokit(token);
+        
+                        const { data: comment } = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+commentID+'/comments', {
+                            body: '```suggestion\n'+results[0]+'\n```',
+                            commit_id: commitID,
+                            path: sourceFile,
+                            position: sourceLine,
+                            side: 'RIGHT',
+                            line: sourceLine,
+                            start_line: sourceLine,
+                            start_side: 'RIGHT',
+                            subject_type: 'file',
+                            headers: {
+                            'X-GitHub-Api-Version': '2022-11-28'
                             }
-                        }
+                        })
+                        console.log('Adding scan results as review to PR #'+commentID)
+                    } catch (error:any) {
+                        console.log(error);
+                    }
+        //        }
+        //        else {
+        //            //file was not changed on the commit of this PR
+        //        }
+         
             
-                        console.log('Annotation body')
-                        console.log(annotationBody)
-            
-                        const response = await octokit.request('UPDATE /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+process.env.GITHUB_RUN_ID,
-                            annotationBody,
-                        );
-                        core.info('Adding scan results as annotation to PR #'+commentID)
-                        console.log(response)
-            
-            */
-        }
-        else {
-            core.info('We are not running on a pull request');
-        }
+        
+        
+            }
+            else {
+                core.info('We are not running on a pull request')
+            }
+        
+        
+         Move to checkRunUpdate */
     });
 }
 exports.createPRComment = createPRComment;
@@ -47900,6 +47886,18 @@ function runSingle(options, credentials) {
         const jsonFindings = jsonData.findings;
         const flawCount = jsonFindings.length;
         console.log('Number of flaws: ' + flawCount);
+        //if prComment is true and we run on a PR we need to create a check run
+        let checkRunID = '';
+        if (options.prComment == 'true') {
+            console.log('PR commenting is enabled');
+            if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
+                console.log('This is a PR - create a check run');
+                //create a check run
+                let checkRunID = yield (0, checkRun_1.createCheckRun)(options);
+                options['checkRunID'] = checkRunID;
+                console.log('Check Run ID is: ' + checkRunID);
+            }
+        }
         //loop through json file
         let i = 0;
         for (i = 0; i < flawCount; i++) {
@@ -47971,6 +47969,15 @@ function runSingle(options, credentials) {
                 }
             }
             i++;
+        }
+        //if prComment is true and we run on a PR we need to close the check run
+        if (options.prComment == 'true') {
+            console.log('PR commenting is enabled');
+            if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
+                console.log('This is a PR - create a check run');
+                //create a check run
+                const checkRun = yield (0, checkRun_1.updateCheckRunClose)(options, checkRunID);
+            }
         }
     });
 }

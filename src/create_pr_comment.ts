@@ -50,6 +50,10 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     //commentBody = commentBody+'<br>'
     commentBody = commentBody+'\n```'
 
+    return commentBody
+
+/* move to checkRunUpdate    
+
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
         console.log('create_pr_comment.ts - createPRComment()')
@@ -96,76 +100,47 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
             core.info(error);
         }
 
-        try {
-            const octokit = github.getOctokit(token);
+        //find out if the files part of the commits on the PR. If not comment on the last commit of the file
 
-            const { data: comment } = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+commentID+'/comments', {
-                body: '```suggestion\n'+results[0]+'\n```',
-                commit_id: commitID,
-                path: sourceFile,
-                position: sourceLine,
-                side: 'RIGHT',
-                line: sourceLine,
-                start_line: sourceLine,
-                start_side: 'RIGHT',
-                subject_type: 'file',
-                headers: {
-                  'X-GitHub-Api-Version': '2022-11-28'
-                }
-              })
-            console.log('Adding scan results as review to PR #'+commentID)
-        } catch (error:any) {
-            console.log(error);
-        }
+//        if ( findCommitID(sourefile, options ) == commitID) {
+            //file was chnaged on the commit of this PR
 
+            try {
+                const octokit = github.getOctokit(token);
 
-
-
-
-
-/*
-        //add code suggestion to check annotation
-        const access_token = core.getInput("access_token")
-        const octokit = github.getOctokit(access_token);
-
-            const annotationBody = {
-                owner: repo[0],
-                repo: repo[1],
-                name: 'Veracode Flaw Annotation',
-                head_sha: process.env.GITHUB_SHA,
-                check_run_id: process.env.GITHUB_RUN_ID,
-                status: 'completed',
-                conclusion: 'failure',
-                output: {
-                    title: 'Veracode Flaw Annotation',
-                    summary: 'Veracode Flaw Annotation',
-                    text: 'Veracode Flaw Annotation',
-                    annotations: [
-                        {
-                            path: sourceFile,
-                            start_line: sourceLine,
-                            end_line: sourceLine,
-                            annotation_level: 'failure',
-                            message: 'Veracode Flaw Annotation',
-                        },
-                    ],
-                }
+                const { data: comment } = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+commentID+'/comments', {
+                    body: '```suggestion\n'+results[0]+'\n```',
+                    commit_id: commitID,
+                    path: sourceFile,
+                    position: sourceLine,
+                    side: 'RIGHT',
+                    line: sourceLine,
+                    start_line: sourceLine,
+                    start_side: 'RIGHT',
+                    subject_type: 'file',
+                    headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                })
+                console.log('Adding scan results as review to PR #'+commentID)
+            } catch (error:any) {
+                console.log(error);
             }
+//        }
+//        else {
+//            //file was not changed on the commit of this PR
+//        }
+ 
+    
 
-            console.log('Annotation body')
-            console.log(annotationBody)
 
-            const response = await octokit.request('UPDATE /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+process.env.GITHUB_RUN_ID,
-                annotationBody,
-            );
-            core.info('Adding scan results as annotation to PR #'+commentID)
-            console.log(response)
-
-*/
     }
     else {
         core.info('We are not running on a pull request')
     }
+
+
+ Move to checkRunUpdate */
 
 }
 

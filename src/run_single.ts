@@ -5,7 +5,7 @@ import tarModule from 'tar';
 import { checkCWE } from './check_cwe_support';
 import { createPRComment } from './create_pr_comment';
 import { selectPlatfrom } from './select_platform';
-import { updateCheckRunUpdate } from './checkRun';
+import { createCheckRun, updateCheckRunClose, updateCheckRunUpdate } from './checkRun';
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -15,6 +15,20 @@ export async function runSingle(options: any, credentials: any) {
     const jsonFindings = jsonData.findings
     const flawCount = jsonFindings.length
     console.log('Number of flaws: '+flawCount)
+
+
+    //if prComment is true and we run on a PR we need to create a check run
+    let checkRunID:any = ''
+    if (options.prComment == 'true'){
+        console.log('PR commenting is enabled')
+        if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
+            console.log('This is a PR - create a check run')
+            //create a check run
+            let checkRunID = await createCheckRun(options)
+            options['checkRunID'] = checkRunID
+            console.log('Check Run ID is: '+checkRunID)
+        }
+    }
 
     //loop through json file
     let i = 0
@@ -94,6 +108,16 @@ export async function runSingle(options: any, credentials: any) {
             }
         }
         i++
+    }
+
+    //if prComment is true and we run on a PR we need to close the check run
+    if (options.prComment == 'true'){
+        console.log('PR commenting is enabled')
+        if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
+            console.log('This is a PR - create a check run')
+            //create a check run
+            const checkRun = await updateCheckRunClose(options, checkRunID)
+        }
     }
     
 }

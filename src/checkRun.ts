@@ -106,7 +106,7 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
     })
 
     try {
-        const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/{check_run_id}', {
+        const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+checkRunID, {
             owner: repo[0],
             repo: repo[1],
             check_run_id: checkRunID,
