@@ -46672,15 +46672,13 @@ function updateCheckRunClose(options, checkRunID) {
                 owner: repo[0],
                 repo: repo[1],
                 check_run_id: checkRunID,
+                conclusion: 'success',
                 headers: {
                     accept: 'application/vnd.github.v3+json',
-                },
-                data: {
-                    conclusion: 'success',
-                },
+                }
             });
             console.log('Check run closed - updated');
-            console.log(response.data);
+            console.log(response);
         }
         catch (error) {
             core.info(error);
