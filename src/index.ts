@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import { runSingle } from './run_single';
 import { runBatch } from './run_batch';
-import { createCheckRun, updateCheckRunClose } from './checkRun';
+
 
 let credentials:any = {}
 let options:any = {}
@@ -35,18 +35,7 @@ options['token'] = getInputOrEnv('token',false);
 
 
 
-//if prComment is true and we run on a PR we need to create a check run
-let checkRunID:any = ''
-if (options.prComment == 'true'){
-    console.log('PR commenting is enabled')
-    if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
-        console.log('This is a PR - create a check run')
-        //create a check run
-        let checkRunID = createCheckRun(options)
-        options['checkRunID'] = checkRunID
-        console.log('Check Run ID is: '+checkRunID)
-    }
-}
+
 
 
 
@@ -63,13 +52,5 @@ else {
 }
 
 
-//if prComment is true and we run on a PR we need to close the check run
-if (options.prComment == 'true'){
-    console.log('PR commenting is enabled')
-    if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
-        console.log('This is a PR - create a check run')
-        //create a check run
-        const checkRun = updateCheckRunClose(options, checkRunID)
-    }
-}
+
 

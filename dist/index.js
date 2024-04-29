@@ -47330,7 +47330,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(5127));
 const run_single_1 = __nccwpck_require__(4855);
 const run_batch_1 = __nccwpck_require__(6108);
-const checkRun_1 = __nccwpck_require__(7366);
 let credentials = {};
 let options = {};
 function getInputOrEnv(name, required) {
@@ -47357,18 +47356,6 @@ options['prComment'] = getInputOrEnv('prComment', false);
 options['createPR'] = getInputOrEnv('createPR', false);
 options['files'] = getInputOrEnv('files', false);
 options['token'] = getInputOrEnv('token', false);
-//if prComment is true and we run on a PR we need to create a check run
-let checkRunID = '';
-if (options.prComment == 'true') {
-    console.log('PR commenting is enabled');
-    if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
-        console.log('This is a PR - create a check run');
-        //create a check run
-        let checkRunID = (0, checkRun_1.createCheckRun)(options);
-        options['checkRunID'] = checkRunID;
-        console.log('Check Run ID is: ' + checkRunID);
-    }
-}
 if (options.fixType == 'batch') {
     console.log('Running Batch Fix');
     (0, run_batch_1.runBatch)(options, credentials);
@@ -47379,15 +47366,6 @@ else if (options.fixType == 'single') {
 }
 else {
     console.log('no Fix Type selected');
-}
-//if prComment is true and we run on a PR we need to close the check run
-if (options.prComment == 'true') {
-    console.log('PR commenting is enabled');
-    if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
-        console.log('This is a PR - create a check run');
-        //create a check run
-        const checkRun = (0, checkRun_1.updateCheckRunClose)(options, checkRunID);
-    }
 }
 
 
