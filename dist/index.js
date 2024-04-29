@@ -46634,8 +46634,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                             end_line: end_line,
                             annotation_level: 'warning',
                             title: 'Securityy findings',
-                            message: 'Fix this security finding',
-                            raw_details: commentBody
+                            message: commentBody,
                         }
                     ]
                 },
