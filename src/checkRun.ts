@@ -57,7 +57,7 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
         const end_line = flawInfo.sourceLine + 20
 
         
-        const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/{check_run_id}', {
+        const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
             owner: repo[0],
             repo: repo[1],
             check_run_id: options.checkRunID,
@@ -109,6 +109,7 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
             owner: repo[0],
             repo: repo[1],
             check_run_id: checkRunID,
+            status: 'completed',
             conclusion: 'success',
             headers: {
                 accept: 'application/vnd.github.v3+json',

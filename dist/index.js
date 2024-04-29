@@ -46620,7 +46620,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
             console.log(fixResults);
             console.log(flawInfo);
             const end_line = flawInfo.sourceLine + 20;
-            const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/{check_run_id}', {
+            const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
                 owner: repo[0],
                 repo: repo[1],
                 check_run_id: options.checkRunID,
@@ -46672,6 +46672,7 @@ function updateCheckRunClose(options, checkRunID) {
                 owner: repo[0],
                 repo: repo[1],
                 check_run_id: checkRunID,
+                status: 'completed',
                 conclusion: 'success',
                 headers: {
                     accept: 'application/vnd.github.v3+json',
