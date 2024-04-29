@@ -49,6 +49,10 @@ inputs:
     description: 'Create PRs for fixes'
     required: false
     default: 'false'
+  files:
+    description: 'Files to fix'
+    required: true
+    default: 'all'
     
 
 runs:

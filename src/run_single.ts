@@ -2,10 +2,10 @@ import { upload, checkFix } from './requests'
 import { createFlawInfo } from './createFlawInfo';
 import fs from 'fs';
 import tarModule from 'tar';
-import * as core from '@actions/core'
 import { checkCWE } from './check_cwe_support';
 import { createPRComment } from './create_pr_comment';
 import { selectPlatfrom } from './select_platform';
+import { updateCheckRunUpdate } from './checkRun';
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -60,6 +60,9 @@ export async function runSingle(options: any, credentials: any) {
                         if (options.prComment == 'true'){
                             console.log('PR commenting is enabled')
                             const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
+                            //need flawinfo again
+                            const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                            const checkRunUpate = updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
                         }
                     }
                     else {

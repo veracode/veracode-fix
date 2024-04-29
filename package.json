@@ -12,10 +12,12 @@
   "dependencies": {
     "@actions/artifact": "^2.1.4",
     "@actions/core": "^1.10.1",
+    "@octokit/rest": "^20.1.0",
     "axios": "^1.6.8",
     "diff": "^5.2.0",
     "form-data": "^4.0.0",
     "fs": "^0.0.1-security",
+    "octokit": "^3.2.0",
     "sjcl": "^1.0.8",
     "tar": "^6.2.1",
     "tar-stream": "^3.1.7",
