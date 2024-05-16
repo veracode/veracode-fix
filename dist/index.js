@@ -47099,10 +47099,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createPRCommentBatch = exports.createPRComment = void 0;
+const core = __importStar(__nccwpck_require__(5127));
 const github = __importStar(__nccwpck_require__(3134));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 function createPRComment(results, options, flawInfo) {
     return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b;
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('create_pr_comment.ts - createPRComment()');
@@ -47145,96 +47147,49 @@ function createPRComment(results, options, flawInfo) {
         commentBody = commentBody + results[0] + '\n';
         //commentBody = commentBody+'<br>'
         commentBody = commentBody + '\n```';
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('create_pr_comment.ts - createPRComment()');
+            console.log('Comment body');
+            console.log(commentBody);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        core.info('check if we run on a pull request');
+        let pullRequest = process.env.GITHUB_REF;
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('create_pr_comment.ts - createPRComment()');
+            console.log(pullRequest);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        let isPR = pullRequest === null || pullRequest === void 0 ? void 0 : pullRequest.indexOf("pull");
+        if (isPR >= 1) {
+            core.info("This run is part of a PR, should add some PR comment");
+            const context = github.context;
+            const repository = process.env.GITHUB_REPOSITORY;
+            const token = core.getInput("token");
+            const repo = repository.split("/");
+            const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+            const commitID = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
+            //add PR Comment
+            try {
+                const octokit = github.getOctokit(token);
+                const { data: comment } = yield octokit.rest.issues.createComment({
+                    owner: repo[0],
+                    repo: repo[1],
+                    issue_number: commentID,
+                    body: commentBody,
+                });
+                core.info('Adding scan results as comment to PR #' + commentID);
+            }
+            catch (error) {
+                core.info(error);
+            }
+        }
+        else {
+            core.info('We are not running on a pull request');
+        }
         return commentBody;
-        /* move to checkRunUpdate
-        
-            if (options.DEBUG == 'true'){
-                console.log('#######- DEBUG MODE -#######')
-                console.log('create_pr_comment.ts - createPRComment()')
-                console.log('Comment body')
-                console.log(commentBody)
-                console.log('#######- DEBUG MODE -#######')
-            }
-            
-        
-            core.info('check if we run on a pull request')
-            let pullRequest = process.env.GITHUB_REF
-        
-            if (options.DEBUG == 'true'){
-                console.log('#######- DEBUG MODE -#######')
-                console.log('create_pr_comment.ts - createPRComment()')
-                console.log(pullRequest)
-                console.log('#######- DEBUG MODE -#######')
-            }
-            
-            let isPR:any = pullRequest?.indexOf("pull")
-        
-            if ( isPR >= 1 ){
-                core.info("This run is part of a PR, should add some PR comment")
-                const context = github.context
-                const repository:any = process.env.GITHUB_REPOSITORY
-                const token = core.getInput("token")
-                const repo = repository.split("/");
-                const commentID:any = context.payload.pull_request?.number
-                const commitID = context.payload.pull_request?.head.sha
-        
-                
-                //add PR Comment
-                try {
-                    const octokit = github.getOctokit(token);
-        
-                    const { data: comment } = await octokit.rest.issues.createComment({
-                        owner: repo[0],
-                        repo: repo[1],
-                        issue_number: commentID,
-                        body: commentBody,
-                    });
-                    core.info('Adding scan results as comment to PR #'+commentID)
-                } catch (error:any) {
-                    core.info(error);
-                }
-        
-                //find out if the files part of the commits on the PR. If not comment on the last commit of the file
-        
-        //        if ( findCommitID(sourefile, options ) == commitID) {
-                    //file was chnaged on the commit of this PR
-        
-                    try {
-                        const octokit = github.getOctokit(token);
-        
-                        const { data: comment } = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+commentID+'/comments', {
-                            body: '```suggestion\n'+results[0]+'\n```',
-                            commit_id: commitID,
-                            path: sourceFile,
-                            position: sourceLine,
-                            side: 'RIGHT',
-                            line: sourceLine,
-                            start_line: sourceLine,
-                            start_side: 'RIGHT',
-                            subject_type: 'file',
-                            headers: {
-                            'X-GitHub-Api-Version': '2022-11-28'
-                            }
-                        })
-                        console.log('Adding scan results as review to PR #'+commentID)
-                    } catch (error:any) {
-                        console.log(error);
-                    }
-        //        }
-        //        else {
-        //            //file was not changed on the commit of this PR
-        //        }
-         
-            
-        
-        
-            }
-            else {
-                core.info('We are not running on a pull request')
-            }
-        
-        
-         Move to checkRunUpdate */
     });
 }
 exports.createPRComment = createPRComment;
