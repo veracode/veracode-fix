@@ -3,6 +3,7 @@ import {calculateAuthorizationHeader} from './auth'
 import fs from 'fs';
 import FormData from 'form-data';
 import { selectPlatfrom } from './select_platform';
+import * as github from '@actions/github'
 
 
 export async function upload(platform:any, tar:any, options:any) {
@@ -253,6 +254,8 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
         console.log('#######- DEBUG MODE -#######')
     }
 
+    
+
     const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_results', {
         headers: {
             'Authorization': authHeader,
@@ -274,4 +277,53 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
         }
         return response.data;
     }
+}
+
+export async function getFilesPartOfPR(options:any) {
+
+    const octokit = github.getOctokit(options.token);
+
+    const context = github.context
+    const prID:any = context.payload.pull_request?.number
+    const repository:any = process.env.GITHUB_REPOSITORY
+    const repo = repository.split("/");
+
+    let page = 1;
+    let files:any = [];
+
+    while (true) {
+        const response = await octokit.request('GET /repos/{repo[0]}/{repo[1]}/pulls/{prID}/files', {
+            owner: repo[0],
+            repo: repo[1],
+            pull_number: prID,
+            per_page: 100,
+            page: page,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
+        });
+
+        if (!response.data) {
+            console.log('Response is empty. Something went wrong. No files identified. ');
+            return 0
+        }
+
+        files = files.concat(response.data);
+
+        if (!response.headers.link || !response.headers.link.includes('rel="next"')) {
+            break;
+        }
+
+        page++;
+    }
+
+
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('requests.ts - getFilesPartOfPR')
+        console.log('Files changed in PR:')
+        console.log(files);
+        console.log('#######- DEBUG MODE -#######')
+    }
+    return files;
 }

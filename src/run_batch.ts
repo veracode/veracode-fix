@@ -2,7 +2,7 @@ import fs from 'fs';
 import { createFlawInfo } from './createFlawInfo';
 import { checkCWE } from './check_cwe_support';
 import tarModule from 'tar';
-import { uploadBatch, checkFixBatch, pullBatchFixResults } from './requests'
+import { uploadBatch, checkFixBatch, pullBatchFixResults, getFilesPartOfPR } from './requests'
 import { createPRCommentBatch } from './create_pr_comment'
 import { execSync }  from 'child_process';
 import * as github from '@actions/github'
@@ -15,6 +15,8 @@ export async function runBatch( options:any, credentials:any){
     const jsonFindings = jsonData.findings
     const flawCount = jsonFindings.length
     console.log('Number of flaws: '+flawCount)
+
+    const filesPartOfPR = await getFilesPartOfPR(options)
 
     //loop through json file and create a new array
     let i = 0

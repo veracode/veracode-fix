@@ -6,6 +6,7 @@ import { checkCWE } from './check_cwe_support';
 import { createPRComment } from './create_pr_comment';
 import { selectPlatfrom } from './select_platform';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdate } from './checkRun';
+import { getFilesPartOfPR } from './requests';
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -16,6 +17,7 @@ export async function runSingle(options: any, credentials: any) {
     const flawCount = jsonFindings.length
     console.log('Number of flaws: '+flawCount)
 
+    const filesPartOfPR = await getFilesPartOfPR(options)
 
     //if prComment is true and we run on a PR we need to create a check run
     let checkRunID:any = ''

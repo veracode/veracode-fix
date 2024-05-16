@@ -47372,6 +47372,29 @@ else {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -47385,12 +47408,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pullBatchFixResults = exports.checkFixBatch = exports.checkFix = exports.uploadBatch = exports.upload = void 0;
+exports.getFilesPartOfPR = exports.pullBatchFixResults = exports.checkFixBatch = exports.checkFix = exports.uploadBatch = exports.upload = void 0;
 const axios_1 = __importDefault(__nccwpck_require__(2223));
 const auth_1 = __nccwpck_require__(6980);
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const form_data_1 = __importDefault(__nccwpck_require__(5676));
 const select_platform_1 = __nccwpck_require__(4709);
+const github = __importStar(__nccwpck_require__(3134));
 function upload(platform, tar, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const fileBuffer = fs_1.default.readFileSync('data.tar.gz');
@@ -47636,6 +47660,48 @@ function pullBatchFixResults(credentials, projectId, options) {
     });
 }
 exports.pullBatchFixResults = pullBatchFixResults;
+function getFilesPartOfPR(options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        const octokit = github.getOctokit(options.token);
+        const context = github.context;
+        const prID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+        const repository = process.env.GITHUB_REPOSITORY;
+        const repo = repository.split("/");
+        let page = 1;
+        let files = [];
+        while (true) {
+            const response = yield octokit.request('GET /repos/{repo[0]}/{repo[1]}/pulls/{prID}/files', {
+                owner: repo[0],
+                repo: repo[1],
+                pull_number: prID,
+                per_page: 100,
+                page: page,
+                headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            });
+            if (!response.data) {
+                console.log('Response is empty. Something went wrong. No files identified. ');
+                return 0;
+            }
+            files = files.concat(response.data);
+            if (!response.headers.link || !response.headers.link.includes('rel="next"')) {
+                break;
+            }
+            page++;
+        }
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('requests.ts - getFilesPartOfPR');
+            console.log('Files changed in PR:');
+            console.log(files);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        return files;
+    });
+}
+exports.getFilesPartOfPR = getFilesPartOfPR;
 
 
 /***/ }),
@@ -47673,6 +47739,7 @@ function runBatch(options, credentials) {
         const jsonFindings = jsonData.findings;
         const flawCount = jsonFindings.length;
         console.log('Number of flaws: ' + flawCount);
+        const filesPartOfPR = yield (0, requests_1.getFilesPartOfPR)(options);
         //loop through json file and create a new array
         let i = 0;
         let flawArray = {};
@@ -47850,6 +47917,7 @@ const check_cwe_support_1 = __nccwpck_require__(6123);
 const create_pr_comment_1 = __nccwpck_require__(3849);
 const select_platform_1 = __nccwpck_require__(4709);
 const checkRun_1 = __nccwpck_require__(7366);
+const requests_2 = __nccwpck_require__(3222);
 function runSingle(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -47858,6 +47926,7 @@ function runSingle(options, credentials) {
         const jsonFindings = jsonData.findings;
         const flawCount = jsonFindings.length;
         console.log('Number of flaws: ' + flawCount);
+        const filesPartOfPR = yield (0, requests_2.getFilesPartOfPR)(options);
         //if prComment is true and we run on a PR we need to create a check run
         let checkRunID = '';
         if (options.prComment == 'true') {
