@@ -292,7 +292,7 @@ export async function getFilesPartOfPR(options:any) {
     let files:any = [];
 
     while (true) {
-        const response = await octokit.request('GET /repos/{repo[0]}/{repo[1]}/pulls/{prID}/files', {
+        const response = await octokit.request('GET /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+prID+'/files', {
             owner: repo[0],
             repo: repo[1],
             pull_number: prID,

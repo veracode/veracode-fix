@@ -47671,7 +47671,7 @@ function getFilesPartOfPR(options) {
         let page = 1;
         let files = [];
         while (true) {
-            const response = yield octokit.request('GET /repos/{repo[0]}/{repo[1]}/pulls/{prID}/files', {
+            const response = yield octokit.request('GET /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + prID + '/files', {
                 owner: repo[0],
                 repo: repo[1],
                 pull_number: prID,
