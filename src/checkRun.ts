@@ -70,7 +70,7 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
         if (fixResults[0].indexOf('@@') > 0){
             //first remove the first part of the result that include the file names and path, we don't need that for the annotation
             const cleanedResults = fixResults[0].replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
-            const hunk = fixResults[0].split('@@')
+            const hunk = cleanedResults.split('@@')
             hunks = hunk.length
             console.log('Number of hunks: '+hunks)
 
