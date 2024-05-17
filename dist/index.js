@@ -46613,6 +46613,13 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
         const repo = repository.split("/");
         const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
         const commitID = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('checkRun.ts - updateCheckRunUpdate');
+            console.log('results:');
+            console.log(fixResults);
+            console.log('#######- DEBUG MODE -#######');
+        }
         const octokit = new rest_1.Octokit({
             auth: token
         });
@@ -46634,7 +46641,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                             end_line: end_line,
                             annotation_level: 'warning',
                             title: 'Securityy findings',
-                            message: commentBody,
+                            message: fixResults,
                         }
                     ]
                 },

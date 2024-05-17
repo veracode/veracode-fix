@@ -46,6 +46,14 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
     const commentID:any = context.payload.pull_request?.number
     const commitID = context.payload.pull_request?.head.sha
 
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('checkRun.ts - updateCheckRunUpdate')
+        console.log('results:')
+        console.log(fixResults)
+        console.log('#######- DEBUG MODE -#######')
+    }
+
     const octokit = new Octokit({
         auth: token
     })
@@ -68,7 +76,7 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
                     end_line: end_line,
                     annotation_level: 'warning',
                     title: 'Securityy findings',
-                    message: commentBody,
+                    message: fixResults,
                     }
                 ]
             },
