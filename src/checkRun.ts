@@ -63,29 +63,59 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
         console.log('Start line: '+flawInfo.line)
         const end_line = flawInfo.line + 20
         console.log('End line: '+end_line)
-        const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
-            status: 'in_progress',
-            output: {
-                title: 'Veracode Autofix suggestions',
-                summary: 'Will create Veracode Autofix suggestions as PR comments',
-                text: 'Will create Veracode Autofix suggestions as PR comments',
-                annotations: [
-                    {
-                    path: flawInfo.sourceFile,
-                    start_line: flawInfo.line,
-                    end_line: end_line,
-                    annotation_level: 'warning',
-                    title: 'Securityy findings',
-                    message: fixResults,
+
+
+        //Let's check if there are multiple hunks on the first fix result
+        let hunks = 0
+        if (fixResults[0].indexOf('@@') > 0){
+            //first remove the first part of the result that include the file names and path, we don't need that for the annotation
+            const cleanedResults = fixResults[0].replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+            const hunk = fixResults[0].split('@@')
+            hunks = hunk.length
+            console.log('Number of hunks: '+hunks)
+
+           
+            hunk.forEach(async (hunk:any) => {
+                
+                const hunkHeaderMatch = hunk.match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
+                if (!hunkHeaderMatch) {
+                    console.log('No hunk header found');
+                }
+
+                const startLineOriginal = parseInt(hunkHeaderMatch[1]);
+                const startLineNew = parseInt(hunkHeaderMatch[2]);
+                const lineCountNew = parseInt(hunkHeaderMatch[3]);
+                const endLineNew = startLineNew + lineCountNew - 1;
+
+                console.log('Start line original: '+startLineOriginal)
+                console.log('Start line new: '+startLineNew)
+                console.log('End line new: '+endLineNew)
+  
+                const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
+                    status: 'in_progress',
+                    output: {
+                        title: 'Veracode Autofix suggestions',
+                        summary: 'Will create Veracode Autofix suggestions as PR comments',
+                        text: 'Will create Veracode Autofix suggestions as PR comments',
+                        annotations: [
+                            {
+                            path: flawInfo.sourceFile,
+                            start_line: startLineOriginal,
+                            end_line: endLineNew,
+                            annotation_level: 'warning',
+                            title: 'Securityy findings',
+                            message: fixResults[0],
+                            }
+                        ]
+                    },
+                    headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
                     }
-                ]
-            },
-            headers: {
-            'X-GitHub-Api-Version': '2022-11-28'
-            }
-        })
-        console.log('Check run updated')
-        console.log(response)
+                })
+                console.log('Check run updated')
+                console.log(response)
+            });
+        }
     } catch (error:any) {
         console.log(error.request)
         console.log(error.response)
