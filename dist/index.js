@@ -46634,6 +46634,8 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                 //first remove the first part of the result that include the file names and path, we don't need that for the annotation
                 const cleanedResults = fixResults[0].replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
                 const hunk = cleanedResults.split('@@');
+                console.log('hunks:');
+                console.log(hunk);
                 hunks = hunk.length;
                 console.log('Number of hunks: ' + hunks);
                 hunk.forEach((hunk) => __awaiter(this, void 0, void 0, function* () {
