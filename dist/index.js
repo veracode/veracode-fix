@@ -47239,13 +47239,17 @@ function createPRCommentBatch(batchFixResults, options) {
         for (let i = 0; i < batchFixResultsCount; i++) {
             let keys = Object.keys(batchFixResults.results);
             console.log('Creating PR comment for ' + keys[i]);
-            commentBody = 'Fixes for ' + keys[i] + ':\n\n';
-            commentBody = commentBody + 'Falws found for this file:\n\n';
+            commentBody = commentBody + '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n';
+            commentBody = commentBody + '> [!CAUTION]\n';
+            commentBody = commentBody + '***Breaking Flaws identified in code!***\n';
+            commentBody = commentBody + '\n';
+            commentBody = 'Fixes for ' + keys[i] + ':\n';
+            commentBody = commentBody + 'Falws found for this file:\n';
             const flawsCount = batchFixResults.results[keys[i]].flaws.length;
             for (let j = 0; j < flawsCount; j++) {
                 commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' in line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
             }
-            commentBody = commentBody + 'Fix:\n\n';
+            commentBody = commentBody + '\nFix suggestions:\n\n';
             commentBody = commentBody + '```diff\n';
             commentBody = commentBody + batchFixResults.results[keys[i]].patch[0];
             commentBody = commentBody + '\n```';
