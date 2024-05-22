@@ -46654,6 +46654,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                     console.log('Start line original: ' + startLineOriginal);
                     console.log('Start line new: ' + startLineNew);
                     console.log('End line new: ' + endLineNew);
+                    const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
                     const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
                         status: 'in_progress',
                         output: {
@@ -46667,7 +46668,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                                     end_line: endLineNew,
                                     annotation_level: 'warning',
                                     title: 'Securityy findings',
-                                    message: fixResults[0],
+                                    message: cleanedHunk,
                                 }
                             ]
                         },
