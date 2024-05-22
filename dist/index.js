@@ -46632,14 +46632,17 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
             let hunks = 0;
             if (fixResults[0].indexOf('@@') > 0) {
                 //first remove the first part of the result that include the file names and path, we don't need that for the annotation
-                const cleanedResults = fixResults[0].replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
-                const hunk = cleanedResults.split('@@');
+                const firstFixResult = fixResults[0];
+                console.log('First fix result:');
+                console.log(firstFixResult);
+                const hunks = firstFixResult.indexOf('@@');
+                const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                //const hunk = cleanedResults.split('@@')
                 console.log('hunks:');
-                console.log(hunk);
-                hunks = hunk.length;
+                console.log(cleanedResults);
                 console.log('Number of hunks: ' + hunks);
                 for (let i = 0; i < hunks; i++) {
-                    const hunkHeaderMatch = hunk[i].match(/ -(\d+),\d+ \+(\d+),(\d+) @@/);
+                    const hunkHeaderMatch = cleanedResults[i].match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
                     if (!hunkHeaderMatch) {
                         console.log('No hunk header found');
                     }
