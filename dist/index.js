@@ -46635,13 +46635,14 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                 const firstFixResult = fixResults[0];
                 console.log('First fix result:');
                 console.log(firstFixResult);
-                const hunks = firstFixResult.indexOf('@@');
+                //const hunks = firstFixResult.indexOf('@@')
                 const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
-                //const hunk = cleanedResults.split('@@')
+                const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
                 console.log('hunks:');
-                console.log(cleanedResults);
-                console.log('Number of hunks: ' + hunks);
-                for (let i = 0; i < hunks; i++) {
+                console.log(hunks);
+                const hunksCount = hunks.length;
+                console.log('Number of hunks: ' + hunksCount);
+                for (let i = 0; i < hunksCount; i++) {
                     const hunkHeaderMatch = cleanedResults[i].match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
                     if (!hunkHeaderMatch) {
                         console.log('No hunk header found');
