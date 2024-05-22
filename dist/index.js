@@ -46638,8 +46638,8 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                 console.log(hunk);
                 hunks = hunk.length;
                 console.log('Number of hunks: ' + hunks);
-                hunk.forEach((hunk) => __awaiter(this, void 0, void 0, function* () {
-                    const hunkHeaderMatch = hunk.match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
+                for (let i = 0; i < hunks; i++) {
+                    const hunkHeaderMatch = hunk[i].match(/ -(\d+),\d+ \+(\d+),(\d+) @@/);
                     if (!hunkHeaderMatch) {
                         console.log('No hunk header found');
                     }
@@ -46673,7 +46673,8 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                     });
                     console.log('Check run updated');
                     console.log(response);
-                }));
+                }
+                ;
             }
         }
         catch (error) {

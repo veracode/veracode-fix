@@ -77,9 +77,9 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
             console.log('Number of hunks: '+hunks)
 
            
-            hunk.forEach(async (hunk:any) => {
+            for (let i = 0; i < hunks; i++) {
                 
-                const hunkHeaderMatch = hunk.match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
+                const hunkHeaderMatch = hunk[i].match(/ -(\d+),\d+ \+(\d+),(\d+) @@/);
                 if (!hunkHeaderMatch) {
                     console.log('No hunk header found');
                 }
@@ -116,7 +116,7 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
                 })
                 console.log('Check run updated')
                 console.log(response)
-            });
+            };
         }
     } catch (error:any) {
         console.log(error.request)
