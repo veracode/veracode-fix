@@ -47247,7 +47247,7 @@ function createPRCommentBatch(batchFixResults, options) {
             commentBody = commentBody + 'Falws found for this file:\n';
             const flawsCount = batchFixResults.results[keys[i]].flaws.length;
             for (let j = 0; j < flawsCount; j++) {
-                commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' in line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
+                commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' - ' + batchFixResults.results[keys[i]].flaws[j].issue_type + ' on line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
             }
             commentBody = commentBody + '\nFix suggestions:\n\n';
             commentBody = commentBody + '```diff\n';
