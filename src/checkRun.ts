@@ -70,9 +70,6 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
         if (fixResults[0].indexOf('@@') > 0){
             //first remove the first part of the result that include the file names and path, we don't need that for the annotation
             const firstFixResult = fixResults[0]
-            console.log('First fix result:')
-            console.log(firstFixResult)
-            //const hunks = firstFixResult.indexOf('@@')
             const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
             const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
             console.log('hunks:')
@@ -83,9 +80,12 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
            
             for (let i = 0; i < hunksCount; i++) {
                 
-                const hunkHeaderMatch = cleanedResults[i].match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
+                const hunkLines = hunks[i].split('\n');
+                const hunkHeader = hunkLines[0];
+                const hunkHeaderMatch = hunkHeader.match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
                 if (!hunkHeaderMatch) {
                     console.log('No hunk header found');
+                    continue;
                 }
 
                 const startLineOriginal = parseInt(hunkHeaderMatch[1]);
