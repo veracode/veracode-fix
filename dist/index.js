@@ -46714,16 +46714,12 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
             console.log('Start line: ' + flawInfo.line);
             const end_line = flawInfo.line + 20;
             console.log('End line: ' + end_line);
-            console.log('Batch Fix Results:');
-            console.log(batchFixResults);
             //Let's check if there are multiple hunks on the first fix result
             let hunks = 0;
             for (let key in batchFixResults.results) {
                 let patches = batchFixResults.results[key].patch;
                 for (let i = 0; i < patches.length; i++) {
                     let patch = patches[i];
-                    console.log('Patch:');
-                    console.log(patch);
                     if (patch.indexOf('@@') > 0) {
                         const cleanedPatch = patch.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
                         const hunks = cleanedPatch.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
@@ -46747,31 +46743,29 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                             console.log('Start line new: ' + startLineNew);
                             console.log('End line new: ' + endLineNew);
                             const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-                            /*
-                                            const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
-                                                status: 'in_progress',
-                                                output: {
-                                                    title: 'Veracode Autofix suggestions',
-                                                    summary: 'Will create Veracode Autofix suggestions as PR comments',
-                                                    text: 'Will create Veracode Autofix suggestions as PR comments',
-                                                    annotations: [
-                                                        {
-                                                        path: flawInfo.sourceFile,
-                                                        start_line: startLineOriginal,
-                                                        end_line: endLineNew,
-                                                        annotation_level: 'warning',
-                                                        title: 'Securityy findings',
-                                                        message: cleanedHunk,
-                                                        }
-                                                    ]
-                                                },
-                                                headers: {
-                                                'X-GitHub-Api-Version': '2022-11-28'
-                                                }
-                                            })
-                                            console.log('Check run updated')
-                                            console.log(response)
-                            */
+                            const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
+                                status: 'in_progress',
+                                output: {
+                                    title: 'Veracode Autofix suggestions',
+                                    summary: 'Will create Veracode Autofix suggestions as PR comments',
+                                    text: 'Will create Veracode Autofix suggestions as PR comments',
+                                    annotations: [
+                                        {
+                                            path: flawInfo.sourceFile,
+                                            start_line: startLineOriginal,
+                                            end_line: endLineNew,
+                                            annotation_level: 'warning',
+                                            title: 'Securityy findings',
+                                            message: cleanedHunk,
+                                        }
+                                    ]
+                                },
+                                headers: {
+                                    'X-GitHub-Api-Version': '2022-11-28'
+                                }
+                            });
+                            console.log('Check run updated');
+                            console.log(response);
                         }
                         ;
                     }

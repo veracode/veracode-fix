@@ -157,8 +157,6 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
         const end_line = flawInfo.line + 20
         console.log('End line: '+end_line)
 
-        console.log('Batch Fix Results:')
-        console.log(batchFixResults)
        
 
         //Let's check if there are multiple hunks on the first fix result
@@ -167,9 +165,6 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
             let patches = batchFixResults.results[key].patch;
             for (let i = 0; i < patches.length; i++) {
                 let patch = patches[i];
-
-                console.log('Patch:')
-                console.log(patch)
 
                 if (patch.indexOf('@@') > 0) {
                     const cleanedPatch = patch.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
@@ -198,7 +193,7 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                         console.log('End line new: '+endLineNew)
 
                         const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-        /* 
+         
                         const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
                             status: 'in_progress',
                             output: {
@@ -222,7 +217,6 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                         })
                         console.log('Check run updated')
                         console.log(response)
-        */
                     };
                 }
             }
