@@ -47248,7 +47248,16 @@ function createPRCommentBatch(batchFixResults, options, flawArray) {
             commentBody = commentBody + 'Falws found for this file:\n';
             const flawsCount = batchFixResults.results[keys[i]].flaws.length;
             for (let j = 0; j < flawsCount; j++) {
-                commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' - ' + batchFixResults.results[keys[i]].flaws[j].issue_type + ' - ' + batchFixResults.results[keys[i]].flaws[j].severity + ' on line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
+                const issueId = batchFixResults.results[keys[i]].flaws[j].issueId;
+                const flaw = flawArray.find((flaw) => flaw.issue_id === issueId);
+                let issue_type = '';
+                let severity = '';
+                if (flaw) {
+                    console.log('Found matching flaw for ' + keys[i]);
+                    issue_type = flaw.issue_type;
+                    severity = flaw.severity;
+                }
+                commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' - ' + issue_type + ' - ' + severity + ' on line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
             }
             commentBody = commentBody + '\nFix suggestions:\n\n';
             commentBody = commentBody + '```diff\n';

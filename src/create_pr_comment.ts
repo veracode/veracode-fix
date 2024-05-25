@@ -2,7 +2,6 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import fs from 'fs';
 
-
 export async function createPRComment(results:any, options:any, flawInfo:any){
 
     if (options.DEBUG == 'true'){
@@ -125,7 +124,17 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
         commentBody = commentBody +'Falws found for this file:\n'
         const flawsCount = batchFixResults.results[keys[i]].flaws.length
         for (let j = 0; j < flawsCount; j++) {
-            commentBody = commentBody +'CWE '+batchFixResults.results[keys[i]].flaws[j].CWEId+' - '+batchFixResults.results[keys[i]].flaws[j].issue_type+' - '+batchFixResults.results[keys[i]].flaws[j].severity+' on line '+batchFixResults.results[keys[i]].flaws[j].line+' for issue '+batchFixResults.results[keys[i]].flaws[j].issueId+'\n'
+            const issueId = batchFixResults.results[keys[i]].flaws[j].issueId;
+            const flaw = flawArray.find((flaw: any) => flaw.issue_id === issueId);
+
+            let issue_type = ''
+            let severity = ''
+            if (flaw) {
+                console.log('Found matching flaw for ' + keys[i]);
+                issue_type = flaw.issue_type;
+                severity = flaw.severity;
+            } 
+            commentBody = commentBody +'CWE '+batchFixResults.results[keys[i]].flaws[j].CWEId+' - '+issue_type+' - '+severity+' on line '+batchFixResults.results[keys[i]].flaws[j].line+' for issue '+batchFixResults.results[keys[i]].flaws[j].issueId+'\n'
         }
         commentBody = commentBody + '\nFix suggestions:\n\n'
         commentBody = commentBody + '```diff\n'
