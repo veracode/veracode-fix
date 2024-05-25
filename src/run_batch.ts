@@ -6,6 +6,7 @@ import { uploadBatch, checkFixBatch, pullBatchFixResults, getFilesPartOfPR } fro
 import { createPRCommentBatch } from './create_pr_comment'
 import { execSync }  from 'child_process';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdateBatch } from './checkRun';
+import { rewritePath } from './rewritePath'
 
 export async function runBatch( options:any, credentials:any){
 
@@ -63,7 +64,11 @@ export async function runBatch( options:any, credentials:any){
             let include = 0
             if ( options.files == 'changed' ){
                 console.log('Checking if file is part of PR')
-                if (filesPartOfPR.includes(sourceFile)){
+                //sourceFile needs rewrite before checking if its part of the PR
+
+                const filepath = await rewritePath(options, sourceFile)
+
+                if (filesPartOfPR.includes(filepath)){
                     include = 1
                     console.log('File is part of PR')
                 }

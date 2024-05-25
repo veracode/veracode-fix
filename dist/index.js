@@ -47021,6 +47021,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createFlawInfo = void 0;
 const fs_1 = __importDefault(__nccwpck_require__(7147));
+const rewritePath_1 = __nccwpck_require__(6133);
 function createFlawInfo(flawInfo, options) {
     return __awaiter(this, void 0, void 0, function* () {
         if (options.DEBUG == 'true') {
@@ -47102,65 +47103,78 @@ function createFlawInfo(flawInfo, options) {
             flows.push(flow);
             console.log('No flows 2');
         }
-        //rewrite path
-        function replacePath(rewrite, path) {
-            return __awaiter(this, void 0, void 0, function* () {
-                const replaceValues = rewrite.split(":");
-                const newPath = path.replace(replaceValues[0], replaceValues[1]);
-                if (options.DEBUG == 'true') {
-                    console.log('#######- DEBUG MODE -#######');
-                    console.log('createFlawInfo.ts');
-                    console.log('Value 1:' + replaceValues[0] + ' Value 2: ' + replaceValues[1] + ' old path: ' + path);
-                    console.log('new Path:' + newPath);
-                    console.log('#######- DEBUG MODE -#######');
-                }
-                return newPath;
-            });
-        }
         const filename = resultArray.files.source_file.file;
-        let filepath;
-        if (options.source_base_path_1 || options.source_base_path_2 || options.source_base_path_3) {
-            const orgPath1 = options.source_base_path_1.split(":");
-            const orgPath2 = options.source_base_path_2.split(":");
-            const orgPath3 = options.source_base_path_3.split(":");
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('createFlawInfo.ts');
-                console.log('path1: ' + orgPath1[0] + ':' + orgPath1[1] + ' path2: ' + orgPath2[0] + ':' + orgPath2[1] + ' path3: ' + orgPath3[0] + ':' + orgPath3[1]);
-                console.log('#######- DEBUG MODE -#######');
-            }
-            if (filename.includes(orgPath1[0])) {
-                filepath = yield replacePath(options.source_base_path_1, filename);
-                if (options.DEBUG == 'true') {
-                    console.log('#######- DEBUG MODE -#######');
-                    console.log('createFlawInfo.ts');
-                    console.log('file path1: ' + filename);
-                    console.log('Filepath rewrite 1: ' + filepath);
-                    console.log('#######- DEBUG MODE -#######');
+        let filepath = yield (0, rewritePath_1.rewritePath)(options, filename);
+        /*
+        
+            //rewrite path
+            async function replacePath (rewrite:any, path:any){
+                const replaceValues = rewrite.split(":")
+                const newPath = path.replace(replaceValues[0],replaceValues[1])
+        
+                if (options.DEBUG == 'true'){
+                    console.log('#######- DEBUG MODE -#######')
+                    console.log('createFlawInfo.ts')
+                    console.log('Value 1:'+replaceValues[0]+' Value 2: '+replaceValues[1]+' old path: '+path)
+                    console.log('new Path:'+newPath)
+                    console.log('#######- DEBUG MODE -#######')
                 }
+        
+                return newPath
             }
-            else if (filename.includes(orgPath2[0])) {
-                filepath = yield replacePath(options.source_base_path_2, filename);
-                if (options.DEBUG == 'true') {
-                    console.log('#######- DEBUG MODE -#######');
-                    console.log('createFlawInfo.ts');
-                    console.log('file path2: ' + filename);
-                    console.log('Filepath rewrite 2: ' + filepath);
-                    console.log('#######- DEBUG MODE -#######');
+        
+            
+            let filepath
+        
+            if (options.source_base_path_1 || options.source_base_path_2 || options.source_base_path_3){
+                const orgPath1 = options.source_base_path_1.split(":")
+                const orgPath2 = options.source_base_path_2.split(":")
+                const orgPath3 = options.source_base_path_3.split(":")
+        
+                if (options.DEBUG == 'true'){
+                    console.log('#######- DEBUG MODE -#######')
+                    console.log('createFlawInfo.ts')
+                    console.log('path1: '+orgPath1[0]+':'+orgPath1[1]+' path2: '+orgPath2[0]+':'+orgPath2[1]+' path3: '+orgPath3[0]+':'+orgPath3[1])
+                    console.log('#######- DEBUG MODE -#######')
                 }
-            }
-            else if (filename.includes(orgPath3[0])) {
-                filepath = yield replacePath(options.source_base_path_3, filename);
-                if (options.DEBUG == 'true') {
-                    console.log('#######- DEBUG MODE -#######');
-                    console.log('createFlawInfo.ts');
-                    console.log('file path3: ' + filename);
-                    console.log('Filepath rewrite 3: ' + filepath);
-                    console.log('#######- DEBUG MODE -#######');
+        
+        
+                if( filename.includes(orgPath1[0])) {
+                    filepath = await replacePath(options.source_base_path_1, filename)
+        
+                    if (options.DEBUG == 'true'){
+                        console.log('#######- DEBUG MODE -#######')
+                        console.log('createFlawInfo.ts')
+                        console.log('file path1: '+filename)
+                        console.log('Filepath rewrite 1: '+filepath);
+                        console.log('#######- DEBUG MODE -#######')
+                    }
                 }
+                else if (filename.includes(orgPath2[0])){
+                    filepath = await replacePath(options.source_base_path_2, filename)
+        
+                    if (options.DEBUG == 'true'){
+                        console.log('#######- DEBUG MODE -#######')
+                        console.log('createFlawInfo.ts')
+                        console.log('file path2: '+filename)
+                        console.log('Filepath rewrite 2: '+filepath);
+                        console.log('#######- DEBUG MODE -#######')
+                    }
+                }
+                else if (filename.includes(orgPath3[0])){
+                    filepath = await replacePath(options.source_base_path_3, filename)
+        
+                    if (options.DEBUG == 'true'){
+                        console.log('#######- DEBUG MODE -#######')
+                        console.log('createFlawInfo.ts')
+                        console.log('file path3: '+filename)
+                        console.log('Filepath rewrite 3: '+filepath);
+                        console.log('#######- DEBUG MODE -#######')
+                    }
+                }
+                console.log('Rewritten Filepath: '+filepath);
             }
-            console.log('Rewritten Filepath: ' + filepath);
-        }
+        */
         if (filepath == undefined) {
             filepath = filename;
         }
@@ -47809,6 +47823,89 @@ exports.getFilesPartOfPR = getFilesPartOfPR;
 
 /***/ }),
 
+/***/ 6133:
+/***/ (function(__unused_webpack_module, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.rewritePath = void 0;
+function rewritePath(options, filename) {
+    return __awaiter(this, void 0, void 0, function* () {
+        function replacePath(rewrite, path) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const replaceValues = rewrite.split(":");
+                const newPath = path.replace(replaceValues[0], replaceValues[1]);
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('rewritePath.ts');
+                    console.log('Value 1:' + replaceValues[0] + ' Value 2: ' + replaceValues[1] + ' old path: ' + path);
+                    console.log('new Path:' + newPath);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                return newPath;
+            });
+        }
+        let filepath;
+        if (options.source_base_path_1 || options.source_base_path_2 || options.source_base_path_3) {
+            const orgPath1 = options.source_base_path_1.split(":");
+            const orgPath2 = options.source_base_path_2.split(":");
+            const orgPath3 = options.source_base_path_3.split(":");
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('rewritePath.ts');
+                console.log('path1: ' + orgPath1[0] + ':' + orgPath1[1] + ' path2: ' + orgPath2[0] + ':' + orgPath2[1] + ' path3: ' + orgPath3[0] + ':' + orgPath3[1]);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            if (filename.includes(orgPath1[0])) {
+                filepath = yield replacePath(options.source_base_path_1, filename);
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('rewritePath.ts');
+                    console.log('file path1: ' + filename);
+                    console.log('Filepath rewrite 1: ' + filepath);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+            }
+            else if (filename.includes(orgPath2[0])) {
+                filepath = yield replacePath(options.source_base_path_2, filename);
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('rewritePath.ts');
+                    console.log('file path2: ' + filename);
+                    console.log('Filepath rewrite 2: ' + filepath);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+            }
+            else if (filename.includes(orgPath3[0])) {
+                filepath = yield replacePath(options.source_base_path_3, filename);
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('rewritePath.ts');
+                    console.log('file path3: ' + filename);
+                    console.log('Filepath rewrite 3: ' + filepath);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+            }
+            console.log('Rewritten Filepath: ' + filepath);
+        }
+        return filepath;
+    });
+}
+exports.rewritePath = rewritePath;
+
+
+/***/ }),
+
 /***/ 6108:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -47835,6 +47932,7 @@ const requests_1 = __nccwpck_require__(3222);
 const create_pr_comment_1 = __nccwpck_require__(3849);
 const child_process_1 = __nccwpck_require__(2081);
 const checkRun_1 = __nccwpck_require__(7366);
+const rewritePath_1 = __nccwpck_require__(6133);
 function runBatch(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -47879,7 +47977,9 @@ function runBatch(options, credentials) {
                 let include = 0;
                 if (options.files == 'changed') {
                     console.log('Checking if file is part of PR');
-                    if (filesPartOfPR.includes(sourceFile)) {
+                    //sourceFile needs rewrite before checking if its part of the PR
+                    const filepath = yield (0, rewritePath_1.rewritePath)(options, sourceFile);
+                    if (filesPartOfPR.includes(filepath)) {
                         include = 1;
                         console.log('File is part of PR');
                     }

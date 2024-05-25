@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { rewritePath } from './rewritePath'
 
 export async function createFlawInfo(flawInfo:any,options:any){
 
@@ -96,6 +97,12 @@ export async function createFlawInfo(flawInfo:any,options:any){
         console.log('No flows 2')
     }
 
+    const filename = resultArray.files.source_file.file
+    let filepath = await rewritePath(options, filename)
+
+
+/*    
+
     //rewrite path
     async function replacePath (rewrite:any, path:any){
         const replaceValues = rewrite.split(":")
@@ -112,7 +119,7 @@ export async function createFlawInfo(flawInfo:any,options:any){
         return newPath
     }
 
-    const filename = resultArray.files.source_file.file
+    
     let filepath
 
     if (options.source_base_path_1 || options.source_base_path_2 || options.source_base_path_3){
@@ -163,6 +170,9 @@ export async function createFlawInfo(flawInfo:any,options:any){
         }
         console.log('Rewritten Filepath: '+filepath);
     }
+*/
+
+
 
     if ( filepath == undefined ){
         filepath = filename

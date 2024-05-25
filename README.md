@@ -48,7 +48,7 @@
 IMAGE prComment_singleFix
 - If `prComment` is set to `true` and 'fixType' is set to `batch` the action will create a comment on the PR with a single fixe per file, for every flaw that is fixable. 
 IMAGE prComment_batchFix
-- If `files` is set to `changed` and the action runs on a PR, it will only fix flaws in files that have been changed in the PR. If it is run on a `commit` it will only fix flaws in files that have been changed in the commit.
+- If `files` is set to `changed` and the action runs on a PR, it will only fix flaws in files that have been changed in the PR. Only works if the action runs on a PR.
 - If it is running on a PR it will create annotations for changed and unchagened files. This cannot be disabled and should help PR reviewers to see what could be fixed with Veracode Fix.
 IMAGE changedFileAnnotation
 IMAGE unchangedFileAnnotation
