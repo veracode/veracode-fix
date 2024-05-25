@@ -47844,6 +47844,8 @@ function runBatch(options, credentials) {
         const flawCount = jsonFindings.length;
         console.log('Number of flaws: ' + flawCount);
         const filesPartOfPR = yield (0, requests_1.getFilesPartOfPR)(options);
+        console.log('Files part of PR:');
+        console.log(filesPartOfPR);
         //loop through json file and create a new array
         let i = 0;
         let flawArray = {};

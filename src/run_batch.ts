@@ -18,6 +18,9 @@ export async function runBatch( options:any, credentials:any){
 
     const filesPartOfPR = await getFilesPartOfPR(options)
 
+    console.log('Files part of PR:')
+    console.log(filesPartOfPR)
+
     //loop through json file and create a new array
     let i = 0
     let flawArray:any = {}
