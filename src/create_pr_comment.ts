@@ -113,7 +113,7 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
         let keys = Object.keys(batchFixResults.results);
         console.log('Creating PR comment for '+keys[i])
 
-        console.log(flawArray)
+        //console.log(flawArray)
 
         
         commentBody = commentBody+'![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
@@ -125,7 +125,11 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
         const flawsCount = batchFixResults.results[keys[i]].flaws.length
         for (let j = 0; j < flawsCount; j++) {
             const issueId = batchFixResults.results[keys[i]].flaws[j].issueId;
-            const flaw = flawArray.find((flaw: any) => flaw.issue_id === issueId);
+            let flaw;
+            for (let key in flawArray) {
+                flaw = flawArray[key].find((flaw: any) => flaw.issue_id === issueId);
+                if (flaw) break;
+            }
 
             let issue_type = ''
             let severity = ''
