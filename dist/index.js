@@ -47874,25 +47874,75 @@ function runBatch(options, credentials) {
                     language: options.language,
                     sourceFile: sourceFile,
                 };
-                if (options.cwe != '') {
-                    console.log('Fix only for CWE: ' + options.cwe);
-                    //get CWE list input
-                    let cweList = [];
-                    if (options.cwe.includes(',')) {
-                        cweList = options.cwe.split(',');
+                let include = 0;
+                if (options.files == 'true') {
+                    console.log('Checking if file is part of PR');
+                    if (filesPartOfPR.includes(sourceFile)) {
+                        include = 1;
+                        console.log('File is part of PR');
                     }
                     else {
-                        cweList = [options.cwe];
+                        include = 0;
+                        console.log('File is not part of PR, skipping');
                     }
-                    if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
-                        console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is in the list of CWEs to fix, creating flaw info');
+                }
+                if (include == 0 && options.files == 'true') {
+                    console.log('File is not part of PR, and only included files should be fixed. Parameter files is set to true');
+                }
+                else {
+                    console.log('File is part of PR, or all files should be fixed. Parameter files is set to false or not set');
+                    if (options.cwe != '') {
+                        console.log('Fix only for CWE: ' + options.cwe);
+                        //get CWE list input
+                        let cweList = [];
+                        if (options.cwe.includes(',')) {
+                            cweList = options.cwe.split(',');
+                        }
+                        else {
+                            cweList = [options.cwe];
+                        }
+                        if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
+                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is in the list of CWEs to fix, creating flaw info');
+                            if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                                const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                                console.log('Flaw Info:', flawInfo);
+                                //write flaw info and source file
+                                const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
+                                const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
+                                console.log('Writing flaw to: app/' + flawFoldername + '/' + flawFilenane);
+                                fs_1.default.mkdirSync('app/flaws/' + flawFoldername, { recursive: true });
+                                fs_1.default.writeFileSync('app/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
+                                if (fs_1.default.existsSync('app/' + flawInfo.sourceFile)) {
+                                    console.log('File exists nothing to do');
+                                }
+                                else {
+                                    console.log('File does not exist, copying file');
+                                    let str = flawInfo.sourceFile;
+                                    let lastSlashIndex = str.lastIndexOf('/');
+                                    let strBeforeLastSlash = str.substring(0, lastSlashIndex);
+                                    if (!fs_1.default.existsSync('app/' + strBeforeLastSlash)) {
+                                        console.log('Destination directory does not exist lest create it');
+                                        fs_1.default.mkdirSync('app/' + strBeforeLastSlash, { recursive: true });
+                                    }
+                                    fs_1.default.copyFileSync(flawInfo.sourceFile, 'app/' + flawInfo.sourceFile);
+                                }
+                            }
+                            else {
+                                console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + options.language);
+                            }
+                        }
+                        else {
+                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not in the list of CWEs to fix');
+                        }
+                    }
+                    else {
+                        console.log('Fix for all CWEs');
                         if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
                             const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                            console.log('Flaw Info:', flawInfo);
                             //write flaw info and source file
                             const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
                             const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
-                            console.log('Writing flaw to: app/' + flawFoldername + '/' + flawFilenane);
+                            console.log('Writing flaw to: app/flaws/' + flawFoldername + '/' + flawFilenane);
                             fs_1.default.mkdirSync('app/flaws/' + flawFoldername, { recursive: true });
                             fs_1.default.writeFileSync('app/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
                             if (fs_1.default.existsSync('app/' + flawInfo.sourceFile)) {
@@ -47914,38 +47964,6 @@ function runBatch(options, credentials) {
                             console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + options.language);
                         }
                     }
-                    else {
-                        console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not in the list of CWEs to fix');
-                    }
-                }
-                else {
-                    console.log('Fix for all CWEs');
-                    if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
-                        const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                        //write flaw info and source file
-                        const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
-                        const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
-                        console.log('Writing flaw to: app/flaws/' + flawFoldername + '/' + flawFilenane);
-                        fs_1.default.mkdirSync('app/flaws/' + flawFoldername, { recursive: true });
-                        fs_1.default.writeFileSync('app/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
-                        if (fs_1.default.existsSync('app/' + flawInfo.sourceFile)) {
-                            console.log('File exists nothing to do');
-                        }
-                        else {
-                            console.log('File does not exist, copying file');
-                            let str = flawInfo.sourceFile;
-                            let lastSlashIndex = str.lastIndexOf('/');
-                            let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                            if (!fs_1.default.existsSync('app/' + strBeforeLastSlash)) {
-                                console.log('Destination directory does not exist lest create it');
-                                fs_1.default.mkdirSync('app/' + strBeforeLastSlash, { recursive: true });
-                            }
-                            fs_1.default.copyFileSync(flawInfo.sourceFile, 'app/' + flawInfo.sourceFile);
-                        }
-                    }
-                    else {
-                        console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + options.language);
-                    }
                 }
             }
         }
@@ -47965,7 +47983,7 @@ function runBatch(options, credentials) {
             }
             else {
                 console.log('Fixs pulled from batch fix');
-                console.log(batchFixResults);
+                //console.log(batchFixResults)
                 //working with results
                 if (options.prComment == 'true') {
                     console.log('PR commenting is enabled');
