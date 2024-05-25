@@ -5,7 +5,7 @@ import tarModule from 'tar';
 import { uploadBatch, checkFixBatch, pullBatchFixResults, getFilesPartOfPR } from './requests'
 import { createPRCommentBatch } from './create_pr_comment'
 import { execSync }  from 'child_process';
-import * as github from '@actions/github'
+import { createCheckRun, updateCheckRunClose, updateCheckRunUpdateBatch } from './checkRun';
 
 export async function runBatch( options:any, credentials:any){
 
@@ -167,7 +167,18 @@ export async function runBatch( options:any, credentials:any){
             if (options.prComment == 'true'){
                 console.log('PR commenting is enabled')
 
-                createPRCommentBatch(batchFixResults, options, flawArray)
+                if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
+                    console.log('This is a PR - create PR comments')
+                    createPRCommentBatch(batchFixResults, options, flawArray)
+                    
+                    console.log('This is a PR - create a check annotations')
+                    //create a check run
+                    let checkRunID = await createCheckRun(options)
+                    options['checkRunID'] = checkRunID
+                    console.log('Check Run ID is: '+checkRunID)
+                    const checkRunUpate = await updateCheckRunUpdateBatch(options, batchFixResults, flawArray)
+                    const checkRun = await updateCheckRunClose(options, options.checkRunID)
+                }
             }
 
             if ( options.codeSuggestion == 'ture' ){

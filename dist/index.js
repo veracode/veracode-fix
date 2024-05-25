@@ -46563,7 +46563,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.updateCheckRunClose = exports.updateCheckRunUpdate = exports.createCheckRun = void 0;
+exports.updateCheckRunClose = exports.updateCheckRunUpdateBatch = exports.updateCheckRunUpdate = exports.createCheckRun = void 0;
 const rest_1 = __nccwpck_require__(1563);
 const github = __importStar(__nccwpck_require__(3134));
 const core = __importStar(__nccwpck_require__(5127));
@@ -46690,6 +46690,104 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
     });
 }
 exports.updateCheckRunUpdate = updateCheckRunUpdate;
+function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b;
+        const context = github.context;
+        const repository = process.env.GITHUB_REPOSITORY;
+        const token = core.getInput("token");
+        const repo = repository.split("/");
+        const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+        const commitID = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('checkRun.ts - updateCheckRunUpdate');
+            console.log('results:');
+            console.log(batchFixResults);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        const octokit = new rest_1.Octokit({
+            auth: token
+        });
+        try {
+            console.log('Check run update started');
+            console.log('Start line: ' + flawInfo.line);
+            const end_line = flawInfo.line + 20;
+            console.log('End line: ' + end_line);
+            console.log('Batch Fix Results:');
+            console.log(batchFixResults);
+            /*
+            
+                    //Let's check if there are multiple hunks on the first fix result
+                    let hunks = 0
+                    if (batchFixResults[0].indexOf('@@') > 0){
+                        //first remove the first part of the result that include the file names and path, we don't need that for the annotation
+                        const firstFixResult = batchFixResults[0]
+                        const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                        const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
+                        console.log('hunks:')
+                        console.log(hunks)
+                        const hunksCount = hunks.length
+                        console.log('Number of hunks: '+hunksCount)
+            
+                       
+                        for (let i = 0; i < hunksCount; i++) {
+                            
+                            const hunkLines = hunks[i].split('\n');
+                            const hunkHeader = hunkLines[0];
+                            const hunkHeaderMatch = hunkHeader.match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
+                            if (!hunkHeaderMatch) {
+                                console.log('No hunk header found');
+                                continue;
+                            }
+            
+                            const startLineOriginal = parseInt(hunkHeaderMatch[1]);
+                            const startLineNew = parseInt(hunkHeaderMatch[2]);
+                            const lineCountNew = parseInt(hunkHeaderMatch[3]);
+                            const endLineNew = startLineNew + lineCountNew - 1;
+            
+                            console.log('Start line original: '+startLineOriginal)
+                            console.log('Start line new: '+startLineNew)
+                            console.log('End line new: '+endLineNew)
+            
+                            const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
+              
+                            const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
+                                status: 'in_progress',
+                                output: {
+                                    title: 'Veracode Autofix suggestions',
+                                    summary: 'Will create Veracode Autofix suggestions as PR comments',
+                                    text: 'Will create Veracode Autofix suggestions as PR comments',
+                                    annotations: [
+                                        {
+                                        path: flawInfo.sourceFile,
+                                        start_line: startLineOriginal,
+                                        end_line: endLineNew,
+                                        annotation_level: 'warning',
+                                        title: 'Securityy findings',
+                                        message: cleanedHunk,
+                                        }
+                                    ]
+                                },
+                                headers: {
+                                'X-GitHub-Api-Version': '2022-11-28'
+                                }
+                            })
+                            console.log('Check run updated')
+                            console.log(response)
+                        };
+                    }
+            
+            */
+        }
+        catch (error) {
+            console.log(error.request);
+            console.log(error.response);
+            core.info(error);
+        }
+    });
+}
+exports.updateCheckRunUpdateBatch = updateCheckRunUpdateBatch;
 function updateCheckRunClose(options, checkRunID) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b;
@@ -47239,7 +47337,6 @@ function createPRCommentBatch(batchFixResults, options, flawArray) {
             let commentBody;
             let keys = Object.keys(batchFixResults.results);
             console.log('Creating PR comment for ' + keys[i]);
-            //console.log(flawArray)
             commentBody = commentBody + '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n';
             commentBody = commentBody + '> [!CAUTION]\n';
             commentBody = commentBody + '***Breaking Flaws identified in code!***\n';
@@ -47258,17 +47355,16 @@ function createPRCommentBatch(batchFixResults, options, flawArray) {
                 let issue_type = '';
                 let severity = '';
                 if (flaw) {
-                    console.log('Found matching flaw for ' + keys[i]);
                     issue_type = flaw.issue_type;
                     severity = flaw.severity;
                 }
-                commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' - ' + issue_type + ' - ' + severity + ' on line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
+                commentBody = commentBody + 'CWE ' + batchFixResults.results[keys[i]].flaws[j].CWEId + ' - ' + issue_type + ' - Severity ' + severity + ' on line ' + batchFixResults.results[keys[i]].flaws[j].line + ' for issue ' + batchFixResults.results[keys[i]].flaws[j].issueId + '\n';
             }
             commentBody = commentBody + '\nFix suggestions:\n\n';
             commentBody = commentBody + '```diff\n';
             commentBody = commentBody + batchFixResults.results[keys[i]].patch[0];
             commentBody = commentBody + '\n```';
-            console.log('PR Comment: ' + commentBody);
+            //console.log('PR Comment: '+commentBody)
             console.log('check if we run on a pull request');
             let pullRequest = process.env.GITHUB_REF;
             let isPR = pullRequest === null || pullRequest === void 0 ? void 0 : pullRequest.indexOf("pull");
@@ -47742,6 +47838,7 @@ const check_cwe_support_1 = __nccwpck_require__(6123);
 const requests_1 = __nccwpck_require__(3222);
 const create_pr_comment_1 = __nccwpck_require__(3849);
 const child_process_1 = __nccwpck_require__(2081);
+const checkRun_1 = __nccwpck_require__(7366);
 function runBatch(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -47876,7 +47973,17 @@ function runBatch(options, credentials) {
                 //working with results
                 if (options.prComment == 'true') {
                     console.log('PR commenting is enabled');
-                    (0, create_pr_comment_1.createPRCommentBatch)(batchFixResults, options, flawArray);
+                    if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
+                        console.log('This is a PR - create PR comments');
+                        (0, create_pr_comment_1.createPRCommentBatch)(batchFixResults, options, flawArray);
+                        console.log('This is a PR - create a check annotations');
+                        //create a check run
+                        let checkRunID = yield (0, checkRun_1.createCheckRun)(options);
+                        options['checkRunID'] = checkRunID;
+                        console.log('Check Run ID is: ' + checkRunID);
+                        const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdateBatch)(options, batchFixResults, flawArray);
+                        const checkRun = yield (0, checkRun_1.updateCheckRunClose)(options, options.checkRunID);
+                    }
                 }
                 if (options.codeSuggestion == 'ture') {
                     console.log('Code suggestion is enabled');

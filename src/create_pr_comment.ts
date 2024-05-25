@@ -112,9 +112,6 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
         let commentBody:any
         let keys = Object.keys(batchFixResults.results);
         console.log('Creating PR comment for '+keys[i])
-
-        //console.log(flawArray)
-
         
         commentBody = commentBody+'![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
         commentBody = commentBody+'> [!CAUTION]\n'
@@ -134,18 +131,17 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
             let issue_type = ''
             let severity = ''
             if (flaw) {
-                console.log('Found matching flaw for ' + keys[i]);
                 issue_type = flaw.issue_type;
                 severity = flaw.severity;
             } 
-            commentBody = commentBody +'CWE '+batchFixResults.results[keys[i]].flaws[j].CWEId+' - '+issue_type+' - '+severity+' on line '+batchFixResults.results[keys[i]].flaws[j].line+' for issue '+batchFixResults.results[keys[i]].flaws[j].issueId+'\n'
+            commentBody = commentBody +'CWE '+batchFixResults.results[keys[i]].flaws[j].CWEId+' - '+issue_type+' - Severity '+severity+' on line '+batchFixResults.results[keys[i]].flaws[j].line+' for issue '+batchFixResults.results[keys[i]].flaws[j].issueId+'\n'
         }
         commentBody = commentBody + '\nFix suggestions:\n\n'
         commentBody = commentBody + '```diff\n'
         commentBody = commentBody + batchFixResults.results[keys[i]].patch[0]
         commentBody = commentBody + '\n```'
 
-        console.log('PR Comment: '+commentBody)
+        //console.log('PR Comment: '+commentBody)
 
         console.log('check if we run on a pull request')
         let pullRequest = process.env.GITHUB_REF
