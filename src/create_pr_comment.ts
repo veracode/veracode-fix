@@ -104,14 +104,18 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
 }
 
 
-export async function createPRCommentBatch(batchFixResults:any, options:any){
+export async function createPRCommentBatch(batchFixResults:any, options:any, flawArray:any){
     const batchFixResultsCount = Object.keys(batchFixResults.results).length;
 
     console.log('Number of files with fixes: '+batchFixResultsCount)
-    let commentBody:any
+    
     for (let i = 0; i < batchFixResultsCount; i++) {
+        let commentBody:any
         let keys = Object.keys(batchFixResults.results);
         console.log('Creating PR comment for '+keys[i])
+
+        console.log(flawArray[keys[i]])
+
         
         commentBody = commentBody+'![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
         commentBody = commentBody+'> [!CAUTION]\n'
@@ -120,7 +124,6 @@ export async function createPRCommentBatch(batchFixResults:any, options:any){
         commentBody = commentBody+'Fixes for '+keys[i]+':\n'
         commentBody = commentBody +'Falws found for this file:\n'
         const flawsCount = batchFixResults.results[keys[i]].flaws.length
-        console.log(batchFixResults.results[keys[i]].flaws)
         for (let j = 0; j < flawsCount; j++) {
             commentBody = commentBody +'CWE '+batchFixResults.results[keys[i]].flaws[j].CWEId+' - '+batchFixResults.results[keys[i]].flaws[j].issue_type+' - '+batchFixResults.results[keys[i]].flaws[j].severity+' on line '+batchFixResults.results[keys[i]].flaws[j].line+' for issue '+batchFixResults.results[keys[i]].flaws[j].issueId+'\n'
         }

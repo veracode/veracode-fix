@@ -167,7 +167,7 @@ export async function runBatch( options:any, credentials:any){
             if (options.prComment == 'true'){
                 console.log('PR commenting is enabled')
 
-                createPRCommentBatch(batchFixResults, options)
+                createPRCommentBatch(batchFixResults, options, flawArray)
             }
 
             if ( options.codeSuggestion == 'ture' ){
