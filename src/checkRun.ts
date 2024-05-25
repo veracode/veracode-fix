@@ -171,8 +171,8 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                     const sourceFile = patch.match(/---\s(.*)\n/);
                     const cleanedSourceFile = sourceFile[1].replace('--- ', '');
                     const hunks = cleanedPatch.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
-                    console.log('hunks:');
-                    console.log(hunks);
+                    //console.log('hunks:');
+                    //console.log(hunks);
                     const hunksCount = hunks.length;
                     console.log('Number of hunks: ' + hunksCount);
 
