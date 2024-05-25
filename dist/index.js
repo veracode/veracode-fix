@@ -46722,6 +46722,7 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                     let patch = patches[i];
                     if (patch.indexOf('@@') > 0) {
                         const cleanedPatch = patch.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                        const sourceFile = patch.match(/---\s(.*)\n/);
                         const hunks = cleanedPatch.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
                         console.log('hunks:');
                         console.log(hunks);
@@ -46751,7 +46752,7 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                                     text: 'Will create Veracode Autofix suggestions as PR comments',
                                     annotations: [
                                         {
-                                            path: flawInfo.sourceFile,
+                                            path: sourceFile,
                                             start_line: startLineOriginal,
                                             end_line: endLineNew,
                                             annotation_level: 'warning',
