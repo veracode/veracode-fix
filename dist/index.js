@@ -47979,13 +47979,12 @@ function runBatch(options, credentials) {
                     console.log('Checking if file is part of PR');
                     //sourceFile needs rewrite before checking if its part of the PR
                     const filepath = yield (0, rewritePath_1.rewritePath)(options, sourceFile);
-                    if (filesPartOfPR.includes(filepath)) {
-                        include = 1;
-                        console.log('File is part of PR');
-                    }
-                    else {
-                        include = 0;
-                        console.log('File is not part of PR, skipping');
+                    for (let key in filesPartOfPR) {
+                        if (filesPartOfPR[key].filename === filepath) {
+                            include = 1;
+                            console.log('File is part of PR');
+                            break;
+                        }
                     }
                 }
                 if (include == 0 && options.files == 'changed') {

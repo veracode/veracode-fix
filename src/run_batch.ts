@@ -68,13 +68,12 @@ export async function runBatch( options:any, credentials:any){
 
                 const filepath = await rewritePath(options, sourceFile)
 
-                if (filesPartOfPR.includes(filepath)){
-                    include = 1
-                    console.log('File is part of PR')
-                }
-                else {
-                    include = 0
-                    console.log('File is not part of PR, skipping')
+                for (let key in filesPartOfPR) {
+                    if (filesPartOfPR[key].filename === filepath) {
+                        include = 1
+                        console.log('File is part of PR')
+                        break;
+                    }
                 }
             }
 
