@@ -47875,7 +47875,7 @@ function runBatch(options, credentials) {
                     sourceFile: sourceFile,
                 };
                 let include = 0;
-                if (options.files == 'true') {
+                if (options.files == 'changed') {
                     console.log('Checking if file is part of PR');
                     if (filesPartOfPR.includes(sourceFile)) {
                         include = 1;
@@ -47886,11 +47886,11 @@ function runBatch(options, credentials) {
                         console.log('File is not part of PR, skipping');
                     }
                 }
-                if (include == 0 && options.files == 'true') {
-                    console.log('File is not part of PR, and only included files should be fixed. Parameter files is set to true');
+                if (include == 0 && options.files == 'changed') {
+                    console.log('File is not part of PR, and only changed files should be fixed. -> Parameter "files" is set to "changed"');
                 }
                 else {
-                    console.log('File is part of PR, or all files should be fixed. Parameter files is set to false or not set');
+                    console.log('File is part of PR, or all files should be fixed. -> Parameter "files" is set to "all" or not set');
                     if (options.cwe != '') {
                         console.log('Fix only for CWE: ' + options.cwe);
                         //get CWE list input
