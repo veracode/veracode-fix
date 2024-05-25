@@ -190,9 +190,11 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                         const lineCountNew = parseInt(hunkHeaderMatch[3]);
                         const endLineNew = startLineNew + lineCountNew - 1;
 
+                        /*
                         console.log('Start line original: '+startLineOriginal)
                         console.log('Start line new: '+startLineNew)
                         console.log('End line new: '+endLineNew)
+                        */
 
                         const cleanedHunk = hunks[j].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
          
@@ -218,7 +220,7 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                             }
                         })
                         console.log('Check run updated')
-                        console.log(response)
+                        //console.log(response)
                     };
                 }
             }

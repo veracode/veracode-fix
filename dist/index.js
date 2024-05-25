@@ -46741,9 +46741,11 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                             const startLineNew = parseInt(hunkHeaderMatch[2]);
                             const lineCountNew = parseInt(hunkHeaderMatch[3]);
                             const endLineNew = startLineNew + lineCountNew - 1;
-                            console.log('Start line original: ' + startLineOriginal);
-                            console.log('Start line new: ' + startLineNew);
-                            console.log('End line new: ' + endLineNew);
+                            /*
+                            console.log('Start line original: '+startLineOriginal)
+                            console.log('Start line new: '+startLineNew)
+                            console.log('End line new: '+endLineNew)
+                            */
                             const cleanedHunk = hunks[j].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
                             const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
                                 status: 'in_progress',
@@ -46767,7 +46769,7 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                                 }
                             });
                             console.log('Check run updated');
-                            console.log(response);
+                            //console.log(response)
                         }
                         ;
                     }
