@@ -153,9 +153,9 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
 
     try {
         console.log('Check run update started')
-        console.log('Start line: '+flawInfo.line)
-        const end_line = flawInfo.line + 20
-        console.log('End line: '+end_line)
+        //console.log('Start line: '+flawInfo.line)
+        //const end_line = flawInfo.line + 20
+        //console.log('End line: '+end_line)
 
        
 

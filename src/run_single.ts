@@ -7,6 +7,7 @@ import { createPRComment } from './create_pr_comment';
 import { selectPlatfrom } from './select_platform';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdate } from './checkRun';
 import { getFilesPartOfPR } from './requests';
+import { rewritePath } from './rewritePath'
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -54,61 +55,90 @@ export async function runSingle(options: any, credentials: any) {
         
         console.log('#############################\n\n')
 
-        if ( options.cwe != '' ){
-            console.log('Only run Fix for CWE: '+options.cwe)
-            let cweList = [];
-            if (options.cwe.includes(',')) {
-                cweList = options.cwe.split(',');
-            } else {
-                cweList = [options.cwe];
+        let include = 0
+        if ( options.files == 'changed' ){
+            console.log('Checking if file is part of PR')
+            //sourceFile needs rewrite before checking if its part of the PR
+
+            const filepath = await rewritePath(options, initialFlawInfo.sourceFile)
+
+            for (let key in filesPartOfPR) {
+                if (filesPartOfPR[key].filename === filepath) {
+                    include = 1
+                    //console.log('File is part of PR')
+                    break;
+                }
             }
-            const cweListLength = cweList.length
-            let j = 0
-            for (j = 0; j < cweListLength; j++) {
-                if (parseInt(cweList[j]) == initialFlawInfo.cweID){
-                    if (await checkCWE(initialFlawInfo, options) == true){
+        }
 
-                        const choosePlatform = await selectPlatfrom(credentials)
-                        const tar = await createTar(initialFlawInfo,options)
-                        const uploadTar = await upload(choosePlatform, tar, options)
-                        const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
+        if ( include == 0 && options.files == 'changed' ){
+            console.log('File is not part of PR, and only changed files should be fixed. -> Parameter "files" is set to "changed"')
+        }
+        else {
+            console.log('File is part of PR, either all files should be fixed or this file is part of changed files to be fixed')
 
-                        if (options.prComment == 'true'){
-                            console.log('PR commenting is enabled')
-                            const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
-                            //need flawinfo again
-                            const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
-                            console.log('Check Run ID is: '+options.checkRunID)
-                            console.log('Update Check Run with PR Comment')
-                            const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+
+            if ( options.cwe != '' ){
+                console.log('Only run Fix for CWE: '+options.cwe)
+                let cweList = [];
+                if (options.cwe.includes(',')) {
+                    cweList = options.cwe.split(',');
+                } else {
+                    cweList = [options.cwe];
+                }
+                const cweListLength = cweList.length
+                let j = 0
+                for (j = 0; j < cweListLength; j++) {
+                    if (parseInt(cweList[j]) == initialFlawInfo.cweID){
+                        if (await checkCWE(initialFlawInfo, options) == true){
+
+                            const choosePlatform = await selectPlatfrom(credentials)
+                            const tar = await createTar(initialFlawInfo,options)
+                            const uploadTar = await upload(choosePlatform, tar, options)
+                            const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
+
+                            if (options.prComment == 'true'){
+                                console.log('PR commenting is enabled')
+                                const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
+                                //need flawinfo again
+                                const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                                console.log('Check Run ID is: '+options.checkRunID)
+                                console.log('Update Check Run with PR Comment')
+                                const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                            }
+                        }
+                        else {
+                            console.log('CWE '+initialFlawInfo.cweID+' is not supported '+options.language)
                         }
                     }
                     else {
-                        console.log('CWE '+initialFlawInfo.cweID+' is not supported '+options.language)
+                        console.log('CWE '+initialFlawInfo.cweID+' is not in the list of CWEs to fix')
+                    }
+                }
+                
+            }
+            else {
+                console.log('Run Fix for all CWEs')
+                if (await checkCWE(initialFlawInfo, options) == true){
+                    console.log('CWE '+initialFlawInfo.cweID+' is supported for '+options.language)
+                    const choosePlatform = await selectPlatfrom(credentials)
+                    const tar = await createTar(initialFlawInfo,options)
+                    const uploadTar = await upload(choosePlatform, tar, options)
+                    const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
+
+                    if (options.prComment == 'true'){
+                        console.log('PR commenting is enabled')
+                        const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
+                        //need flawinfo again
+                        const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                        console.log('Check Run ID is: '+options.checkRunID)
+                        console.log('Update Check Run with PR Comment')
+                        const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
                     }
                 }
                 else {
-                    console.log('CWE '+initialFlawInfo.cweID+' is not in the list of CWEs to fix')
+                    console.log('CWE '+initialFlawInfo.cweID+' is NOT supported for '+options.language)
                 }
-            }
-            
-        }
-        else {
-            console.log('Run Fix for all CWEs')
-            if (await checkCWE(initialFlawInfo, options) == true){
-                console.log('CWE '+initialFlawInfo.cweID+' is supported for '+options.language)
-                const choosePlatform = await selectPlatfrom(credentials)
-                const tar = await createTar(initialFlawInfo,options)
-                const uploadTar = await upload(choosePlatform, tar, options)
-                const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
-
-                if (options.prComment == 'true'){
-                    console.log('PR commenting is enabled')
-                    const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
-                }
-            }
-            else {
-                console.log('CWE '+initialFlawInfo.cweID+' is NOT supported for '+options.language)
             }
         }
         i++

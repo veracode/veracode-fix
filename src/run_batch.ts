@@ -71,7 +71,7 @@ export async function runBatch( options:any, credentials:any){
                 for (let key in filesPartOfPR) {
                     if (filesPartOfPR[key].filename === filepath) {
                         include = 1
-                        console.log('File is part of PR')
+                        //console.log('File is part of PR')
                         break;
                     }
                 }
@@ -81,7 +81,7 @@ export async function runBatch( options:any, credentials:any){
                 console.log('File is not part of PR, and only changed files should be fixed. -> Parameter "files" is set to "changed"')
             }
             else {
-                console.log('File is part of PR, or all files should be fixed. -> Parameter "files" is set to "all" or not set')
+                console.log('File is part of PR, either all files should be fixed or this file is part of changed files to be fixed')
 
                 if (options.cwe != '') {
 
@@ -100,7 +100,7 @@ export async function runBatch( options:any, credentials:any){
                         
                         if (await checkCWE(initialFlawInfo, options) == true){
                             const flawInfo = await createFlawInfo(initialFlawInfo,options)
-                            console.log('Flaw Info:',flawInfo)
+                            //console.log('Flaw Info:',flawInfo)
 
                             //write flaw info and source file
                             const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId

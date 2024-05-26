@@ -46711,9 +46711,9 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
         });
         try {
             console.log('Check run update started');
-            console.log('Start line: ' + flawInfo.line);
-            const end_line = flawInfo.line + 20;
-            console.log('End line: ' + end_line);
+            //console.log('Start line: '+flawInfo.line)
+            //const end_line = flawInfo.line + 20
+            //console.log('End line: '+end_line)
             //Let's check if there are multiple hunks on the first fix result
             let hunks = 0;
             for (let key in batchFixResults.results) {
@@ -47982,7 +47982,7 @@ function runBatch(options, credentials) {
                     for (let key in filesPartOfPR) {
                         if (filesPartOfPR[key].filename === filepath) {
                             include = 1;
-                            console.log('File is part of PR');
+                            //console.log('File is part of PR')
                             break;
                         }
                     }
@@ -47991,7 +47991,7 @@ function runBatch(options, credentials) {
                     console.log('File is not part of PR, and only changed files should be fixed. -> Parameter "files" is set to "changed"');
                 }
                 else {
-                    console.log('File is part of PR, or all files should be fixed. -> Parameter "files" is set to "all" or not set');
+                    console.log('File is part of PR, either all files should be fixed or this file is part of changed files to be fixed');
                     if (options.cwe != '') {
                         console.log('Fix only for CWE: ' + options.cwe);
                         //get CWE list input
@@ -48006,7 +48006,7 @@ function runBatch(options, credentials) {
                             console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is in the list of CWEs to fix, creating flaw info');
                             if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
                                 const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                                console.log('Flaw Info:', flawInfo);
+                                //console.log('Flaw Info:',flawInfo)
                                 //write flaw info and source file
                                 const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
                                 const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
@@ -48151,6 +48151,7 @@ const create_pr_comment_1 = __nccwpck_require__(3849);
 const select_platform_1 = __nccwpck_require__(4709);
 const checkRun_1 = __nccwpck_require__(7366);
 const requests_2 = __nccwpck_require__(3222);
+const rewritePath_1 = __nccwpck_require__(6133);
 function runSingle(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -48190,58 +48191,82 @@ function runSingle(options, credentials) {
                 console.log('#######- DEBUG MODE -#######');
             }
             console.log('#############################\n\n');
-            if (options.cwe != '') {
-                console.log('Only run Fix for CWE: ' + options.cwe);
-                let cweList = [];
-                if (options.cwe.includes(',')) {
-                    cweList = options.cwe.split(',');
-                }
-                else {
-                    cweList = [options.cwe];
-                }
-                const cweListLength = cweList.length;
-                let j = 0;
-                for (j = 0; j < cweListLength; j++) {
-                    if (parseInt(cweList[j]) == initialFlawInfo.cweID) {
-                        if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
-                            const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
-                            const tar = yield createTar(initialFlawInfo, options);
-                            const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
-                            const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                            if (options.prComment == 'true') {
-                                console.log('PR commenting is enabled');
-                                const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
-                                //need flawinfo again
-                                const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                                console.log('Check Run ID is: ' + options.checkRunID);
-                                console.log('Update Check Run with PR Comment');
-                                const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
-                            }
-                        }
-                        else {
-                            console.log('CWE ' + initialFlawInfo.cweID + ' is not supported ' + options.language);
-                        }
-                    }
-                    else {
-                        console.log('CWE ' + initialFlawInfo.cweID + ' is not in the list of CWEs to fix');
+            let include = 0;
+            if (options.files == 'changed') {
+                console.log('Checking if file is part of PR');
+                //sourceFile needs rewrite before checking if its part of the PR
+                const filepath = yield (0, rewritePath_1.rewritePath)(options, initialFlawInfo.sourceFile);
+                for (let key in filesPartOfPR) {
+                    if (filesPartOfPR[key].filename === filepath) {
+                        include = 1;
+                        //console.log('File is part of PR')
+                        break;
                     }
                 }
             }
+            if (include == 0 && options.files == 'changed') {
+                console.log('File is not part of PR, and only changed files should be fixed. -> Parameter "files" is set to "changed"');
+            }
             else {
-                console.log('Run Fix for all CWEs');
-                if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
-                    console.log('CWE ' + initialFlawInfo.cweID + ' is supported for ' + options.language);
-                    const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
-                    const tar = yield createTar(initialFlawInfo, options);
-                    const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
-                    const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                    if (options.prComment == 'true') {
-                        console.log('PR commenting is enabled');
-                        const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                console.log('File is part of PR, either all files should be fixed or this file is part of changed files to be fixed');
+                if (options.cwe != '') {
+                    console.log('Only run Fix for CWE: ' + options.cwe);
+                    let cweList = [];
+                    if (options.cwe.includes(',')) {
+                        cweList = options.cwe.split(',');
+                    }
+                    else {
+                        cweList = [options.cwe];
+                    }
+                    const cweListLength = cweList.length;
+                    let j = 0;
+                    for (j = 0; j < cweListLength; j++) {
+                        if (parseInt(cweList[j]) == initialFlawInfo.cweID) {
+                            if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                                const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
+                                const tar = yield createTar(initialFlawInfo, options);
+                                const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
+                                const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                                if (options.prComment == 'true') {
+                                    console.log('PR commenting is enabled');
+                                    const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                                    //need flawinfo again
+                                    const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                                    console.log('Check Run ID is: ' + options.checkRunID);
+                                    console.log('Update Check Run with PR Comment');
+                                    const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                }
+                            }
+                            else {
+                                console.log('CWE ' + initialFlawInfo.cweID + ' is not supported ' + options.language);
+                            }
+                        }
+                        else {
+                            console.log('CWE ' + initialFlawInfo.cweID + ' is not in the list of CWEs to fix');
+                        }
                     }
                 }
                 else {
-                    console.log('CWE ' + initialFlawInfo.cweID + ' is NOT supported for ' + options.language);
+                    console.log('Run Fix for all CWEs');
+                    if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                        console.log('CWE ' + initialFlawInfo.cweID + ' is supported for ' + options.language);
+                        const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
+                        const tar = yield createTar(initialFlawInfo, options);
+                        const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
+                        const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                        if (options.prComment == 'true') {
+                            console.log('PR commenting is enabled');
+                            const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                            //need flawinfo again
+                            const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                            console.log('Check Run ID is: ' + options.checkRunID);
+                            console.log('Update Check Run with PR Comment');
+                            const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                        }
+                    }
+                    else {
+                        console.log('CWE ' + initialFlawInfo.cweID + ' is NOT supported for ' + options.language);
+                    }
                 }
             }
             i++;
