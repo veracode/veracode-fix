@@ -47420,11 +47420,13 @@ function createPRComment(results, options, flawInfo) {
         commentBody = commentBody + 'CWE: ' + flawCWEID + ' ' + issueType + '<br>Severity: ' + flawSeverity + '\n';
         commentBody = commentBody + display_text + '\n';
         commentBody = commentBody + '\n';
-        commentBody = commentBody + '```diff\n';
-        //commentBody = commentBody+'<br>'
-        commentBody = commentBody + results[0] + '\n';
-        //commentBody = commentBody+'<br>'
-        commentBody = commentBody + '\n```';
+        if (options.codeSuggestion == 'false' || options.codeSuggestion == '') {
+            commentBody = commentBody + '```diff\n';
+            //commentBody = commentBody+'<br>'
+            commentBody = commentBody + results[0] + '\n';
+            //commentBody = commentBody+'<br>'
+            commentBody = commentBody + '\n```';
+        }
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('create_pr_comment.ts - createPRComment()');
@@ -48372,6 +48374,8 @@ function runSingle(options, credentials) {
                                     const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
                                 }
                                 else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
+                                    console.log('PR commenting is enabled');
+                                    const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
                                     console.log('Code Suggestions are enabled');
                                     //need flawinfo again
                                     const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
@@ -48405,6 +48409,8 @@ function runSingle(options, credentials) {
                             const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
                         }
                         else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
+                            console.log('PR commenting is enabled');
+                            const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
                             console.log('Code Suggestions are enabled');
                             //need flawinfo again
                             const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);

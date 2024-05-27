@@ -110,6 +110,8 @@ export async function runSingle(options: any, credentials: any) {
                                 const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
                             }
                             else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
+                                console.log('PR commenting is enabled')
+                                const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
                                 console.log('Code Suggestions are enabled')
                                 //need flawinfo again
                                 const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
@@ -145,6 +147,8 @@ export async function runSingle(options: any, credentials: any) {
                         const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
                     }
                     else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
+                        console.log('PR commenting is enabled')
+                        const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
                         console.log('Code Suggestions are enabled')
                         //need flawinfo again
                         const newFlawInfo = await createFlawInfo(initialFlawInfo,options)

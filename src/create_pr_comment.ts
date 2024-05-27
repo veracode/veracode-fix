@@ -43,11 +43,13 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     commentBody = commentBody+'CWE: '+flawCWEID+' '+issueType+'<br>Severity: '+flawSeverity+'\n'
     commentBody = commentBody+display_text+'\n'
     commentBody = commentBody+'\n'
-    commentBody = commentBody+'```diff\n'
-    //commentBody = commentBody+'<br>'
-    commentBody = commentBody+results[0]+'\n'
-    //commentBody = commentBody+'<br>'
-    commentBody = commentBody+'\n```'
+    if (options.codeSuggestion == 'false' || options.codeSuggestion == ''){
+        commentBody = commentBody+'```diff\n'
+        //commentBody = commentBody+'<br>'
+        commentBody = commentBody+results[0]+'\n'
+        //commentBody = commentBody+'<br>'
+        commentBody = commentBody+'\n```'
+    }
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
