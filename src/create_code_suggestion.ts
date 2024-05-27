@@ -64,6 +64,7 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
                     body: cleanedHunk,
                     commit_id: commitID,
                     subject_type: 'file',
+                    start_side: 'RIGHT',
                     path: flawInfo.sourceFile,
                     start_line: startLineOriginal,
                     headers: {

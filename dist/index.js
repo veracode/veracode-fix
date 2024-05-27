@@ -47297,6 +47297,7 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                         body: cleanedHunk,
                         commit_id: commitID,
                         subject_type: 'file',
+                        start_side: 'RIGHT',
                         path: flawInfo.sourceFile,
                         start_line: startLineOriginal,
                         headers: {
