@@ -47289,6 +47289,7 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                     const startLineNew = parseInt(hunkHeaderMatch[2]);
                     const lineCountNew = parseInt(hunkHeaderMatch[3]);
                     const endLineNew = startLineNew + lineCountNew - 1;
+                    const position = startLineNew + lineCountNew;
                     console.log('Start line original: ' + startLineOriginal);
                     console.log('Start line new: ' + startLineNew);
                     console.log('End line new: ' + endLineNew);
@@ -47299,6 +47300,7 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                         subject_type: 'file',
                         start_side: 'RIGHT',
                         path: flawInfo.sourceFile,
+                        position: position,
                         start_line: startLineOriginal,
                         headers: {
                             'X-GitHub-Api-Version': '2022-11-28'

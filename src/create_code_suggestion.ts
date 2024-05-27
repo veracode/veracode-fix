@@ -53,6 +53,7 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
                 const startLineNew = parseInt(hunkHeaderMatch[2]);
                 const lineCountNew = parseInt(hunkHeaderMatch[3]);
                 const endLineNew = startLineNew + lineCountNew - 1;
+                const position = startLineNew + lineCountNew;
 
                 console.log('Start line original: '+startLineOriginal)
                 console.log('Start line new: '+startLineNew)
@@ -66,6 +67,7 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
                     subject_type: 'file',
                     start_side: 'RIGHT',
                     path: flawInfo.sourceFile,
+                    position: position,
                     start_line: startLineOriginal,
                     headers: {
                     'X-GitHub-Api-Version': '2022-11-28'
