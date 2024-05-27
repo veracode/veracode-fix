@@ -47293,24 +47293,12 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                     console.log('Start line new: ' + startLineNew);
                     console.log('End line new: ' + endLineNew);
                     const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-                    //await octokit.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/comments', {
                     const response = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + prId + '/comments', {
-                        status: 'in_progress',
-                        output: {
-                            title: 'Veracode Autofix suggestions',
-                            summary: 'Will create Veracode Autofix suggestions as PR comments',
-                            text: 'Will create Veracode Autofix suggestions as PR comments',
-                            annotations: [
-                                {
-                                    path: flawInfo.sourceFile,
-                                    start_line: startLineOriginal,
-                                    end_line: endLineNew,
-                                    annotation_level: 'warning',
-                                    title: 'Securityy findings',
-                                    message: cleanedHunk,
-                                }
-                            ]
-                        },
+                        body: cleanedHunk,
+                        commit_id: commitID,
+                        subject_type: 'file',
+                        path: flawInfo.sourceFile,
+                        start_line: startLineOriginal,
                         headers: {
                             'X-GitHub-Api-Version': '2022-11-28'
                         }
