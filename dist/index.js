@@ -48373,7 +48373,9 @@ function runSingle(options, credentials) {
                                 }
                                 else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
                                     console.log('Code Suggestions are enabled');
-                                    const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(checkFixResults, options, initialFlawInfo);
+                                    //need flawinfo again
+                                    const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                                    const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
                                 }
                             }
                             else {
@@ -48404,7 +48406,9 @@ function runSingle(options, credentials) {
                         }
                         else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
                             console.log('Code Suggestions are enabled');
-                            const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(checkFixResults, options, initialFlawInfo);
+                            //need flawinfo again
+                            const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                            const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
                         }
                     }
                     else {

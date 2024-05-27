@@ -111,7 +111,9 @@ export async function runSingle(options: any, credentials: any) {
                             }
                             else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
                                 console.log('Code Suggestions are enabled')
-                                const codeSuggestion = await createCodeSuggestion(checkFixResults, options, initialFlawInfo)
+                                //need flawinfo again
+                                const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                                const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
                             }   
                         }
                         else {
@@ -144,7 +146,9 @@ export async function runSingle(options: any, credentials: any) {
                     }
                     else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
                         console.log('Code Suggestions are enabled')
-                        const codeSuggestion = await createCodeSuggestion(checkFixResults, options, initialFlawInfo)
+                        //need flawinfo again
+                        const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                        const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
                     }
                 }
                 else {
