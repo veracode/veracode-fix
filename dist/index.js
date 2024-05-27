@@ -47246,13 +47246,14 @@ const github = __importStar(__nccwpck_require__(3134));
 const core = __importStar(__nccwpck_require__(5127));
 function createCodeSuggestion(options, fixResults, flawInfo) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b;
+        var _a, _b, _c;
         const context = github.context;
         const repository = process.env.GITHUB_REPOSITORY;
         const token = core.getInput("token");
         const repo = repository.split("/");
         const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
         const commitID = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
+        const prId = (_c = github.context.payload.pull_request) === null || _c === void 0 ? void 0 : _c.number;
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('create_code_suggestions.ts - createCodeSuggestion');
@@ -47264,10 +47265,7 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
             auth: token
         });
         try {
-            console.log('Check run update started');
-            console.log('Start line: ' + flawInfo.line);
-            const end_line = flawInfo.line + 20;
-            console.log('End line: ' + end_line);
+            console.log('Adding Code Suggestion');
             //Let's check if there are multiple hunks on the first fix result
             let hunks = 0;
             if (fixResults[0].indexOf('@@') > 0) {
@@ -47296,7 +47294,7 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                     console.log('End line new: ' + endLineNew);
                     const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
                     //await octokit.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/comments', {
-                    const response = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + commitID + '/comments', {
+                    const response = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + prId + '/comments', {
                         status: 'in_progress',
                         output: {
                             title: 'Veracode Autofix suggestions',

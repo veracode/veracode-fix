@@ -9,6 +9,7 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
     const repo = repository.split("/");
     const commentID:any = context.payload.pull_request?.number
     const commitID = context.payload.pull_request?.head.sha
+    const prId = github.context.payload.pull_request?.number;
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
@@ -23,11 +24,7 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
     })
 
     try {
-        console.log('Check run update started')
-        console.log('Start line: '+flawInfo.line)
-        const end_line = flawInfo.line + 20
-        console.log('End line: '+end_line)
-
+        console.log('Adding Code Suggestion')
 
         //Let's check if there are multiple hunks on the first fix result
         let hunks = 0
@@ -65,7 +62,7 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
 
 
                                 //await octokit.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/comments', {
-                const response = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+commitID+'/comments', {
+                const response = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+prId+'/comments', {
                     status: 'in_progress',
                     output: {
                         title: 'Veracode Autofix suggestions',
