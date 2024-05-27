@@ -65,7 +65,7 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
 
 
                                 //await octokit.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/comments', {
-                const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+commitID+'/comments', {
+                const response = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/pulls/'+commitID+'/comments', {
                     status: 'in_progress',
                     output: {
                         title: 'Veracode Autofix suggestions',

@@ -47296,7 +47296,7 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                     console.log('End line new: ' + endLineNew);
                     const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
                     //await octokit.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/comments', {
-                    const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + commitID + '/comments', {
+                    const response = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + commitID + '/comments', {
                         status: 'in_progress',
                         output: {
                             title: 'Veracode Autofix suggestions',
