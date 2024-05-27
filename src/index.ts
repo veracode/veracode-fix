@@ -31,6 +31,7 @@ options['language'] = getInputOrEnv('language',false);
 options['prComment'] = getInputOrEnv('prComment',false);
 options['createPR'] = getInputOrEnv('createPR',false);
 options['files'] = getInputOrEnv('files',false);
+options['codeSuggestion'] = getInputOrEnv('codeSuggestion',false);
 options['token'] = getInputOrEnv('token',false);
 
 

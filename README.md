@@ -41,17 +41,27 @@
     * Create a PR with the fixes to the source branch (only works with `fixType=batch`)
   * files
     * Filter on `all` or on `changed` files only per commit or PR.
+  * codeSuggestion
+    * (`true`|`false`) This will create a code suggestion for every fix that is created. It will give you the posibility to commit the code suggestion back to the source branch. This is only available if the action runs on a PR and will not work in a combination with `prComment=true`
   
 
 ## Documentation
 - If `prComment` is set to `true` and 'fixType' is set to `single` the action will create a comment on the PR with the fixes for every flaw that is fixable. That could lead to a lot of comments on the PR. We reccomend to run it with the batch option.
-IMAGE prComment_singleFix
+![](/images/changedFileAnnotation.png)
+  
 - If `prComment` is set to `true` and 'fixType' is set to `batch` the action will create a comment on the PR with a single fixe per file, for every flaw that is fixable. 
-IMAGE prComment_batchFix
+![](/images/prComment_batchFix.png)
+  
+- If `fixType`ist set to `single` and the action runs on a PR, it will create annotations for either changed files or all files, depending on the `files` parameter. This cannot be disabled and should help PR reviewers to see what could be fixed with Veracode Fix. Please keep in mind that this could creat multiple annotations on the same line of code ofthe file which will lead to a situation where you need to carefully decide what has to be put into the file and what not. This is due to the fact that multiple flaws require the same line of code changed.
+![](/images/checkAnnotationsSingleSameLine.png)
+  
 - If `files` is set to `changed` and the action runs on a PR, it will only fix flaws in files that have been changed in the PR. Only works if the action runs on a PR.
 - If it is running on a PR it will create annotations for changed and unchagened files. This cannot be disabled and should help PR reviewers to see what could be fixed with Veracode Fix.
-IMAGE changedFileAnnotation
-IMAGE unchangedFileAnnotation
+![](/images/changedFileAnnotation.png)
+![](/images/unchangedFileAnnotation.png)
+
+ 
+- If `codeSuggestion` is set to `true` and the action runs on a PR, it will create a code suggestion for every fix that is created. It will give you the posibility to commit the code suggestion back to the source branch. This is only available if the action runs on a PR and will not work in a combination with `prComment=true` and `file=changed`. It will automatically overwrite the `prComment=true` option. The reason for this is that otherwise you would see the code suggestions twice, which doesn't make sense. In addition it will add a little button at the bottom of the code that will let you commit the code suggestion back to the source branch. It also can only work with `files=changed` as tbere is no possibility to comment on unchanged files of the PR.
 
 ## Examples  
 All examples follow the same strucutre, the will all `need` the `build` to be finished before the they will start running. Veraocde's static analysis is mainly binary static analysis, therefore a compile/build action is required before a pipeline scan can be started. Please read about the packaging and compilation requirements here: https://docs.veracode.com/r/compilation_packaging.  

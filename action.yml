@@ -53,6 +53,10 @@ inputs:
     description: 'Files to fix'
     required: true
     default: 'all'
+  codeSuggestion:
+    description: 'Code suggestion'
+    required: false
+    default: 'false'
     
 
 runs:

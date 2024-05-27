@@ -47106,7 +47106,7 @@ function createFlawInfo(flawInfo, options) {
         const filename = resultArray.files.source_file.file;
         let filepath = yield (0, rewritePath_1.rewritePath)(options, filename);
         /*
-        
+        this moved into a dedicated file
             //rewrite path
             async function replacePath (rewrite:any, path:any){
                 const replaceValues = rewrite.split(":")
@@ -47198,6 +47198,139 @@ function createFlawInfo(flawInfo, options) {
     });
 }
 exports.createFlawInfo = createFlawInfo;
+
+
+/***/ }),
+
+/***/ 6708:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createCodeSuggestion = void 0;
+const rest_1 = __nccwpck_require__(1563);
+const github = __importStar(__nccwpck_require__(3134));
+const core = __importStar(__nccwpck_require__(5127));
+function createCodeSuggestion(options, fixResults, flawInfo) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b;
+        const context = github.context;
+        const repository = process.env.GITHUB_REPOSITORY;
+        const token = core.getInput("token");
+        const repo = repository.split("/");
+        const commentID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+        const commitID = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('create_code_suggestions.ts - createCodeSuggestion');
+            console.log('results:');
+            console.log(fixResults);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        const octokit = new rest_1.Octokit({
+            auth: token
+        });
+        try {
+            console.log('Check run update started');
+            console.log('Start line: ' + flawInfo.line);
+            const end_line = flawInfo.line + 20;
+            console.log('End line: ' + end_line);
+            //Let's check if there are multiple hunks on the first fix result
+            let hunks = 0;
+            if (fixResults[0].indexOf('@@') > 0) {
+                //first remove the first part of the result that include the file names and path, we don't need that for the annotation
+                const firstFixResult = fixResults[0];
+                const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
+                console.log('hunks:');
+                console.log(hunks);
+                const hunksCount = hunks.length;
+                console.log('Number of hunks: ' + hunksCount);
+                for (let i = 0; i < hunksCount; i++) {
+                    const hunkLines = hunks[i].split('\n');
+                    const hunkHeader = hunkLines[0];
+                    const hunkHeaderMatch = hunkHeader.match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
+                    if (!hunkHeaderMatch) {
+                        console.log('No hunk header found');
+                        continue;
+                    }
+                    const startLineOriginal = parseInt(hunkHeaderMatch[1]);
+                    const startLineNew = parseInt(hunkHeaderMatch[2]);
+                    const lineCountNew = parseInt(hunkHeaderMatch[3]);
+                    const endLineNew = startLineNew + lineCountNew - 1;
+                    console.log('Start line original: ' + startLineOriginal);
+                    console.log('Start line new: ' + startLineNew);
+                    console.log('End line new: ' + endLineNew);
+                    const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
+                    //await octokit.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/comments', {
+                    const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + commitID + '/comments', {
+                        status: 'in_progress',
+                        output: {
+                            title: 'Veracode Autofix suggestions',
+                            summary: 'Will create Veracode Autofix suggestions as PR comments',
+                            text: 'Will create Veracode Autofix suggestions as PR comments',
+                            annotations: [
+                                {
+                                    path: flawInfo.sourceFile,
+                                    start_line: startLineOriginal,
+                                    end_line: endLineNew,
+                                    annotation_level: 'warning',
+                                    title: 'Securityy findings',
+                                    message: cleanedHunk,
+                                }
+                            ]
+                        },
+                        headers: {
+                            'X-GitHub-Api-Version': '2022-11-28'
+                        }
+                    });
+                    console.log('PR review comment created');
+                    console.log(response);
+                }
+                ;
+            }
+        }
+        catch (error) {
+            console.log(error.request);
+            console.log(error.response);
+            core.info(error);
+        }
+    });
+}
+exports.createCodeSuggestion = createCodeSuggestion;
 
 
 /***/ }),
@@ -47468,6 +47601,7 @@ options['language'] = getInputOrEnv('language', false);
 options['prComment'] = getInputOrEnv('prComment', false);
 options['createPR'] = getInputOrEnv('createPR', false);
 options['files'] = getInputOrEnv('files', false);
+options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
 if (options.fixType == 'batch') {
     console.log('Running Batch Fix');
@@ -48152,6 +48286,7 @@ const select_platform_1 = __nccwpck_require__(4709);
 const checkRun_1 = __nccwpck_require__(7366);
 const requests_2 = __nccwpck_require__(3222);
 const rewritePath_1 = __nccwpck_require__(6133);
+const create_code_suggestion_1 = __nccwpck_require__(6708);
 function runSingle(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -48163,7 +48298,7 @@ function runSingle(options, credentials) {
         const filesPartOfPR = yield (0, requests_2.getFilesPartOfPR)(options);
         //if prComment is true and we run on a PR we need to create a check run
         let checkRunID = '';
-        if (options.prComment == 'true') {
+        if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
             console.log('PR commenting is enabled');
             if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
                 console.log('This is a PR - create a check run');
@@ -48227,7 +48362,7 @@ function runSingle(options, credentials) {
                                 const tar = yield createTar(initialFlawInfo, options);
                                 const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                                 const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                                if (options.prComment == 'true') {
+                                if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
                                     console.log('PR commenting is enabled');
                                     const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
                                     //need flawinfo again
@@ -48235,6 +48370,10 @@ function runSingle(options, credentials) {
                                     console.log('Check Run ID is: ' + options.checkRunID);
                                     console.log('Update Check Run with PR Comment');
                                     const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                }
+                                else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
+                                    console.log('Code Suggestions are enabled');
+                                    const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(checkFixResults, options, initialFlawInfo);
                                 }
                             }
                             else {
@@ -48254,7 +48393,7 @@ function runSingle(options, credentials) {
                         const tar = yield createTar(initialFlawInfo, options);
                         const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                         const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                        if (options.prComment == 'true') {
+                        if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
                             console.log('PR commenting is enabled');
                             const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
                             //need flawinfo again
@@ -48262,6 +48401,10 @@ function runSingle(options, credentials) {
                             console.log('Check Run ID is: ' + options.checkRunID);
                             console.log('Update Check Run with PR Comment');
                             const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                        }
+                        else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
+                            console.log('Code Suggestions are enabled');
+                            const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(checkFixResults, options, initialFlawInfo);
                         }
                     }
                     else {
@@ -48272,7 +48415,7 @@ function runSingle(options, credentials) {
             i++;
         }
         //if prComment is true and we run on a PR we need to close the check run
-        if (options.prComment == 'true') {
+        if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
             console.log('PR commenting is enabled');
             if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
                 console.log('This is a PR - check run should be closed');

@@ -8,6 +8,7 @@ import { selectPlatfrom } from './select_platform';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdate } from './checkRun';
 import { getFilesPartOfPR } from './requests';
 import { rewritePath } from './rewritePath'
+import { createCodeSuggestion } from './create_code_suggestion';
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -22,7 +23,7 @@ export async function runSingle(options: any, credentials: any) {
 
     //if prComment is true and we run on a PR we need to create a check run
     let checkRunID:any = ''
-    if (options.prComment == 'true'){
+    if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
         console.log('PR commenting is enabled')
         if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
             console.log('This is a PR - create a check run')
@@ -32,6 +33,8 @@ export async function runSingle(options: any, credentials: any) {
             console.log('Check Run ID is: '+checkRunID)
         }
     }
+
+
 
     //loop through json file
     let i = 0
@@ -97,7 +100,7 @@ export async function runSingle(options: any, credentials: any) {
                             const uploadTar = await upload(choosePlatform, tar, options)
                             const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
 
-                            if (options.prComment == 'true'){
+                            if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
                                 console.log('PR commenting is enabled')
                                 const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
                                 //need flawinfo again
@@ -106,6 +109,10 @@ export async function runSingle(options: any, credentials: any) {
                                 console.log('Update Check Run with PR Comment')
                                 const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
                             }
+                            else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
+                                console.log('Code Suggestions are enabled')
+                                const codeSuggestion = await createCodeSuggestion(checkFixResults, options, initialFlawInfo)
+                            }   
                         }
                         else {
                             console.log('CWE '+initialFlawInfo.cweID+' is not supported '+options.language)
@@ -126,7 +133,7 @@ export async function runSingle(options: any, credentials: any) {
                     const uploadTar = await upload(choosePlatform, tar, options)
                     const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
 
-                    if (options.prComment == 'true'){
+                    if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
                         console.log('PR commenting is enabled')
                         const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
                         //need flawinfo again
@@ -134,6 +141,10 @@ export async function runSingle(options: any, credentials: any) {
                         console.log('Check Run ID is: '+options.checkRunID)
                         console.log('Update Check Run with PR Comment')
                         const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                    }
+                    else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
+                        console.log('Code Suggestions are enabled')
+                        const codeSuggestion = await createCodeSuggestion(checkFixResults, options, initialFlawInfo)
                     }
                 }
                 else {
@@ -145,7 +156,7 @@ export async function runSingle(options: any, credentials: any) {
     }
 
     //if prComment is true and we run on a PR we need to close the check run
-    if (options.prComment == 'true'){
+    if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
         console.log('PR commenting is enabled')
         if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
             console.log('This is a PR - check run should be closed')

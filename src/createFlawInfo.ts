@@ -102,7 +102,7 @@ export async function createFlawInfo(flawInfo:any,options:any){
 
 
 /*    
-
+this moved into a dedicated file
     //rewrite path
     async function replacePath (rewrite:any, path:any){
         const replaceValues = rewrite.split(":")
