@@ -55,9 +55,12 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
                 const endLineNew = startLineNew + lineCountNew - 1;
                 const position = startLineNew + lineCountNew;
 
+                console.log('Hunk header: '+hunkHeader)
                 console.log('Start line original: '+startLineOriginal)
                 console.log('Start line new: '+startLineNew)
+                console.log('Line count new: '+lineCountNew)
                 console.log('End line new: '+endLineNew)
+                console.log('Position: '+position)
 
                 const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
                 const cleanedHunkLines = cleanedHunk.split('\n').map((line: string) => line.replace(/^-|\+/, ''));
