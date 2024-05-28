@@ -47311,8 +47311,8 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                         side: 'right',
                         start_side: 'left',
                         path: flawInfo.sourceFile,
-                        position: position,
-                        line: startLineNew,
+                        position: lineCountOriginal,
+                        line: position,
                         start_line: startLineOriginal,
                         headers: {
                             'X-GitHub-Api-Version': '2022-11-28'
