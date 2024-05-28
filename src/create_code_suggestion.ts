@@ -78,9 +78,9 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
                     side: 'right',
                     start_side: 'left',
                     path: flawInfo.sourceFile,
-                    //position: lineCountOriginal,
                     line: position,
                     start_line: startLineOriginal,
+                    position: lineCountOriginal,
                     headers: {
                     'X-GitHub-Api-Version': '2022-11-28'
                     }
