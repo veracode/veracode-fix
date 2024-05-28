@@ -47290,7 +47290,7 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                     const startLineNew = parseInt(hunkHeaderMatch[3]);
                     const lineCountNew = parseInt(hunkHeaderMatch[4]);
                     const endLineNew = startLineNew + lineCountNew - 1;
-                    const position = startLineNew + lineCountOriginal;
+                    const position = startLineOriginal + lineCountOriginal - 1;
                     console.log('Hunk header: ' + hunkHeader);
                     console.log('Start line original: ' + startLineOriginal);
                     console.log('Line count original: ' + lineCountOriginal);
@@ -47311,7 +47311,7 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                         side: 'right',
                         start_side: 'left',
                         path: flawInfo.sourceFile,
-                        position: lineCountOriginal,
+                        //position: lineCountOriginal,
                         line: position,
                         start_line: startLineOriginal,
                         headers: {
