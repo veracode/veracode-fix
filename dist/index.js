@@ -47280,24 +47280,27 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                 for (let i = 0; i < hunksCount; i++) {
                     const hunkLines = hunks[i].split('\n');
                     const hunkHeader = hunkLines[0];
-                    const hunkHeaderMatch = hunkHeader.match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/);
+                    const hunkHeaderMatch = hunkHeader.match(/@@ -(\d+),(\d)+ \+(\d+),(\d+) @@/);
                     if (!hunkHeaderMatch) {
                         console.log('No hunk header found');
                         continue;
                     }
                     const startLineOriginal = parseInt(hunkHeaderMatch[1]);
-                    const startLineNew = parseInt(hunkHeaderMatch[2]);
-                    const lineCountNew = parseInt(hunkHeaderMatch[3]);
+                    const lineCountOriginal = parseInt(hunkHeaderMatch[2]);
+                    const startLineNew = parseInt(hunkHeaderMatch[3]);
+                    const lineCountNew = parseInt(hunkHeaderMatch[4]);
                     const endLineNew = startLineNew + lineCountNew - 1;
-                    const position = startLineNew + lineCountNew;
+                    const position = startLineNew + lineCountOriginal;
                     console.log('Hunk header: ' + hunkHeader);
                     console.log('Start line original: ' + startLineOriginal);
+                    console.log('Line count original: ' + lineCountOriginal);
                     console.log('Start line new: ' + startLineNew);
                     console.log('Line count new: ' + lineCountNew);
                     console.log('End line new: ' + endLineNew);
                     console.log('Position: ' + position);
                     const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-                    const cleanedHunkLines = cleanedHunk.split('\n').map((line) => line.replace(/^-|\+/, ''));
+                    //const cleanedHunkLines = cleanedHunk.split('\n').map((line: string) => line.replace(/^-|\+/, ''));
+                    const cleanedHunkLines = cleanedHunk.split('\n').filter((line) => !line.startsWith('-')).map((line) => line.replace(/^\+/, ''));
                     let commentBody = '```suggestion\n';
                     commentBody = commentBody + cleanedHunkLines.join('\n');
                     commentBody = commentBody + '\n```';
