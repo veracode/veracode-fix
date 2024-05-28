@@ -47294,13 +47294,19 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                     console.log('Start line new: ' + startLineNew);
                     console.log('End line new: ' + endLineNew);
                     const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
+                    const cleanedHunkLines = cleanedHunk.split('\n').map((line) => line.replace(/^-|\+/, ''));
+                    let commentBody = '```suggestion\n';
+                    commentBody = commentBody + cleanedHunkLines.join('\n');
+                    commentBody = commentBody + '\n```';
                     const response = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + prId + '/comments', {
-                        body: cleanedHunk,
+                        body: commentBody,
                         commit_id: commitID,
                         subject_type: 'file',
-                        start_side: 'RIGHT',
+                        side: 'right',
+                        start_side: 'left',
                         path: flawInfo.sourceFile,
                         position: position,
+                        line: startLineNew,
                         start_line: startLineOriginal,
                         headers: {
                             'X-GitHub-Api-Version': '2022-11-28'
