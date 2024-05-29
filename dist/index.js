@@ -47287,17 +47287,18 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                     }
                     const startLineOriginal = parseInt(hunkHeaderMatch[1]);
                     const lineCountOriginal = parseInt(hunkHeaderMatch[2]);
+                    const endLineOriginal = startLineOriginal + lineCountOriginal;
                     const startLineNew = parseInt(hunkHeaderMatch[3]);
                     const lineCountNew = parseInt(hunkHeaderMatch[4]);
                     const endLineNew = startLineNew + lineCountNew - 1;
-                    const position = startLineOriginal + lineCountOriginal - 1;
                     console.log('Hunk header: ' + hunkHeader);
                     console.log('Start line original: ' + startLineOriginal);
                     console.log('Line count original: ' + lineCountOriginal);
+                    console.log('End Line Original: ' + endLineOriginal);
                     console.log('Start line new: ' + startLineNew);
                     console.log('Line count new: ' + lineCountNew);
                     console.log('End line new: ' + endLineNew);
-                    console.log('Position: ' + position);
+                    console.log('End Line Original: ' + endLineOriginal);
                     const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
                     //const cleanedHunkLines = cleanedHunk.split('\n').map((line: string) => line.replace(/^-|\+/, ''));
                     const cleanedHunkLines = cleanedHunk.split('\n').filter((line) => !line.startsWith('-')).map((line) => line.replace(/^\+/, ''));
@@ -47311,7 +47312,7 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                         side: 'RIGHT',
                         start_side: 'LEFT',
                         path: flawInfo.sourceFile,
-                        line: position,
+                        line: endLineOriginal,
                         start_line: startLineOriginal,
                         position: lineCountOriginal,
                         headers: {
