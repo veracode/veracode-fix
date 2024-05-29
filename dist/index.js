@@ -47307,9 +47307,9 @@ function createCodeSuggestion(options, fixResults, flawInfo) {
                     const response = yield octokit.request('POST /repos/' + repo[0] + '/' + repo[1] + '/pulls/' + prId + '/comments', {
                         body: commentBody,
                         commit_id: commitID,
-                        subject_type: 'file',
-                        side: 'right',
-                        start_side: 'left',
+                        subject_type: 'line',
+                        side: 'RIGHT',
+                        start_side: 'LEFT',
                         path: flawInfo.sourceFile,
                         line: position,
                         start_line: startLineOriginal,
