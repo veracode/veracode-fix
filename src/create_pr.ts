@@ -10,8 +10,8 @@ export async function createPR(fixResults:any, options:any){
     const repoName = repo[1]
     const context = github.context
     const prID:any = context.payload.pull_request?.number
-    const baseRef = context.payload.pull_request?.base.ref 
-    const baseSha = context.payload.pull_request?.base.sha
+    const baseRef = process.env.GITHUB_REF_NAME 
+    const baseSha:any = process.env.GITHUB_SHA
 
     console.log('Environment: ')
     console.log(environment)
