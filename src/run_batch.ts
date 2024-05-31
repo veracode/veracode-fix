@@ -17,10 +17,12 @@ export async function runBatch( options:any, credentials:any){
     const flawCount = jsonFindings.length
     console.log('Number of flaws: '+flawCount)
 
-    const filesPartOfPR = await getFilesPartOfPR(options)
-
-    console.log('Files part of PR:')
-    console.log(filesPartOfPR)
+    let filesPartOfPR:any = {}
+    if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
+        filesPartOfPR = await getFilesPartOfPR(options)
+        console.log('Files part of PR:')
+        console.log(filesPartOfPR)
+    }
 
     //loop through json file and create a new array
     let i = 0
@@ -68,11 +70,13 @@ export async function runBatch( options:any, credentials:any){
 
                 const filepath = await rewritePath(options, sourceFile)
 
-                for (let key in filesPartOfPR) {
-                    if (filesPartOfPR[key].filename === filepath) {
-                        include = 1
-                        //console.log('File is part of PR')
-                        break;
+                if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
+                    for (let key in filesPartOfPR) {
+                        if (filesPartOfPR[key].filename === filepath) {
+                            include = 1
+                            //console.log('File is part of PR')
+                            break;
+                        }
                     }
                 }
             }

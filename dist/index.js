@@ -48079,9 +48079,12 @@ function runBatch(options, credentials) {
         const jsonFindings = jsonData.findings;
         const flawCount = jsonFindings.length;
         console.log('Number of flaws: ' + flawCount);
-        const filesPartOfPR = yield (0, requests_1.getFilesPartOfPR)(options);
-        console.log('Files part of PR:');
-        console.log(filesPartOfPR);
+        let filesPartOfPR = {};
+        if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
+            filesPartOfPR = yield (0, requests_1.getFilesPartOfPR)(options);
+            console.log('Files part of PR:');
+            console.log(filesPartOfPR);
+        }
         //loop through json file and create a new array
         let i = 0;
         let flawArray = {};
@@ -48117,11 +48120,13 @@ function runBatch(options, credentials) {
                     console.log('Checking if file is part of PR');
                     //sourceFile needs rewrite before checking if its part of the PR
                     const filepath = yield (0, rewritePath_1.rewritePath)(options, sourceFile);
-                    for (let key in filesPartOfPR) {
-                        if (filesPartOfPR[key].filename === filepath) {
-                            include = 1;
-                            //console.log('File is part of PR')
-                            break;
+                    if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
+                        for (let key in filesPartOfPR) {
+                            if (filesPartOfPR[key].filename === filepath) {
+                                include = 1;
+                                //console.log('File is part of PR')
+                                break;
+                            }
                         }
                     }
                 }
