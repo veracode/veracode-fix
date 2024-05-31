@@ -79,6 +79,10 @@ export async function runBatch( options:any, credentials:any){
                         }
                     }
                 }
+                else {
+                    console.log('Not a PR, all files should be fixed')
+                    include = 1
+                }
             }
 
             if ( include == 0 && options.files == 'changed' ){

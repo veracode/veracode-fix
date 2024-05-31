@@ -48129,6 +48129,10 @@ function runBatch(options, credentials) {
                             }
                         }
                     }
+                    else {
+                        console.log('Not a PR, all files should be fixed');
+                        include = 1;
+                    }
                 }
                 if (include == 0 && options.files == 'changed') {
                     console.log('File is not part of PR, and only changed files should be fixed. -> Parameter "files" is set to "changed"');
