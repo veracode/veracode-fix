@@ -7,6 +7,7 @@ import { createPRCommentBatch } from './create_pr_comment'
 import { execSync }  from 'child_process';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdateBatch } from './checkRun';
 import { rewritePath } from './rewritePath'
+import { createPR } from './create_pr'
 
 export async function runBatch( options:any, credentials:any){
 
@@ -214,6 +215,9 @@ export async function runBatch( options:any, credentials:any){
                     const checkRunUpate = await updateCheckRunUpdateBatch(options, batchFixResults, flawArray)
                     const checkRun = await updateCheckRunClose(options, options.checkRunID)
                 }
+                else {
+                    console.log('... but wea are not running on a pull request')
+                }
             }
 
             if ( options.codeSuggestion == 'ture' ){
@@ -231,6 +235,10 @@ export async function runBatch( options:any, credentials:any){
                 }
             }
 
+            if ( options.createPR == 'true' ){
+                console.log('Creating PRs is enabled')
+                const createPr = await createPR(batchFixResults, options)
+            }
 
         }
     }

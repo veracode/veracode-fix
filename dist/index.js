@@ -47337,6 +47337,83 @@ exports.createCodeSuggestion = createCodeSuggestion;
 
 /***/ }),
 
+/***/ 5219:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createPR = void 0;
+const rest_1 = __nccwpck_require__(1563);
+const github = __importStar(__nccwpck_require__(3134));
+function createPR(fixResults, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b, _c;
+        const repository = process.env.GITHUB_REPOSITORY;
+        const repo = repository.split("/");
+        const owner = repo[0];
+        const repoName = repo[1];
+        const context = github.context;
+        const prID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+        const baseRef = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.base.ref;
+        const baseSha = (_c = context.payload.pull_request) === null || _c === void 0 ? void 0 : _c.base.sha;
+        console.log('Owner: ' + owner);
+        console.log('Repo: ' + repoName);
+        console.log('Context: ' + context);
+        console.log('PR ID: ' + prID);
+        console.log('Base Ref: ' + baseRef);
+        console.log('Base SHA: ' + baseSha);
+        const octokit = new rest_1.Octokit({
+            auth: options.token
+        });
+        //create a new branch from base branch
+        const branchName = 'Veracode-fix-' + baseSha;
+        console.log('Branch Name: ' + branchName);
+        const branch = yield octokit.git.createRef({
+            owner: owner,
+            repo: repoName,
+            ref: 'refs/heads/' + branchName,
+            sha: baseSha
+        });
+    });
+}
+exports.createPR = createPR;
+
+
+/***/ }),
+
 /***/ 3849:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -48071,6 +48148,7 @@ const create_pr_comment_1 = __nccwpck_require__(3849);
 const child_process_1 = __nccwpck_require__(2081);
 const checkRun_1 = __nccwpck_require__(7366);
 const rewritePath_1 = __nccwpck_require__(6133);
+const create_pr_1 = __nccwpck_require__(5219);
 function runBatch(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -48246,6 +48324,9 @@ function runBatch(options, credentials) {
                         const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdateBatch)(options, batchFixResults, flawArray);
                         const checkRun = yield (0, checkRun_1.updateCheckRunClose)(options, options.checkRunID);
                     }
+                    else {
+                        console.log('... but wea are not running on a pull request');
+                    }
                 }
                 if (options.codeSuggestion == 'ture') {
                     console.log('Code suggestion is enabled');
@@ -48257,6 +48338,10 @@ function runBatch(options, credentials) {
                         console.log('Creating suggestions for ' + keys[i]);
                         //const codeSuggestion = addCodeSuggestion(batchFixResults, keys[i], options)
                     }
+                }
+                if (options.createPR == 'true') {
+                    console.log('Creating PRs is enabled');
+                    const createPr = yield (0, create_pr_1.createPR)(batchFixResults, options);
                 }
             }
         }
