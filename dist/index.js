@@ -47381,6 +47381,7 @@ const github = __importStar(__nccwpck_require__(3134));
 function createPR(fixResults, options) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b, _c;
+        const environment = process.env;
         const repository = process.env.GITHUB_REPOSITORY;
         const repo = repository.split("/");
         const owner = repo[0];
@@ -47389,9 +47390,12 @@ function createPR(fixResults, options) {
         const prID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
         const baseRef = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.base.ref;
         const baseSha = (_c = context.payload.pull_request) === null || _c === void 0 ? void 0 : _c.base.sha;
+        console.log('Environment: ');
+        console.log(environment);
         console.log('Owner: ' + owner);
         console.log('Repo: ' + repoName);
-        console.log('Context: ' + context);
+        console.log('Context: ');
+        console.log(context);
         console.log('PR ID: ' + prID);
         console.log('Base Ref: ' + baseRef);
         console.log('Base SHA: ' + baseSha);

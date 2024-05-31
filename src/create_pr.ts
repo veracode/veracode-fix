@@ -3,6 +3,7 @@ import * as github from '@actions/github'
 
 export async function createPR(fixResults:any, options:any){
 
+    const environment = process.env
     const repository:any = process.env.GITHUB_REPOSITORY
     const repo = repository.split("/");
     const owner = repo[0]
@@ -12,9 +13,12 @@ export async function createPR(fixResults:any, options:any){
     const baseRef = context.payload.pull_request?.base.ref 
     const baseSha = context.payload.pull_request?.base.sha
 
+    console.log('Environment: ')
+    console.log(environment)
     console.log('Owner: '+owner)
     console.log('Repo: '+repoName)
-    console.log('Context: '+context)
+    console.log('Context: ')
+    console.log(context)
     console.log('PR ID: '+prID)
     console.log('Base Ref: '+baseRef)
     console.log('Base SHA: '+baseSha)
