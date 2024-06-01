@@ -52944,17 +52944,29 @@ function createPR(fixResults, options) {
             auth: options.token
         });
         //create a new branch from base branch
-        const branchName = 'Veracode-fix-bot' + baseSha;
+        const timestamp = new Date().getTime();
+        const branchName = 'Veracode-fix-bot' + baseSha + '-' + timestamp;
         console.log('Branch Name: ' + branchName);
-        const branch = yield octokit.git.createRef({
+        const createBranch = yield octokit.request('POST /repos/' + (owner) + '/' + (repo) + '/git/refs', {
             owner: owner,
-            repo: repoName,
+            repo: repo,
             ref: 'refs/heads/' + branchName,
-            sha: baseSha
+            sha: baseSha,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
         });
-        const branchSha = branch.data.object.sha;
+        /*
+            const branch = await octokit.git.createRef({
+                owner: owner,
+                repo: repoName,
+                ref: 'refs/heads/'+branchName,
+                sha: baseSha
+            })
+        */
+        const branchSha = createBranch.data.object.sha;
         console.log('Branch created: ');
-        console.log(branch);
+        console.log(createBranch);
         console.log('Branch SHA: ');
         console.log(branchSha);
         console.log('Fix Results: ');
