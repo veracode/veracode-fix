@@ -112,8 +112,18 @@ export async function createPR(fixResults:any, options:any){
 
         console.log('Update file response: ')
         console.log(updateFile)
-
-
     }
+
+    //once everything is pushed to the new branch, create a PR from the new branch to the base branch
+    const createPR = await octokit.request('POST /repos/'+(owner)+'/'+(repoName)+'/pulls', {
+        owner: owner,
+        repo: repoName,
+        title: 'Veracode Batch Fix',
+        head: branchName,
+        base: baseRef,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+    })
 
 }
