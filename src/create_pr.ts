@@ -12,7 +12,13 @@ export async function createPR(fixResults:any, options:any){
     const repoName = repo[1]
     const context = github.context
     const prID:any = context.payload.pull_request?.number
-    const baseRef = process.env.GITHUB_REF_NAME 
+    let baseRef:any = ''
+    if ( process.env.GITHUB_EVENT_NAME == 'pull_request' ){
+        baseRef = process.env.GITHUB_HEAD_REF
+    }
+    else {
+        baseRef = process.env.GITHUB_REF_NAME 
+    }
     const baseSha:any = process.env.GITHUB_SHA
 
     /*

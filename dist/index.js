@@ -52927,7 +52927,13 @@ function createPR(fixResults, options) {
         const repoName = repo[1];
         const context = github.context;
         const prID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
-        const baseRef = process.env.GITHUB_REF_NAME;
+        let baseRef = '';
+        if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
+            baseRef = process.env.GITHUB_HEAD_REF;
+        }
+        else {
+            baseRef = process.env.GITHUB_REF_NAME;
+        }
         const baseSha = process.env.GITHUB_SHA;
         /*
         console.log('Environment: ')
