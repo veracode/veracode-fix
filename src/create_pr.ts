@@ -43,8 +43,12 @@ export async function createPR(fixResults:any, options:any){
         sha: baseSha
     })
 
+    const branchSha = branch.data.object.sha
+
     console.log('Branch created: ')
     console.log(branch)
+    console.log('Branch SHA: ')
+    console.log(branchSha)
 
     console.log('Fix Results: ')
     console.log(fixResults)
@@ -58,11 +62,27 @@ export async function createPR(fixResults:any, options:any){
         console.log('Patching file: '+keys[i])
 
         const originalContent = await fs.readFile(keys[i], 'utf-8');
-        const patch = fixResults.results[keys[i]].patch
+        const patch = fixResults.results[keys[i]].patch[0]
 
         console.log('Patch: ')
         console.log(patch)
 
+        const patches = Diff.parsePatch(patch);
+
+        let updatedContent = originalContent;
+        patches.forEach(async patch => {
+            updatedContent = Diff.applyPatch(updatedContent, patch) as string;
+        });
+
+        await octokit.repos.createOrUpdateFileContents({
+            owner,
+            repo,
+            path: keys[i],
+            message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
+            content: Buffer.from(updatedContent).toString('base64'),
+            sha: branchSha,
+            branchName
+        });
 
 
     }
