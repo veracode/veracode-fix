@@ -52983,6 +52983,15 @@ function createPR(fixResults, options) {
             patches.forEach((patch) => __awaiter(this, void 0, void 0, function* () {
                 updatedContent = Diff.applyPatch(updatedContent, patch);
             }));
+            const getFileSha = yield octokit.request('GET /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
+                owner: owner,
+                repo: repoName,
+                path: keys[i],
+                headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            });
+            const fileSha = getFileSha.data.sha;
             const updateFile = yield octokit.request('PUT /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
                 owner: owner,
                 repo: repoName,
@@ -52993,7 +53002,7 @@ function createPR(fixResults, options) {
                     email: 'octocat@github.com'
                 },
                 content: Buffer.from(updatedContent).toString('base64'),
-                sha: branchSha,
+                sha: fileSha,
                 branch: branchName,
                 headers: {
                     'X-GitHub-Api-Version': '2022-11-28'

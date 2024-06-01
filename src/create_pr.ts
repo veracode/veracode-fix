@@ -85,6 +85,18 @@ export async function createPR(fixResults:any, options:any){
             updatedContent = Diff.applyPatch(updatedContent, patch) as string;
         });
 
+
+        const getFileSha = await octokit.request('GET /repos/'+(owner)+'/'+(repoName)+'/contents/'+keys[i], {
+            owner: owner,
+            repo: repoName,
+            path: keys[i],
+            headers: {
+              'X-GitHub-Api-Version': '2022-11-28'
+            }
+        })
+
+        const fileSha = getFileSha.data.sha
+
         const updateFile = await octokit.request('PUT /repos/'+(owner)+'/'+(repoName)+'/contents/'+keys[i], {
             owner: owner,
             repo: repoName,
@@ -95,7 +107,7 @@ export async function createPR(fixResults:any, options:any){
               email: 'octocat@github.com'
             },
             content: Buffer.from(updatedContent).toString('base64'),
-            sha: branchSha,
+            sha: fileSha,
             branch: branchName,
             headers: {
               'X-GitHub-Api-Version': '2022-11-28'
