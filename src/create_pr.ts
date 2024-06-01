@@ -34,7 +34,7 @@ export async function createPR(fixResults:any, options:any){
     })
 
     //create a new branch from base branch
-    const branchName = 'Veracode-fix-'+baseSha
+    const branchName = 'Veracode-fix-bot'+baseSha
     console.log('Branch Name: '+branchName)
     const branch = await octokit.git.createRef({
         owner: owner,
@@ -49,5 +49,22 @@ export async function createPR(fixResults:any, options:any){
     console.log('Fix Results: ')
     console.log(fixResults)
     
+    const batchFixResultsCount = Object.keys(fixResults.results).length;
+
+    console.log('Number of files with fixes: '+batchFixResultsCount)
+    
+    for (let i = 0; i < batchFixResultsCount; i++) {
+        let keys = Object.keys(fixResults.results);
+        console.log('Patching file: '+keys[i])
+
+        const originalContent = await fs.readFile(keys[i], 'utf-8');
+        const patch = fixResults.results[keys[i]].patch
+
+        console.log('Patch: ')
+        console.log(patch)
+
+
+
+    }
 
 }
