@@ -47390,15 +47390,17 @@ function createPR(fixResults, options) {
         const prID = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
         const baseRef = process.env.GITHUB_REF_NAME;
         const baseSha = process.env.GITHUB_SHA;
-        console.log('Environment: ');
-        console.log(environment);
-        console.log('Owner: ' + owner);
-        console.log('Repo: ' + repoName);
-        console.log('Context: ');
-        console.log(context);
-        console.log('PR ID: ' + prID);
-        console.log('Base Ref: ' + baseRef);
-        console.log('Base SHA: ' + baseSha);
+        /*
+        console.log('Environment: ')
+        console.log(environment)
+        console.log('Owner: '+owner)
+        console.log('Repo: '+repoName)
+        console.log('Context: ')
+        console.log(context)
+        console.log('PR ID: '+prID)
+        console.log('Base Ref: '+baseRef)
+        console.log('Base SHA: '+baseSha)
+        */
         const octokit = new rest_1.Octokit({
             auth: options.token
         });
@@ -47411,6 +47413,10 @@ function createPR(fixResults, options) {
             ref: 'refs/heads/' + branchName,
             sha: baseSha
         });
+        console.log('Branch created: ');
+        console.log(branch);
+        console.log('Fix Results: ');
+        console.log(fixResults);
     });
 }
 exports.createPR = createPR;

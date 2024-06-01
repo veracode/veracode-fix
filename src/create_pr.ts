@@ -1,5 +1,7 @@
 import { Octokit } from "@octokit/rest";
 import * as github from '@actions/github'
+import * as Diff from 'diff';
+import * as fs from 'fs-extra';
 
 export async function createPR(fixResults:any, options:any){
 
@@ -13,6 +15,7 @@ export async function createPR(fixResults:any, options:any){
     const baseRef = process.env.GITHUB_REF_NAME 
     const baseSha:any = process.env.GITHUB_SHA
 
+    /*
     console.log('Environment: ')
     console.log(environment)
     console.log('Owner: '+owner)
@@ -22,6 +25,7 @@ export async function createPR(fixResults:any, options:any){
     console.log('PR ID: '+prID)
     console.log('Base Ref: '+baseRef)
     console.log('Base SHA: '+baseSha)
+    */
 
 
 
@@ -38,6 +42,12 @@ export async function createPR(fixResults:any, options:any){
         ref: 'refs/heads/'+branchName,
         sha: baseSha
     })
+
+    console.log('Branch created: ')
+    console.log(branch)
+
+    console.log('Fix Results: ')
+    console.log(fixResults)
     
 
 }
