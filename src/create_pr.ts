@@ -110,8 +110,10 @@ export async function createPR(fixResults:any, options:any){
             }
         })
 
+        /*
         console.log('Update file response: ')
         console.log(updateFile)
+        */
     }
 
     //once everything is pushed to the new branch, create a PR from the new branch to the base branch
@@ -126,7 +128,8 @@ export async function createPR(fixResults:any, options:any){
         }
     })
 
+    /*
     console.log('Create PR response: ')
     console.log(createPR)
-
+    */
 }

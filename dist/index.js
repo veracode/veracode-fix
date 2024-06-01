@@ -53005,8 +53005,10 @@ function createPR(fixResults, options) {
                     'X-GitHub-Api-Version': '2022-11-28'
                 }
             });
-            console.log('Update file response: ');
-            console.log(updateFile);
+            /*
+            console.log('Update file response: ')
+            console.log(updateFile)
+            */
         }
         //once everything is pushed to the new branch, create a PR from the new branch to the base branch
         const createPR = yield octokit.request('POST /repos/' + (owner) + '/' + (repoName) + '/pulls', {
@@ -53019,8 +53021,10 @@ function createPR(fixResults, options) {
                 'X-GitHub-Api-Version': '2022-11-28'
             }
         });
-        console.log('Create PR response: ');
-        console.log(createPR);
+        /*
+        console.log('Create PR response: ')
+        console.log(createPR)
+        */
     });
 }
 exports.createPR = createPR;
