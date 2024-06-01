@@ -27,6 +27,9 @@ export async function createPR(fixResults:any, options:any){
     console.log('Base SHA: '+baseSha)
     */
 
+    console.log('Environment: ')
+    console.log(environment)
+    console.log('Base Ref: '+baseRef)
 
 
     const octokit = new Octokit({
@@ -123,6 +126,7 @@ export async function createPR(fixResults:any, options:any){
         title: 'Veracode Batch Fix',
         head: branchName,
         base: baseRef,
+        body: 'Veracode Batch Fix - MORE CONTENT TO BE ADDED',
         headers: {
           'X-GitHub-Api-Version': '2022-11-28'
         }

@@ -52940,6 +52940,9 @@ function createPR(fixResults, options) {
         console.log('Base Ref: '+baseRef)
         console.log('Base SHA: '+baseSha)
         */
+        console.log('Environment: ');
+        console.log(environment);
+        console.log('Base Ref: ' + baseRef);
         const octokit = new rest_1.Octokit({
             auth: options.token
         });
@@ -53017,6 +53020,7 @@ function createPR(fixResults, options) {
             title: 'Veracode Batch Fix',
             head: branchName,
             base: baseRef,
+            body: 'Veracode Batch Fix - MORE CONTENT TO BE ADDED',
             headers: {
                 'X-GitHub-Api-Version': '2022-11-28'
             }
