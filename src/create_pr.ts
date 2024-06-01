@@ -64,9 +64,6 @@ export async function createPR(fixResults:any, options:any){
         const originalContent = await fs.readFile(keys[i], 'utf-8');
         const patch = fixResults.results[keys[i]].patch[0]
 
-        console.log('Patch: ')
-        console.log(patch)
-
         const patches = Diff.parsePatch(patch);
 
         let updatedContent = originalContent;
@@ -74,6 +71,27 @@ export async function createPR(fixResults:any, options:any){
             updatedContent = Diff.applyPatch(updatedContent, patch) as string;
         });
 
+        const updateFile = await octokit.request('PUT /repos/'+(owner)+'/'+(repo)+'/contents/'+keys[i], {
+            owner: owner,
+            repo: repo,
+            path: keys[i],
+            message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
+            committer: {
+              name: 'Veracode Fix Bot',
+              email: 'octocat@github.com'
+            },
+            content: Buffer.from(updatedContent).toString('base64'),
+            sha: branchSha,
+            branch: branchName,
+            headers: {
+              'X-GitHub-Api-Version': '2022-11-28'
+            }
+        })
+
+        console.log('Update file response: ')
+        console.log(updateFile)
+
+          /*
         await octokit.repos.createOrUpdateFileContents({
             owner,
             repo,
@@ -83,6 +101,7 @@ export async function createPR(fixResults:any, options:any){
             sha: branchSha,
             branchName
         });
+        */
 
 
     }

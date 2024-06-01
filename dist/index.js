@@ -52966,22 +52966,40 @@ function createPR(fixResults, options) {
             console.log('Patching file: ' + keys[i]);
             const originalContent = yield fs.readFile(keys[i], 'utf-8');
             const patch = fixResults.results[keys[i]].patch[0];
-            console.log('Patch: ');
-            console.log(patch);
             const patches = Diff.parsePatch(patch);
             let updatedContent = originalContent;
             patches.forEach((patch) => __awaiter(this, void 0, void 0, function* () {
                 updatedContent = Diff.applyPatch(updatedContent, patch);
             }));
-            yield octokit.repos.createOrUpdateFileContents({
-                owner,
-                repo,
+            const updateFile = yield octokit.request('PUT /repos/' + (owner) + '/' + (repo) + '/contents/' + keys[i], {
+                owner: owner,
+                repo: repo,
                 path: keys[i],
                 message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
+                committer: {
+                    name: 'Veracode Fix Bot',
+                    email: 'octocat@github.com'
+                },
                 content: Buffer.from(updatedContent).toString('base64'),
                 sha: branchSha,
-                branchName
+                branch: branchName,
+                headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
             });
+            console.log('Update file response: ');
+            console.log(updateFile);
+            /*
+          await octokit.repos.createOrUpdateFileContents({
+              owner,
+              repo,
+              path: keys[i],
+              message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
+              content: Buffer.from(updatedContent).toString('base64'),
+              sha: branchSha,
+              branchName
+          });
+          */
         }
     });
 }
