@@ -52947,9 +52947,9 @@ function createPR(fixResults, options) {
         const timestamp = new Date().getTime();
         const branchName = 'Veracode-fix-bot' + baseSha + '-' + timestamp;
         console.log('Branch Name: ' + branchName);
-        const createBranch = yield octokit.request('POST /repos/' + (owner) + '/' + (repo) + '/git/refs', {
+        const createBranch = yield octokit.request('POST /repos/' + (owner) + '/' + (repoName) + '/git/refs', {
             owner: owner,
-            repo: repo,
+            repo: repoName,
             ref: 'refs/heads/' + branchName,
             sha: baseSha,
             headers: {
@@ -52983,9 +52983,9 @@ function createPR(fixResults, options) {
             patches.forEach((patch) => __awaiter(this, void 0, void 0, function* () {
                 updatedContent = Diff.applyPatch(updatedContent, patch);
             }));
-            const updateFile = yield octokit.request('PUT /repos/' + (owner) + '/' + (repo) + '/contents/' + keys[i], {
+            const updateFile = yield octokit.request('PUT /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
                 owner: owner,
-                repo: repo,
+                repo: repoName,
                 path: keys[i],
                 message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
                 committer: {

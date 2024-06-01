@@ -38,9 +38,9 @@ export async function createPR(fixResults:any, options:any){
     const branchName = 'Veracode-fix-bot'+baseSha+'-'+timestamp
     console.log('Branch Name: '+branchName)
 
-    const createBranch = await octokit.request('POST /repos/'+(owner)+'/'+(repo)+'/git/refs', {
+    const createBranch = await octokit.request('POST /repos/'+(owner)+'/'+(repoName)+'/git/refs', {
         owner: owner,
-        repo: repo,
+        repo: repoName,
         ref: 'refs/heads/'+branchName,
         sha: baseSha,
         headers: {
@@ -85,9 +85,9 @@ export async function createPR(fixResults:any, options:any){
             updatedContent = Diff.applyPatch(updatedContent, patch) as string;
         });
 
-        const updateFile = await octokit.request('PUT /repos/'+(owner)+'/'+(repo)+'/contents/'+keys[i], {
+        const updateFile = await octokit.request('PUT /repos/'+(owner)+'/'+(repoName)+'/contents/'+keys[i], {
             owner: owner,
-            repo: repo,
+            repo: repoName,
             path: keys[i],
             message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
             committer: {
