@@ -48,17 +48,10 @@ export async function createPR(fixResults:any, options:any){
         }
     })
 
-/*
-    const branch = await octokit.git.createRef({
-        owner: owner,
-        repo: repoName,
-        ref: 'refs/heads/'+branchName,
-        sha: baseSha
-    })
-*/
 
     const branchSha = createBranch.data.object.sha
 
+    /*
     console.log('Branch created: ')
     console.log(createBranch)
     console.log('Branch SHA: ')
@@ -66,7 +59,8 @@ export async function createPR(fixResults:any, options:any){
 
     console.log('Fix Results: ')
     console.log(fixResults)
-    
+    */
+
     const batchFixResultsCount = Object.keys(fixResults.results).length;
 
     console.log('Number of files with fixes: '+batchFixResultsCount)
@@ -90,12 +84,14 @@ export async function createPR(fixResults:any, options:any){
             owner: owner,
             repo: repoName,
             path: keys[i],
+            ref: 'refs/heads/'+branchName,
             headers: {
               'X-GitHub-Api-Version': '2022-11-28'
             }
         })
 
         const fileSha = getFileSha.data.sha
+        console.log('File SHA: '+fileSha)
 
         const updateFile = await octokit.request('PUT /repos/'+(owner)+'/'+(repoName)+'/contents/'+keys[i], {
             owner: owner,
@@ -116,18 +112,6 @@ export async function createPR(fixResults:any, options:any){
 
         console.log('Update file response: ')
         console.log(updateFile)
-
-          /*
-        await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: keys[i],
-            message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
-            content: Buffer.from(updatedContent).toString('base64'),
-            sha: branchSha,
-            branchName
-        });
-        */
 
 
     }
