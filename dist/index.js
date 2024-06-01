@@ -53019,6 +53019,8 @@ function createPR(fixResults, options) {
                 'X-GitHub-Api-Version': '2022-11-28'
             }
         });
+        console.log('Create PR response: ');
+        console.log(createPR);
     });
 }
 exports.createPR = createPR;
