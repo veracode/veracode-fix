@@ -126,4 +126,7 @@ export async function createPR(fixResults:any, options:any){
         }
     })
 
+    console.log('Create PR response: ')
+    console.log(createPR)
+
 }
