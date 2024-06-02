@@ -68,7 +68,7 @@ Veracode Fix supports the following languagess and CWE's right now, please revie
 | | 601 |  URL Redirection to Untrusted Site ('Open Redirect')
 | | 757 |  Selection of Less-Secure Algorithm During Negotiation ('Algorithm Downgrade') |
 | --- | --- | --- |
-| Kotline | 80 |  Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+| Kotlin | 80 |  Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
 | | 89 |  Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
 | | 113 |  Improper Neutralization of CRLF Sequences in HTTP Headers
 | | 117 |  Improper Output Neutralization for Logs
