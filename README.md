@@ -15,18 +15,18 @@ Veracode Fix supports the following languagess and CWE's right now, please revie
 
 | Language | CWEs |
 | --- | --- |
-| C# | 73: External Control of File Name or Path
-80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-117: Improper Output Neutralization for Logs
-201: Information Exposure Through Sent Data
-209: Information Exposure Through an Error Message
-316: Cleartext Storage of Sensitive Information in Memory
-327: Use of a Broken or Risky Cryptographic Algorithm
-331: Insufficient Entropy
-352: Cross-Site Request Forgery (CSRF)
-404: Improper Resource Shutdown or Release
-601: URL Redirection to Untrusted Site ('Open Redirect')
+| C# | 73: External Control of File Name or Path\n
+80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)\n
+89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)\n
+117: Improper Output Neutralization for Logs\n
+201: Information Exposure Through Sent Data\n
+209: Information Exposure Through an Error Message\n
+316: Cleartext Storage of Sensitive Information in Memory\n
+327: Use of a Broken or Risky Cryptographic Algorithm\n
+331: Insufficient Entropy\n
+352: Cross-Site Request Forgery (CSRF)\n
+404: Improper Resource Shutdown or Release\n
+601: URL Redirection to Untrusted Site ('Open Redirect')\n
 611: Improper Restriction of XML External Entity Reference |
 | Java | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
