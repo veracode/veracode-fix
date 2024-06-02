@@ -52999,8 +52999,7 @@ function createPR(fixResults, options, flawArray) {
         */
         //start body of PR comment
         let prCommentBody;
-        let keys = Object.keys(fixResults.results);
-        prCommentBody = prCommentBody + '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n';
+        prCommentBody = '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n';
         prCommentBody = prCommentBody + 'VERACOE-FIX CODE SUGGESTIONS\n';
         prCommentBody = prCommentBody + '> [!CAUTION]\n';
         prCommentBody = prCommentBody + '***Breaking Flaws identified in code!***\n';
@@ -53071,7 +53070,7 @@ function createPR(fixResults, options, flawArray) {
         }
         //end body of PR comment
         prCommentBody = prCommentBody + '\nThis PR is created by the Veracode-Fix bot to help fix security defects on your code\n\n';
-        prCommentBody = prCommentBody + '\nThe base branch is ' + baseRef + ' the base commit sha is ' + baseSha + '\n\n';
+        prCommentBody = prCommentBody + '\nThe base branch is <b>' + baseRef + '</b> the base commit sha is ' + baseSha + '\n\n';
         prCommentBody = prCommentBody + '\nPlease reach out to your Veracode team if anything in question\n\n';
         //once everything is pushed to the new branch, create a PR from the new branch to the base branch
         const createPR = yield octokit.request('POST /repos/' + (owner) + '/' + (repoName) + '/pulls', {
@@ -53243,7 +53242,7 @@ function createPRCommentBatch(batchFixResults, options, flawArray) {
             let commentBody;
             let keys = Object.keys(batchFixResults.results);
             console.log('Creating PR comment for ' + keys[i]);
-            commentBody = commentBody + '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n';
+            commentBody = '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n';
             commentBody = commentBody + '> [!CAUTION]\n';
             commentBody = commentBody + '***Breaking Flaws identified in code!***\n';
             commentBody = commentBody + '\n';

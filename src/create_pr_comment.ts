@@ -115,7 +115,7 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
         let keys = Object.keys(batchFixResults.results);
         console.log('Creating PR comment for '+keys[i])
         
-        commentBody = commentBody+'![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
+        commentBody = '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
         commentBody = commentBody+'> [!CAUTION]\n'
         commentBody = commentBody+'***Breaking Flaws identified in code!***\n'
         commentBody = commentBody+'\n'

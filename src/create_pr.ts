@@ -72,8 +72,7 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
 
     //start body of PR comment
     let prCommentBody:any
-    let keys = Object.keys(fixResults.results);
-    prCommentBody = prCommentBody+'![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
+    prCommentBody = '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
     prCommentBody = prCommentBody+'VERACOE-FIX CODE SUGGESTIONS\n'
     prCommentBody = prCommentBody+'> [!CAUTION]\n'
     prCommentBody = prCommentBody+'***Breaking Flaws identified in code!***\n'
@@ -159,7 +158,7 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
 
     //end body of PR comment
     prCommentBody = prCommentBody + '\nThis PR is created by the Veracode-Fix bot to help fix security defects on your code\n\n'
-    prCommentBody = prCommentBody + '\nThe base branch is '+baseRef+' the base commit sha is '+baseSha+'\n\n'
+    prCommentBody = prCommentBody + '\nThe base branch is <b>'+baseRef+'</b> the base commit sha is '+baseSha+'\n\n'
     prCommentBody = prCommentBody + '\nPlease reach out to your Veracode team if anything in question\n\n'
 
 
