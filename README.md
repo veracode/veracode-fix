@@ -16,18 +16,18 @@ Veracode Fix supports the following languagess and CWE's right now, please revie
 | Language | CWEs |
 | --- | --- |
 | C# | 73: External Control of File Name or Path<br>
-80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)<br>
-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)<br>
-117: Improper Output Neutralization for Logs<br>
-201: Information Exposure Through Sent Data<br>
-209: Information Exposure Through an Error Message<br>
-316: Cleartext Storage of Sensitive Information in Memory<br>
-327: Use of a Broken or Risky Cryptographic Algorithm<br>
-331: Insufficient Entropy<br>
-352: Cross-Site Request Forgery (CSRF)<br>
-404: Improper Resource Shutdown or Release<br>
-601: URL Redirection to Untrusted Site ('Open Redirect')<br>
-611: Improper Restriction of XML External Entity Reference |
+| | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+| | 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+| | 117: Improper Output Neutralization for Logs
+| | 201: Information Exposure Through Sent Data
+| | 209: Information Exposure Through an Error Message
+| | 316: Cleartext Storage of Sensitive Information in Memory
+| | 327: Use of a Broken or Risky Cryptographic Algorithm
+| | 331: Insufficient Entropy
+| | 352: Cross-Site Request Forgery (CSRF)
+| | 404: Improper Resource Shutdown or Release
+| | 601: URL Redirection to Untrusted Site ('Open Redirect')
+| | 611: Improper Restriction of XML External Entity Reference |
 | Java | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
 113: Improper Neutralization of CRLF Sequences in HTTP Headers
