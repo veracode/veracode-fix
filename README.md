@@ -3,7 +3,7 @@
 
 
 ## About
-This action will use the Veracode's AI assisted remediation service Veracode-Fix. For more information please see the official product page at https://www.veracode.com/fix and the official at https://help.veracode.com/r/c_fix_intro.
+This action will use the Veracode's AI assisted remediation service Veracode-Fix. For more information please see the official product page at https://www.veracode.com/fix and the official at https://docs.veracode.com/r/veracode_fix.
 The action is based on the results of Veracode's pipeline-scan action. The Veracode pipeline-scan can store results with all flaws identified (`results.json`), or filtered results (`filtered_results.json`). Based on the results you provide to this actions fixes will be created.
 It will take the results file and create fixes for the flaws that are found in the scan. The fixes will be created in the form of a code suggestion that can be applied to the source code. The action will create a comment on the PR with the fixes for every flaw that is fixable. That could lead to a lot of comments on the PR. We reccomend to run it with the batch option.
 If the pipeline-scan for exampe is used with a baseline file to sort out already known flaws and you provide the `filtered_results.json` file as in inptu to tis action, it will only create fixes for the new flaws identified in the scan. 
@@ -11,6 +11,76 @@ If the pipeline-scan for exampe is used with a baseline file to sort out already
 
 The action will also automatically use the first code suggested provied by Veracode Fix. The first suggestion is the most likely to be the best one. However there could be situations where the first suggestion is not the best one. In this case you can use the Veracode Fix solution on your IDE or the Veracode CLI to see more suggestions and apply them manually.
 
+Veracode Fix supports the following languagess and CWE's right now, please review the official documentation at https://docs.veracode.com/r/About_Veracode_Fix.
+
+| Language | CWEs |
+| --- | --- |
+| C# | 73: External Control of File Name or Path
+80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+117: Improper Output Neutralization for Logs
+201: Information Exposure Through Sent Data
+209: Information Exposure Through an Error Message
+316: Cleartext Storage of Sensitive Information in Memory
+327: Use of a Broken or Risky Cryptographic Algorithm
+331: Insufficient Entropy
+352: Cross-Site Request Forgery (CSRF)
+404: Improper Resource Shutdown or Release
+601: URL Redirection to Untrusted Site ('Open Redirect')
+611: Improper Restriction of XML External Entity Reference |
+| Java | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+113: Improper Neutralization of CRLF Sequences in HTTP Headers
+117: Improper Output Neutralization for Logs
+159: Improper Handling of Invalid Use of Special Elements
+209: Generation of Error Message Containing Sensitive Information
+327: Use of a Broken or Risky Cryptographic Algorithm
+331: Insufficient Entropy
+404: Improper Resource Shutdown or Release
+502: Deserialization of Untrusted Data
+597: Use of Wrong Operator in String Comparison
+601: URL Redirection to Untrusted Site ('Open Redirect')
+611: Improper Restriction of XML External Entity Reference |
+| JavaScript & Typescript | 73: External Control of File Name or Path
+78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
+80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+113: Improper Neutralization of CRLF Sequences in HTTP Headers
+117: Improper Output Neutralization for Logs
+209: Generation of Error Message Containing Sensitive Information
+311: Missing Encryption of Sensitive Data
+312: Cleartext Storage of Sensitive Information
+327: Use of a Broken or Risky Cryptographic Algorithm
+352: Cross-Site Request Forgery (CSRF)
+601: URL Redirection to Untrusted Site ('Open Redirect')
+611: Improper Restriction of XML External Entity Reference
+614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute |
+| Python | 73: External Control of File Name or Path
+78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
+80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+295: Improper Certificate Validation
+327: Use of a Broken or Risky Cryptographic Algorithm
+331: Insufficient Entropy
+601: URL Redirection to Untrusted Site ('Open Redirect')
+757: Selection of Less-Secure Algorithm During Negotiation ('Algorithm Downgrade') |
+| Kotline | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+113: Improper Neutralization of CRLF Sequences in HTTP Headers
+117: Improper Output Neutralization for Logs
+331: Insufficient Entropy |
+| Scala | 78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
+80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+117: Improper Output Neutralization for Logs
+611: Improper Restriction of XML External Entity Reference |
+| PHP | 73: External Control of File Name or Path
+80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+117: Improper Output Neutralization for Logs |
+| Go | 73: External Control of File Name or Path
+78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
+117: Improper Output Neutralization for Logs |
 
 ## Usage
 
@@ -30,7 +100,7 @@ The action will also automatically use the first code suggested provied by Verac
   
 * Optional
   * cwe
-    * A single CWE or a comma separated list of CWEs to filter on nad generate fix suggestions for
+    * A single CWE or a comma separated list of CWEs to filter on and generate fix suggestions for
   * source_base_path_1
     * Rewrite path 1, in some cases the source file is on a different path than the one in the scan results
   * source_base_path_2
@@ -78,9 +148,10 @@ All examples follow the same strucutre, the will all `need` the `build` to be fi
 The examples will checkout the repository, they will download the previously generated build artefact, that is named `verademo.war` and then run the action.  
   
 
-The basic yml  
+The basic yml - single flaw run
+Create individual fixes for each flaw identifed
   
-  ```yml 
+```yml 
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -98,7 +169,7 @@ jobs:
     - name: Build with Maven
       run: mvn clean package
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: verademo.war
         path: target/verademo.war
@@ -112,7 +183,7 @@ jobs:
           uses: actions/checkout@v3
 
         - name: get archive
-          uses: actions/download-artifact@v3
+          uses: actions/download-artifact@v4
           with:
             name: verademo.war
         - name: pipeline-scan action step
@@ -135,7 +206,158 @@ jobs:
         uses: actions/checkout@v3
 
       - name: get flaw file
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+        with:
+          name: Veracode Pipeline-Scan Results
+          
+      - name: Create fixes from static findings
+        id: convert
+        uses: Veracode/veracode-fix@main
+        with:
+          inputFile: filtered_results.json
+          vid: ${{ secrets.VID }}
+          vkey: ${{ secrets.VKEY }}
+          source_base_path_1: "com/:src/main/java/com/"
+          source_base_path_2: "WEB-INF:src/main/webapp/WEB-INF"
+          language: java
+          prComment: true
+          fixType: single
+  ``` 
+
+The basic yml - batch flaw run
+Create fixes per file for each flaw identifed
+  
+```yml 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: 8
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+    - name: Build with Maven
+      run: mvn clean package
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: verademo.war
+        path: target/verademo.war
+        
+  pipeline_scan:
+      needs: build
+      runs-on: ubuntu-latest
+      name: pipeline scan
+      steps:
+        - name: checkout repo
+          uses: actions/checkout@v3
+
+        - name: get archive
+          uses: actions/download-artifact@v4
+          with:
+            name: verademo.war
+        - name: pipeline-scan action step
+          id: pipelien-scan
+          uses: veracode/Veracode-pipeline-scan-action@v1.0.12
+          with:
+            vid: ${{ secrets.VID }}
+            vkey: ${{ secrets.VKEY }}
+            file: "verademo.war" 
+            request_policy: "VeraDemo Policy"
+            debug: 1
+            fail_build: false
+
+  veracode-fix:
+    runs-on: ubuntu-latest
+    needs: pipeline_scan
+    name: create fixes
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+
+      - name: get flaw file
+        uses: actions/download-artifact@v4
+        with:
+          name: Veracode Pipeline-Scan Results
+          
+      - name: Create fixes from static findings
+        id: convert
+        uses: Veracode/veracode-fix@main
+        with:
+          inputFile: filtered_results.json
+          vid: ${{ secrets.VID }}
+          vkey: ${{ secrets.VKEY }}
+          source_base_path_1: "com/:src/main/java/com/"
+          source_base_path_2: "WEB-INF:src/main/webapp/WEB-INF"
+          language: java
+          prComment: true
+          fixType: batch
+  ``` 
+
+Only fix flaws for CWE 89 and CWE 117
+
+  ```yml 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: 8
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+    - name: Build with Maven
+      run: mvn clean package
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: verademo.war
+        path: target/verademo.war
+        
+  pipeline_scan:
+      needs: build
+      runs-on: ubuntu-latest
+      name: pipeline scan
+      steps:
+        - name: checkout repo
+          uses: actions/checkout@v3
+
+        - name: get archive
+          uses: actions/download-artifact@v4
+          with:
+            name: verademo.war
+        - name: pipeline-scan action step
+          id: pipelien-scan
+          uses: veracode/Veracode-pipeline-scan-action@v1.0.12
+          with:
+            vid: ${{ secrets.VID }}
+            vkey: ${{ secrets.VKEY }}
+            file: "verademo.war" 
+            request_policy: "VeraDemo Policy"
+            debug: 1
+            fail_build: false
+
+  veracode-fix:
+    runs-on: ubuntu-latest
+    needs: pipeline_scan
+    name: create fixes
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+
+      - name: get flaw file
+        uses: actions/download-artifact@v4
         with:
           name: Veracode Pipeline-Scan Results
           
@@ -150,8 +372,8 @@ jobs:
           source_base_path_2: "WEB-INF:src/main/webapp/WEB-INF"
           language: java
           cwe: '89,117'
-          debug: true
           prComment: true
+          fixType: batch
   ``` 
 
 
@@ -161,24 +383,3 @@ The action comes pre-compiled as transpiled JavaScript. If you want to fork and 
 ```sh
 ncc build ./src/index.ts  
 ```
-
-
-http --auth-type=veracode_hmac -vv -f POST "https://api.veracode.com/fix/v1/project/upload_code" \                    
-data@data.tar.gz \
-name="data"
-
-http --auth-type=veracode_hmac -vv -j GET "https://api.veracode.com/fix/v1/project/PROJECTID/results"
-
-
-BATCH
-http --auth-type=veracode_hmac -vv -f POST "https://api.veracode.com/fix/v1/project/batch_upload" \
-data@app.tar.gz \
-name="data"
-
-http --auth-type=veracode_hmac -vv -j GET "https://api.veracode.com/fix/v1/project/PROJECTID/batch_status"
-
-http --auth-type=veracode_hmac -vv -j GET "https://api.veracode.com/fix/v1/project/PROJECTID/batch_results"
-
-
-
-tar -czf data.tar.gz flawInfo UserController.java  
