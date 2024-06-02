@@ -28,59 +28,66 @@ Veracode Fix supports the following languagess and CWE's right now, please revie
 | | 404: Improper Resource Shutdown or Release
 | | 601: URL Redirection to Untrusted Site ('Open Redirect')
 | | 611: Improper Restriction of XML External Entity Reference |
+| --- | --- |
 | Java | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-113: Improper Neutralization of CRLF Sequences in HTTP Headers
-117: Improper Output Neutralization for Logs
-159: Improper Handling of Invalid Use of Special Elements
-209: Generation of Error Message Containing Sensitive Information
-327: Use of a Broken or Risky Cryptographic Algorithm
-331: Insufficient Entropy
-404: Improper Resource Shutdown or Release
-502: Deserialization of Untrusted Data
-597: Use of Wrong Operator in String Comparison
-601: URL Redirection to Untrusted Site ('Open Redirect')
-611: Improper Restriction of XML External Entity Reference |
+| | 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+| | 113: Improper Neutralization of CRLF Sequences in HTTP Headers
+| | 117: Improper Output Neutralization for Logs
+| | 159: Improper Handling of Invalid Use of Special Elements
+| | 209: Generation of Error Message Containing Sensitive Information
+| | 327: Use of a Broken or Risky Cryptographic Algorithm
+| | 331: Insufficient Entropy
+| | 404: Improper Resource Shutdown or Release
+| | 502: Deserialization of Untrusted Data
+| | 597: Use of Wrong Operator in String Comparison
+| | 601: URL Redirection to Untrusted Site ('Open Redirect')
+| | 611: Improper Restriction of XML External Entity Reference |
+| --- | --- |
 | JavaScript & Typescript | 73: External Control of File Name or Path
-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
-80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-113: Improper Neutralization of CRLF Sequences in HTTP Headers
-117: Improper Output Neutralization for Logs
-209: Generation of Error Message Containing Sensitive Information
-311: Missing Encryption of Sensitive Data
-312: Cleartext Storage of Sensitive Information
-327: Use of a Broken or Risky Cryptographic Algorithm
-352: Cross-Site Request Forgery (CSRF)
-601: URL Redirection to Untrusted Site ('Open Redirect')
-611: Improper Restriction of XML External Entity Reference
-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute |
+| | 78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
+| | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+| | 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+| | 113: Improper Neutralization of CRLF Sequences in HTTP Headers
+| | 117: Improper Output Neutralization for Logs
+| | 209: Generation of Error Message Containing Sensitive Information
+| | 311: Missing Encryption of Sensitive Data
+| | 312: Cleartext Storage of Sensitive Information
+| | 327: Use of a Broken or Risky Cryptographic Algorithm
+| | 352: Cross-Site Request Forgery (CSRF)
+| | 601: URL Redirection to Untrusted Site ('Open Redirect')
+| | 611: Improper Restriction of XML External Entity Reference
+| | 614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute |
+| --- | --- |
 | Python | 73: External Control of File Name or Path
-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
-80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-295: Improper Certificate Validation
-327: Use of a Broken or Risky Cryptographic Algorithm
-331: Insufficient Entropy
-601: URL Redirection to Untrusted Site ('Open Redirect')
-757: Selection of Less-Secure Algorithm During Negotiation ('Algorithm Downgrade') |
+| | 78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
+| | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+| | 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+| | 295: Improper Certificate Validation
+| | 327: Use of a Broken or Risky Cryptographic Algorithm
+| | 331: Insufficient Entropy
+| | 601: URL Redirection to Untrusted Site ('Open Redirect')
+| | 757: Selection of Less-Secure Algorithm During Negotiation ('Algorithm Downgrade') |
+| --- | --- |
 | Kotline | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-113: Improper Neutralization of CRLF Sequences in HTTP Headers
-117: Improper Output Neutralization for Logs
-331: Insufficient Entropy |
+| | 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+| | 113: Improper Neutralization of CRLF Sequences in HTTP Headers
+| | 117: Improper Output Neutralization for Logs
+| | 331: Insufficient Entropy |
+| --- | --- |
 | Scala | 78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
-80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-117: Improper Output Neutralization for Logs
-611: Improper Restriction of XML External Entity Reference |
+| | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+| | 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+| | 117: Improper Output Neutralization for Logs
+| | 611: Improper Restriction of XML External Entity Reference |
+| --- | --- |
 | PHP | 73: External Control of File Name or Path
-80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-117: Improper Output Neutralization for Logs |
+| | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
+| | 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
+| | 117: Improper Output Neutralization for Logs |
+| --- | --- |
 | Go | 73: External Control of File Name or Path
-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
-117: Improper Output Neutralization for Logs |
+| | 78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
+| | 117: Improper Output Neutralization for Logs |
 
 ## Usage
 
@@ -92,7 +99,7 @@ Veracode Fix supports the following languagess and CWE's right now, please revie
   * inputFile
     * The results file from a Veracode pipeline scan. Please make sure pipeline-scan is run wiht `--esd true`
   * language:
-    The language the source code is written in. (will go away at some point in time)
+    The language the source code is written in. Can be any of the table above (will go away at some point in time)
   * fixType
     * The type of fix to generate, either `single` or `batch` 
   * files
