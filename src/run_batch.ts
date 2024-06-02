@@ -237,7 +237,7 @@ export async function runBatch( options:any, credentials:any){
 
             if ( options.createPR == 'true' ){
                 console.log('Creating PRs is enabled')
-                const createPr = await createPR(batchFixResults, options)
+                const createPr = await createPR(batchFixResults, options, flawArray)
             }
 
         }
