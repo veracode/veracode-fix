@@ -52531,6 +52531,28 @@ function checkCWE(flawInfo, options) {
                 return false;
             }
         }
+        else if (flawInfo.language == 'go') {
+            console.log('CWE check for Go');
+            const supportedCWEs = [73, 78, 117];
+            if (supportedCWEs.includes(flawInfo.cweID)) {
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('check_cwe_support.ts');
+                    console.log('Checks - CWE ' + flawInfo.cweID + ' is supported for Go');
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                return true;
+            }
+            else {
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('check_cwe_support.ts');
+                    console.log('Checks - CWE ' + flawInfo.cweID + ' is not supported Go');
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                return false;
+            }
+        }
     });
 }
 exports.checkCWE = checkCWE;

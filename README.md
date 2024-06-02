@@ -15,7 +15,7 @@ Veracode Fix supports the following languagess and CWE's right now, please revie
 
 | Language | CWEs |
 | --- | --- |
-| C# | 73: External Control of File Name or Path<br>
+| C# (csharp) | 73: External Control of File Name or Path<br>
 | | 80: Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
 | | 89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
 | | 117: Improper Output Neutralization for Logs
@@ -99,7 +99,7 @@ Veracode Fix supports the following languagess and CWE's right now, please revie
   * inputFile
     * The results file from a Veracode pipeline scan. Please make sure pipeline-scan is run wiht `--esd true`
   * language:
-    The language the source code is written in. Can be any of the table above (will go away at some point in time)
+    The language the source code is written in. Can be any of the table above (java|csharp|javascript|python|kotlin|scala|php|go) (will go away at some point in time) 
   * fixType
     * The type of fix to generate, either `single` or `batch` 
   * files
