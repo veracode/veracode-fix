@@ -52188,9 +52188,14 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                     const startLineNew = parseInt(hunkHeaderMatch[2]);
                     const lineCountNew = parseInt(hunkHeaderMatch[3]);
                     const endLineNew = startLineNew + lineCountNew - 1;
-                    console.log('Start line original: ' + startLineOriginal);
-                    console.log('Start line new: ' + startLineNew);
-                    console.log('End line new: ' + endLineNew);
+                    if (options.DEBUG == 'true') {
+                        console.log('#######- DEBUG MODE -#######');
+                        console.log('checkRun.ts - updateCheckRunUpdate');
+                        console.log('Start line original: ' + startLineOriginal);
+                        console.log('Start line new: ' + startLineNew);
+                        console.log('End line new: ' + endLineNew);
+                        console.log('#######- DEBUG MODE -#######');
+                    }
                     const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
                     const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
                         status: 'in_progress',
@@ -52204,7 +52209,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                                     start_line: startLineOriginal,
                                     end_line: endLineNew,
                                     annotation_level: 'warning',
-                                    title: 'Securityy findings',
+                                    title: 'Security findings',
                                     message: cleanedHunk,
                                 }
                             ]
@@ -52214,7 +52219,12 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                         }
                     });
                     console.log('Check run updated');
-                    console.log(response);
+                    if (options.DEBUG == 'true') {
+                        console.log('#######- DEBUG MODE -#######');
+                        console.log('checkRun.ts - updateCheckRunUpdate');
+                        console.log(response);
+                        console.log('#######- DEBUG MODE -#######');
+                    }
                 }
                 ;
             }
@@ -52238,7 +52248,7 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
         const commitID = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.head.sha;
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
-            console.log('checkRun.ts - updateCheckRunUpdate');
+            console.log('checkRun.ts - updateCheckRunUpdateBatch');
             console.log('results:');
             console.log(batchFixResults);
             console.log('#######- DEBUG MODE -#######');
@@ -52248,9 +52258,14 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
         });
         try {
             console.log('Check run update started');
-            //console.log('Start line: '+flawInfo.line)
-            //const end_line = flawInfo.line + 20
-            //console.log('End line: '+end_line)
+            const end_line = flawInfo.line + 20;
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('checkRun.ts - updateCheckRunUpdateBatch');
+                console.log('Start line: ' + flawInfo.line);
+                console.log('End line: ' + end_line);
+                console.log('#######- DEBUG MODE -#######');
+            }
             //Let's check if there are multiple hunks on the first fix result
             let hunks = 0;
             for (let key in batchFixResults.results) {
@@ -52262,8 +52277,13 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                         const sourceFile = patch.match(/---\s(.*)\n/);
                         const cleanedSourceFile = sourceFile[1].replace('--- ', '');
                         const hunks = cleanedPatch.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
-                        //console.log('hunks:');
-                        //console.log(hunks);
+                        if (options.DEBUG == 'true') {
+                            console.log('#######- DEBUG MODE -#######');
+                            console.log('checkRun.ts - updateCheckRunUpdateBatch');
+                            console.log('hunks:');
+                            console.log(hunks);
+                            console.log('#######- DEBUG MODE -#######');
+                        }
                         const hunksCount = hunks.length;
                         console.log('Number of hunks: ' + hunksCount);
                         for (let j = 0; j < hunksCount; j++) {
@@ -52278,11 +52298,14 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                             const startLineNew = parseInt(hunkHeaderMatch[2]);
                             const lineCountNew = parseInt(hunkHeaderMatch[3]);
                             const endLineNew = startLineNew + lineCountNew - 1;
-                            /*
-                            console.log('Start line original: '+startLineOriginal)
-                            console.log('Start line new: '+startLineNew)
-                            console.log('End line new: '+endLineNew)
-                            */
+                            if (options.DEBUG == 'true') {
+                                console.log('#######- DEBUG MODE -#######');
+                                console.log('checkRun.ts - updateCheckRunUpdateBatch');
+                                console.log('Start line original: ' + startLineOriginal);
+                                console.log('Start line new: ' + startLineNew);
+                                console.log('End line new: ' + endLineNew);
+                                console.log('#######- DEBUG MODE -#######');
+                            }
                             const cleanedHunk = hunks[j].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
                             const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
                                 status: 'in_progress',
@@ -52306,7 +52329,13 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                                 }
                             });
                             console.log('Check run updated');
-                            //console.log(response)
+                            if (options.DEBUG == 'true') {
+                                console.log('#######- DEBUG MODE -#######');
+                                console.log('checkRun.ts - updateCheckRunUpdateBatch');
+                                console.log('Response');
+                                console.log(response);
+                                console.log('#######- DEBUG MODE -#######');
+                            }
                         }
                         ;
                     }
@@ -52957,20 +52986,20 @@ function createPR(fixResults, options, flawArray) {
             baseRef = process.env.GITHUB_REF_NAME;
         }
         const baseSha = process.env.GITHUB_SHA;
-        /*
-        console.log('Environment: ')
-        console.log(environment)
-        console.log('Owner: '+owner)
-        console.log('Repo: '+repoName)
-        console.log('Context: ')
-        console.log(context)
-        console.log('PR ID: '+prID)
-        console.log('Base Ref: '+baseRef)
-        console.log('Base SHA: '+baseSha)
-        */
-        console.log('Environment: ');
-        console.log(environment);
-        console.log('Base Ref: ' + baseRef);
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('create_pr.ts - createPR()');
+            console.log('Environment: ');
+            console.log(environment);
+            console.log('Owner: ' + owner);
+            console.log('Repo: ' + repoName);
+            console.log('Context: ');
+            console.log(context);
+            console.log('PR ID: ' + prID);
+            console.log('Base Ref: ' + baseRef);
+            console.log('Base SHA: ' + baseSha);
+            console.log('#######- DEBUG MODE -#######');
+        }
         const octokit = new rest_1.Octokit({
             auth: options.token
         });
@@ -52988,15 +53017,17 @@ function createPR(fixResults, options, flawArray) {
             }
         });
         const branchSha = createBranch.data.object.sha;
-        /*
-        console.log('Branch created: ')
-        console.log(createBranch)
-        console.log('Branch SHA: ')
-        console.log(branchSha)
-    
-        console.log('Fix Results: ')
-        console.log(fixResults)
-        */
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('create_pr.ts - createPR()');
+            console.log('Branch created: ');
+            console.log(createBranch);
+            console.log('Branch SHA: ');
+            console.log(branchSha);
+            console.log('Fix Results: ');
+            console.log(fixResults);
+            console.log('#######- DEBUG MODE -#######');
+        }
         //start body of PR comment
         let prCommentBody;
         prCommentBody = '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n';
@@ -53026,7 +53057,12 @@ function createPR(fixResults, options, flawArray) {
                 }
             });
             const fileSha = getFileSha.data.sha;
-            console.log('File SHA: ' + fileSha);
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('create_pr.ts - createPR()');
+                console.log('File SHA: ' + fileSha);
+                console.log('#######- DEBUG MODE -#######');
+            }
             const updateFile = yield octokit.request('PUT /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
                 owner: owner,
                 repo: repoName,
@@ -53063,10 +53099,13 @@ function createPR(fixResults, options, flawArray) {
                 }
                 prCommentBody = prCommentBody + 'CWE ' + fixResults.results[keys[i]].flaws[j].CWEId + ' - ' + issue_type + ' - Severity ' + severity + ' on line ' + fixResults.results[keys[i]].flaws[j].line + ' for issue ' + fixResults.results[keys[i]].flaws[j].issueId + '\n';
             }
-            /*
-            console.log('Update file response: ')
-            console.log(updateFile)
-            */
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('create_pr.ts - createPR()');
+                console.log('Update file response: ');
+                console.log(updateFile);
+                console.log('#######- DEBUG MODE -#######');
+            }
         }
         //end body of PR comment
         prCommentBody = prCommentBody + '\nThis PR is created by the Veracode-Fix bot to help fix security defects on your code\n\n';
@@ -53084,10 +53123,13 @@ function createPR(fixResults, options, flawArray) {
                 'X-GitHub-Api-Version': '2022-11-28'
             }
         });
-        /*
-        console.log('Create PR response: ')
-        console.log(createPR)
-        */
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('create_pr.ts - createPR()');
+            console.log('Create PR response: ');
+            console.log(createPR);
+            console.log('#######- DEBUG MODE -#######');
+        }
     });
 }
 exports.createPR = createPR;
@@ -53841,8 +53883,13 @@ function runBatch(options, credentials) {
         let filesPartOfPR = {};
         if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
             filesPartOfPR = yield (0, requests_1.getFilesPartOfPR)(options);
-            console.log('Files part of PR:');
-            console.log(filesPartOfPR);
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('run_batch.ts - runBatch()');
+                console.log('Files part of PR:');
+                console.log(filesPartOfPR);
+                console.log('#######- DEBUG MODE -#######');
+            }
         }
         //loop through json file and create a new array
         let i = 0;
@@ -53912,7 +53959,12 @@ function runBatch(options, credentials) {
                             console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is in the list of CWEs to fix, creating flaw info');
                             if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
                                 const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                                //console.log('Flaw Info:',flawInfo)
+                                if (options.DEBUG == 'true') {
+                                    console.log('#######- DEBUG MODE -#######');
+                                    console.log('run_batch.ts - runBatch()');
+                                    console.log('Flaw Info:', flawInfo);
+                                    console.log('#######- DEBUG MODE -#######');
+                                }
                                 //write flaw info and source file
                                 const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
                                 const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
@@ -53990,7 +54042,13 @@ function runBatch(options, credentials) {
             }
             else {
                 console.log('Fixs pulled from batch fix');
-                //console.log(batchFixResults)
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('run_batch.ts - runBatch()');
+                    console.log('Batch Fix Results:');
+                    console.log(batchFixResults);
+                    console.log('#######- DEBUG MODE -#######');
+                }
                 //working with results
                 if (options.prComment == 'true') {
                     console.log('PR commenting is enabled');
@@ -54009,7 +54067,7 @@ function runBatch(options, credentials) {
                         console.log('... but wea are not running on a pull request');
                     }
                 }
-                if (options.codeSuggestion == 'ture') {
+                if (options.codeSuggestion == 'true') {
                     console.log('Code suggestion is enabled');
                     const batchFixResultsCount = Object.keys(batchFixResults.results).length;
                     console.log('Number of files with fixes: ' + batchFixResultsCount);

@@ -21,8 +21,15 @@ export async function runBatch( options:any, credentials:any){
     let filesPartOfPR:any = {}
     if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
         filesPartOfPR = await getFilesPartOfPR(options)
-        console.log('Files part of PR:')
-        console.log(filesPartOfPR)
+        if (options.DEBUG == 'true'){
+            console.log('#######- DEBUG MODE -#######')
+            console.log('run_batch.ts - runBatch()')
+            console.log('Files part of PR:')
+            console.log(filesPartOfPR)
+            console.log('#######- DEBUG MODE -#######')
+        }
+        
+        
     }
 
     //loop through json file and create a new array
@@ -109,7 +116,13 @@ export async function runBatch( options:any, credentials:any){
                         
                         if (await checkCWE(initialFlawInfo, options) == true){
                             const flawInfo = await createFlawInfo(initialFlawInfo,options)
-                            //console.log('Flaw Info:',flawInfo)
+
+                            if (options.DEBUG == 'true'){
+                                console.log('#######- DEBUG MODE -#######')
+                                console.log('run_batch.ts - runBatch()')
+                                console.log('Flaw Info:',flawInfo)
+                                console.log('#######- DEBUG MODE -#######')
+                            }
 
                             //write flaw info and source file
                             const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
@@ -197,7 +210,14 @@ export async function runBatch( options:any, credentials:any){
         }
         else {
             console.log('Fixs pulled from batch fix')
-            //console.log(batchFixResults)
+
+            if (options.DEBUG == 'true'){
+                console.log('#######- DEBUG MODE -#######')
+                console.log('run_batch.ts - runBatch()')
+                console.log('Batch Fix Results:')
+                console.log(batchFixResults)
+                console.log('#######- DEBUG MODE -#######')
+            }
 
             //working with results
             if (options.prComment == 'true'){
@@ -220,7 +240,7 @@ export async function runBatch( options:any, credentials:any){
                 }
             }
 
-            if ( options.codeSuggestion == 'ture' ){
+            if ( options.codeSuggestion == 'true' ){
                 console.log('Code suggestion is enabled')
 
                 const batchFixResultsCount = Object.keys(batchFixResults.results).length;

@@ -93,9 +93,16 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
                 const lineCountNew = parseInt(hunkHeaderMatch[3]);
                 const endLineNew = startLineNew + lineCountNew - 1;
 
-                console.log('Start line original: '+startLineOriginal)
-                console.log('Start line new: '+startLineNew)
-                console.log('End line new: '+endLineNew)
+                
+                if (options.DEBUG == 'true'){
+                    console.log('#######- DEBUG MODE -#######')
+                    console.log('checkRun.ts - updateCheckRunUpdate')
+                    console.log('Start line original: '+startLineOriginal)
+                    console.log('Start line new: '+startLineNew)
+                    console.log('End line new: '+endLineNew)
+                    console.log('#######- DEBUG MODE -#######')
+                }
+                
 
                 const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
   
@@ -111,7 +118,7 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
                             start_line: startLineOriginal,
                             end_line: endLineNew,
                             annotation_level: 'warning',
-                            title: 'Securityy findings',
+                            title: 'Security findings',
                             message: cleanedHunk,
                             }
                         ]
@@ -121,7 +128,14 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
                     }
                 })
                 console.log('Check run updated')
-                console.log(response)
+
+                if (options.DEBUG == 'true'){
+                    console.log('#######- DEBUG MODE -#######')
+                    console.log('checkRun.ts - updateCheckRunUpdate')
+                    console.log(response)
+                    console.log('#######- DEBUG MODE -#######')
+                }
+                
             };
         }
     } catch (error:any) {
@@ -141,7 +155,7 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
-        console.log('checkRun.ts - updateCheckRunUpdate')
+        console.log('checkRun.ts - updateCheckRunUpdateBatch')
         console.log('results:')
         console.log(batchFixResults)
         console.log('#######- DEBUG MODE -#######')
@@ -153,10 +167,16 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
 
     try {
         console.log('Check run update started')
-        //console.log('Start line: '+flawInfo.line)
-        //const end_line = flawInfo.line + 20
-        //console.log('End line: '+end_line)
+        const end_line = flawInfo.line + 20
 
+        if (options.DEBUG == 'true'){
+            console.log('#######- DEBUG MODE -#######')
+            console.log('checkRun.ts - updateCheckRunUpdateBatch')
+            console.log('Start line: '+flawInfo.line)
+            console.log('End line: '+end_line)
+            console.log('#######- DEBUG MODE -#######')
+        }
+        
        
 
         //Let's check if there are multiple hunks on the first fix result
@@ -171,8 +191,13 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                     const sourceFile = patch.match(/---\s(.*)\n/);
                     const cleanedSourceFile = sourceFile[1].replace('--- ', '');
                     const hunks = cleanedPatch.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
-                    //console.log('hunks:');
-                    //console.log(hunks);
+                    if (options.DEBUG == 'true'){
+                        console.log('#######- DEBUG MODE -#######')
+                        console.log('checkRun.ts - updateCheckRunUpdateBatch')
+                        console.log('hunks:');
+                        console.log(hunks);
+                        console.log('#######- DEBUG MODE -#######')
+                    }
                     const hunksCount = hunks.length;
                     console.log('Number of hunks: ' + hunksCount);
 
@@ -190,11 +215,14 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                         const lineCountNew = parseInt(hunkHeaderMatch[3]);
                         const endLineNew = startLineNew + lineCountNew - 1;
 
-                        /*
-                        console.log('Start line original: '+startLineOriginal)
-                        console.log('Start line new: '+startLineNew)
-                        console.log('End line new: '+endLineNew)
-                        */
+                        if (options.DEBUG == 'true'){
+                            console.log('#######- DEBUG MODE -#######')
+                            console.log('checkRun.ts - updateCheckRunUpdateBatch')
+                            console.log('Start line original: '+startLineOriginal)
+                            console.log('Start line new: '+startLineNew)
+                            console.log('End line new: '+endLineNew)
+                            console.log('#######- DEBUG MODE -#######')
+                        }
 
                         const cleanedHunk = hunks[j].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
          
@@ -220,7 +248,13 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                             }
                         })
                         console.log('Check run updated')
-                        //console.log(response)
+                        if (options.DEBUG == 'true'){
+                            console.log('#######- DEBUG MODE -#######')
+                            console.log('checkRun.ts - updateCheckRunUpdateBatch')
+                            console.log('Response')
+                            console.log(response)
+                            console.log('#######- DEBUG MODE -#######')
+                        }
                     };
                 }
             }

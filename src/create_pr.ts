@@ -21,21 +21,20 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
     }
     const baseSha:any = process.env.GITHUB_SHA
 
-    /*
-    console.log('Environment: ')
-    console.log(environment)
-    console.log('Owner: '+owner)
-    console.log('Repo: '+repoName)
-    console.log('Context: ')
-    console.log(context)
-    console.log('PR ID: '+prID)
-    console.log('Base Ref: '+baseRef)
-    console.log('Base SHA: '+baseSha)
-    */
-
-    console.log('Environment: ')
-    console.log(environment)
-    console.log('Base Ref: '+baseRef)
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('create_pr.ts - createPR()')
+        console.log('Environment: ')
+        console.log(environment)
+        console.log('Owner: '+owner)
+        console.log('Repo: '+repoName)
+        console.log('Context: ')
+        console.log(context)
+        console.log('PR ID: '+prID)
+        console.log('Base Ref: '+baseRef)
+        console.log('Base SHA: '+baseSha)
+        console.log('#######- DEBUG MODE -#######')
+    }
 
 
     const octokit = new Octokit({
@@ -60,15 +59,17 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
 
     const branchSha = createBranch.data.object.sha
 
-    /*
-    console.log('Branch created: ')
-    console.log(createBranch)
-    console.log('Branch SHA: ')
-    console.log(branchSha)
-
-    console.log('Fix Results: ')
-    console.log(fixResults)
-    */
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('create_pr.ts - createPR()')
+        console.log('Branch created: ')
+        console.log(createBranch)
+        console.log('Branch SHA: ')
+        console.log(branchSha)
+        console.log('Fix Results: ')
+        console.log(fixResults)
+        console.log('#######- DEBUG MODE -#######')
+    }
 
     //start body of PR comment
     let prCommentBody:any
@@ -109,7 +110,13 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
         })
 
         const fileSha = getFileSha.data.sha
-        console.log('File SHA: '+fileSha)
+        if (options.DEBUG == 'true'){
+            console.log('#######- DEBUG MODE -#######')
+            console.log('create_pr.ts - createPR()')
+            console.log('File SHA: '+fileSha)
+            console.log('#######- DEBUG MODE -#######')
+        }
+        
 
         const updateFile = await octokit.request('PUT /repos/'+(owner)+'/'+(repoName)+'/contents/'+keys[i], {
             owner: owner,
@@ -149,10 +156,14 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
             prCommentBody = prCommentBody +'CWE '+fixResults.results[keys[i]].flaws[j].CWEId+' - '+issue_type+' - Severity '+severity+' on line '+fixResults.results[keys[i]].flaws[j].line+' for issue '+fixResults.results[keys[i]].flaws[j].issueId+'\n'
         }
 
-        /*
-        console.log('Update file response: ')
-        console.log(updateFile)
-        */
+        if (options.DEBUG == 'true'){
+            console.log('#######- DEBUG MODE -#######')
+            console.log('create_pr.ts - createPR()')
+            console.log('Update file response: ')
+            console.log(updateFile)
+            console.log('#######- DEBUG MODE -#######')
+        }
+
     }
 
 
@@ -176,8 +187,11 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
         }
     })
 
-    /*
-    console.log('Create PR response: ')
-    console.log(createPR)
-    */
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('create_pr.ts - createPR()')
+        console.log('Create PR response: ')
+        console.log(createPR)
+        console.log('#######- DEBUG MODE -#######')
+    }
 }

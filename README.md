@@ -11,83 +11,7 @@ If the pipeline-scan for exampe is used with a baseline file to sort out already
 
 The action will also automatically use the first code suggested provied by Veracode Fix. The first suggestion is the most likely to be the best one. However there could be situations where the first suggestion is not the best one. In this case you can use the Veracode Fix solution on your IDE or the Veracode CLI to see more suggestions and apply them manually.
 
-Veracode Fix supports the following languagess and CWE's right now, please review the official documentation at https://docs.veracode.com/r/About_Veracode_Fix.
-
-| Language | CWE | CWE Name |
-| --- | --- | --- |
-| C# (csharp) | 73 | External Control of File Name or Path<br>
-| | 80 |  Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-| | 89 |  Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-| | 117 |  Improper Output Neutralization for Logs
-| | 201 |  Information Exposure Through Sent Data
-| | 209 |  Information Exposure Through an Error Message
-| | 316 |  Cleartext Storage of Sensitive Information in Memory
-| | 327 |  Use of a Broken or Risky Cryptographic Algorithm
-| | 331 |  Insufficient Entropy
-| | 352 |  Cross-Site Request Forgery (CSRF)
-| | 404 |  Improper Resource Shutdown or Release
-| | 601 |  URL Redirection to Untrusted Site ('Open Redirect')
-| | 611 |  Improper Restriction of XML External Entity Reference |
-| --- | --- | --- |
-| Java | 80 |  Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-| | 89 |  Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-| | 113 |  Improper Neutralization of CRLF Sequences in HTTP Headers
-| | 117 |  Improper Output Neutralization for Logs
-| | 159 |  Improper Handling of Invalid Use of Special Elements
-| | 209 |  Generation of Error Message Containing Sensitive Information
-| | 327 |  Use of a Broken or Risky Cryptographic Algorithm
-| | 331 |  Insufficient Entropy
-| | 404 |  Improper Resource Shutdown or Release
-| | 502 |  Deserialization of Untrusted Data
-| | 597 |  Use of Wrong Operator in String Comparison
-| | 601 |  URL Redirection to Untrusted Site ('Open Redirect')
-| | 611 |  Improper Restriction of XML External Entity Reference |
-| --- | --- | --- |
-| JavaScript & Typescript | 73 |  External Control of File Name or Path
-| | 78 |  Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
-| | 80 |  Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-| | 89 |  Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-| | 113 |  Improper Neutralization of CRLF Sequences in HTTP Headers
-| | 117 |  Improper Output Neutralization for Logs
-| | 209 |  Generation of Error Message Containing Sensitive Information
-| | 311 |  Missing Encryption of Sensitive Data
-| | 312 |  Cleartext Storage of Sensitive Information
-| | 327 |  Use of a Broken or Risky Cryptographic Algorithm
-| | 352 |  Cross-Site Request Forgery (CSRF)
-| | 601 |  URL Redirection to Untrusted Site ('Open Redirect')
-| | 611 |  Improper Restriction of XML External Entity Reference
-| | 614 |  Sensitive Cookie in HTTPS Session Without 'Secure' Attribute |
-| --- | --- | --- |
-| Python | 73 |  External Control of File Name or Path
-| | 78 |  Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
-| | 80 |  Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-| | 89 |  Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-| | 295 |  Improper Certificate Validation
-| | 327 |  Use of a Broken or Risky Cryptographic Algorithm
-| | 331 |  Insufficient Entropy
-| | 601 |  URL Redirection to Untrusted Site ('Open Redirect')
-| | 757 |  Selection of Less-Secure Algorithm During Negotiation ('Algorithm Downgrade') |
-| --- | --- | --- |
-| Kotlin | 80 |  Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-| | 89 |  Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-| | 113 |  Improper Neutralization of CRLF Sequences in HTTP Headers
-| | 117 |  Improper Output Neutralization for Logs
-| | 331 |  Insufficient Entropy |
-| --- | --- | --- |
-| Scala | 78 |  Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
-| | 80 |  Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-| | 89 |  Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-| | 117 |  Improper Output Neutralization for Logs
-| | 611 |  Improper Restriction of XML External Entity Reference |
-| --- | --- | --- |
-| PHP | 73 |  External Control of File Name or Path
-| | 80 |  Improper Neutralization of Script-Related HTML Tags in a Web Page (HTML Injection)
-| | 89 |  Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)
-| | 117 |  Improper Output Neutralization for Logs |
-| --- | --- | --- |
-| Go | 73 |  External Control of File Name or Path
-| | 78 |  Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
-| | 117 |  Improper Output Neutralization for Logs |
+Veracode Fix supports the a few languagess and CWE's right now, please review the official documentation at https://docs.veracode.com/r/About_Veracode_Fix.
 
 ## Usage
 
@@ -116,15 +40,11 @@ Veracode Fix supports the following languagess and CWE's right now, please revie
     * Rewrite path 3, in some cases the source file is on a different path than the one in the scan results
   * debug:
     * Enable debug mode - very verbose!
-  * language:
-    The language the source code is written in.
   * prComment
     * Create comments for fixes on PRs if the action runs on a PR (only works if run within a PR)
   * createPR
     * Create a PR with the fixes to the source branch (only works with `fixType=batch`)
-  * files
-    * Filter on `all` or on `changed` files only per commit or PR.
-  * codeSuggestion
+  * codeSuggestion (not implemented yet)
     * (`true`|`false`) This will create a code suggestion for every fix that is created. It will give you the posibility to commit the code suggestion back to the source branch. This is only available if the action runs on a PR and will not work in a combination with `prComment=true`
   
 
