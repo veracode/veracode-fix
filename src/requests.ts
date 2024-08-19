@@ -5,6 +5,8 @@ import FormData from 'form-data';
 import { selectPlatfrom } from './select_platform';
 import * as github from '@actions/github'
 
+// set client identifier
+axios.defaults.headers.common['X-CLIENT-TYPE'] = 'fix-github-action';
 
 export async function upload(platform:any, tar:any, options:any) {
 
