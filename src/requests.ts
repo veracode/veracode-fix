@@ -31,7 +31,15 @@ export async function upload(platform:any, tar:any, options:any) {
         console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: fix/v1/project/upload_code'+' Method: POST')
         console.log('Auth header created')
         console.log(authHeader)
+        axios.interceptors.request.use(request => {
+            console.log(' Request Headers', JSON.stringify(request.headers, null, 2));
+            return request;
+        }, error => {
+            console.error('Request Error', error);
+            return Promise.reject(error);
+        });
         console.log('#######- DEBUG MODE -#######')
+
     }
 
     console.log('Uploading data.tar.gz to Veracode')
@@ -104,6 +112,13 @@ export async function uploadBatch(credentials:any, tar:any, options:any) {
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - upload')
             console.log(response.data)
+            axios.interceptors.request.use(request => {
+                console.log(' Request Headers', JSON.stringify(request.headers, null, 2));
+                return request;
+            }, error => {
+                console.error('Request Error', error);
+                return Promise.reject(error);
+            });
             console.log('#######- DEBUG MODE -#######')
         }
     }
@@ -137,6 +152,13 @@ async function makeRequest(platform:any, projectId:any, options:any) {
         console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: POST')
         console.log('Auth header created')
         console.log(authHeader)
+        axios.interceptors.request.use(request => {
+            console.log(' Request Headers', JSON.stringify(request.headers, null, 2));
+            return request;
+        }, error => {
+            console.error('Request Error', error);
+            return Promise.reject(error);
+        });
         console.log('#######- DEBUG MODE -#######')
     }
 
@@ -188,6 +210,13 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
         console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: POST')
         console.log('Auth header created')
         console.log(authHeader)
+        axios.interceptors.request.use(request => {
+            console.log(' Request Headers', JSON.stringify(request.headers, null, 2));
+            return request;
+        }, error => {
+            console.error('Request Error', error);
+            return Promise.reject(error);
+        });
         console.log('#######- DEBUG MODE -#######')
     }
 
@@ -253,6 +282,13 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
         console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: POST')
         console.log('Auth header created')
         console.log(authHeader)
+        axios.interceptors.request.use(request => {
+            console.log(' Request Headers', JSON.stringify(request.headers, null, 2));
+            return request;
+        }, error => {
+            console.error('Request Error', error);
+            return Promise.reject(error);
+        });
         console.log('#######- DEBUG MODE -#######')
     }
 
@@ -302,7 +338,9 @@ export async function getFilesPartOfPR(options:any) {
             page: page,
             headers: {
                 'X-GitHub-Api-Version': '2022-11-28'
-            }
+            },
+            //add debug if enabled
+            ...((options.DEBUG == 'true') ? { debug: true } : {})
         });
 
         if (!response.data) {
