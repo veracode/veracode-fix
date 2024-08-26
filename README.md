@@ -104,7 +104,7 @@ jobs:
   pipeline_scan:
       needs: build
       runs-on: ubuntu-latest
-      name: pipeline scan
+      name: Veracode Pipeline Scan
       steps:
         - name: checkout repo
           uses: actions/checkout@v3
@@ -127,7 +127,7 @@ jobs:
   veracode-fix:
     runs-on: ubuntu-latest
     needs: pipeline_scan
-    name: create fixes
+    name: Veracode Fix
     steps:
       - name: checkout repo
         uses: actions/checkout@v3
@@ -180,7 +180,7 @@ jobs:
   pipeline_scan:
       needs: build
       runs-on: ubuntu-latest
-      name: pipeline scan
+      name: Veracode pipeline scan
       steps:
         - name: checkout repo
           uses: actions/checkout@v3
@@ -203,7 +203,7 @@ jobs:
   veracode-fix:
     runs-on: ubuntu-latest
     needs: pipeline_scan
-    name: create fixes
+    name: Veracode Fix
     steps:
       - name: checkout repo
         uses: actions/checkout@v3
@@ -255,7 +255,7 @@ jobs:
   pipeline_scan:
       needs: build
       runs-on: ubuntu-latest
-      name: pipeline scan
+      name: Veracode Pipeline Scan
       steps:
         - name: checkout repo
           uses: actions/checkout@v3
@@ -278,7 +278,7 @@ jobs:
   veracode-fix:
     runs-on: ubuntu-latest
     needs: pipeline_scan
-    name: create fixes
+    name: Veracode Fix
     steps:
       - name: checkout repo
         uses: actions/checkout@v3
