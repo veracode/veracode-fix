@@ -18,13 +18,13 @@ export async function createCheckRun(options:any) {
         const response = await octokit.request('POST /repos/'+repo[0]+'/'+repo[1]+'/check-runs', {
             owner: repo[0],
             repo: repo[1],
-            name: 'Veracode Autofix suggestions',
+            name: 'Veracode Fix suggestions',
             head_sha: commitID,
             status: 'in_progress',
             output: {
-                title: 'Veracode Autofix suggestions',
-                summary: 'Will create Veracode Autofix suggestions as PR comments',
-                text: 'Will create Veracode Autofix suggestions as PR comments'
+                title: 'Veracode Fix suggestions',
+                summary: 'Will create Veracode Fix suggestions as PR comments',
+                text: 'Will create Veracode Fix suggestions as PR comments'
             },
             headers: {
                 'X-GitHub-Api-Version': '2022-11-28'
@@ -109,9 +109,9 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
                 const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
                     status: 'in_progress',
                     output: {
-                        title: 'Veracode Autofix suggestions',
-                        summary: 'Will create Veracode Autofix suggestions as PR comments',
-                        text: 'Will create Veracode Autofix suggestions as PR comments',
+                        title: 'Veracode Fix suggestions',
+                        summary: 'Will create Veracode Fix suggestions as PR comments',
+                        text: 'Will create Veracode Fix suggestions as PR comments',
                         annotations: [
                             {
                             path: flawInfo.sourceFile,
@@ -229,9 +229,9 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                         const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
                             status: 'in_progress',
                             output: {
-                                title: 'Veracode Autofix suggestions',
-                                summary: 'Will create Veracode Autofix suggestions as PR comments',
-                                text: 'Will create Veracode Autofix suggestions as PR comments',
+                                title: 'Veracode Fix suggestions',
+                                summary: 'Will create Veracode Fix suggestions as PR annotation',
+                                text: 'Will create Veracode Fix suggestions as PR annotation',
                                 annotations: [
                                     {
                                     path: cleanedSourceFile,
