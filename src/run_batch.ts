@@ -204,7 +204,7 @@ export async function runBatch( options:any, credentials:any){
     if ( checkBatchFixStatus == 1 ){
         console.log('Batch Fixs are ready to be reviewed')
         const batchFixResults = await pullBatchFixResults(credentials, projectID, options)
-
+        filterEmptyPatchesFromBatch(batchFixResults, options);
         if ( batchFixResults == 0 ){
             console.log('Something went wrong, no fixes generated')
         }
@@ -265,6 +265,19 @@ export async function runBatch( options:any, credentials:any){
     else {
         console.log('Batch Fix failed')
 
+    }
+    function filterEmptyPatchesFromBatch(batchFixResults: any, options: any): void {
+        for (let key in batchFixResults.results) {
+            let patch = batchFixResults.results[key].patch;
+            if (patch.length == 0) {
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('Removing files with empty patch from batchfix results');
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                delete batchFixResults.results[key];
+            }
+        }
     }
 
 }

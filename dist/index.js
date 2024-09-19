@@ -52268,6 +52268,15 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
             }
             //Let's check if there are multiple hunks on the first fix result
             let hunks = 0;
+            /*batchFixResults = {
+        'app/views/userController.py': { flaws: [Array], patch: [Array] },
+        'app/views/resetController.py': { flaws: [Array], patch: [Array] },
+        'app/models.py': { flaws: [Array], patch: [] },
+        'app/templates/app/feed.html': { flaws: [Array], patch: [Array] },
+        'app/views/toolsController.py': { flaws: [Array], patch: [] },
+        'app/views/blabController.py': { flaws: [Array], patch: [Array] },
+        'app/templates/app/profile.html': { flaws: [Array], patch: [Array] }
+      }*/
             for (let key in batchFixResults.results) {
                 let patches = batchFixResults.results[key].patch;
                 for (let i = 0; i < patches.length; i++) {
@@ -54050,6 +54059,7 @@ function runBatch(options, credentials) {
         if (checkBatchFixStatus == 1) {
             console.log('Batch Fixs are ready to be reviewed');
             const batchFixResults = yield (0, requests_1.pullBatchFixResults)(credentials, projectID, options);
+            filterEmptyPatchesFromBatch(batchFixResults, options);
             if (batchFixResults == 0) {
                 console.log('Something went wrong, no fixes generated');
             }
@@ -54099,6 +54109,19 @@ function runBatch(options, credentials) {
         }
         else {
             console.log('Batch Fix failed');
+        }
+        function filterEmptyPatchesFromBatch(batchFixResults, options) {
+            for (let key in batchFixResults.results) {
+                let patch = batchFixResults.results[key].patch;
+                if (patch.length == 0) {
+                    if (options.DEBUG == 'true') {
+                        console.log('#######- DEBUG MODE -#######');
+                        console.log('Removing files with empty patch from batchfix results');
+                        console.log('#######- DEBUG MODE -#######');
+                    }
+                    delete batchFixResults.results[key];
+                }
+            }
         }
     });
 }
