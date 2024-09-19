@@ -91,6 +91,14 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
         const originalContent = await fs.readFile(keys[i], 'utf-8');
         const patch = fixResults.results[keys[i]].patch[0]
 
+        if (options.DEBUG == 'true'){
+            console.log('#######- DEBUG MODE -#######')
+            console.log('create_pr.ts - apply patch')
+            console.log('Patch to be applied: ')
+            console.log(patch)
+            console.log('#######- DEBUG MODE -#######')
+        }
+
         const patches = Diff.parsePatch(patch);
 
         let updatedContent = originalContent;
