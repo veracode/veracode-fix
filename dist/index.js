@@ -52654,6 +52654,8 @@ function createFlawInfo(flawInfo, options) {
                             "region": {
                                 "startLine": parseInt(element.SourceLine) + 1,
                                 "endLine": parseInt(element.SourceLine) + 1,
+                                "startColumn": 0,
+                                "endColumn": 0
                             }
                         };
                         //add flow to flows array
@@ -52674,6 +52676,8 @@ function createFlawInfo(flawInfo, options) {
                     "region": {
                         "startLine": resultArray.files.source_file.line,
                         "endLine": resultArray.files.source_file.line,
+                        "startColumn": 0,
+                        "endColumn": 0
                     }
                 };
                 flows.push(flow);
