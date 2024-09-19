@@ -52686,7 +52686,7 @@ function createFlawInfo(flawInfo, options) {
         }
         else {
             let flow = {
-                "expression": "",
+                "expression": [],
                 "region": {
                     "startLine": resultArray.files.source_file.line,
                     "endLine": resultArray.files.source_file.line,
