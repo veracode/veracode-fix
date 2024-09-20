@@ -1,6 +1,8 @@
 import * as core from '@actions/core'
 import { runSingle } from './run_single';
 import { runBatch } from './run_batch';
+import fs from 'fs';
+import { json } from 'stream/consumers';
 
 
 let credentials:any = {}
@@ -34,13 +36,18 @@ options['files'] = getInputOrEnv('files',false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion',false);
 options['token'] = getInputOrEnv('token',false);
 
+const resultsFile = fs.readFileSync(options.file, 'utf8')
 
-
-
-
-
-
-if ( options.fixType == 'batch' ){
+if (options.DEBUG == 'true'){
+    console.log('#######- DEBUG MODE -#######')
+    console.log('results.json: '+resultsFile)
+    console.log('checking if items are present to fix: ')
+    console.log('#######- DEBUG MODE -#######')
+}
+if (!JSON.parse(resultsFile).findings.length){ 
+    console.log('No findings in results.json, nothing to fix')
+}
+else if ( options.fixType == 'batch' ){
     console.log('Running Batch Fix')
     runBatch(options, credentials)
 }
