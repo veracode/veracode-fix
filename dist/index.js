@@ -53423,7 +53423,12 @@ options['files'] = getInputOrEnv('files', false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
 const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
-console.log('checking if items are present to fix: ' + resultsFile);
+if (options.DEBUG == 'true') {
+    console.log('#######- DEBUG MODE -#######');
+    console.log('results.json: ' + resultsFile);
+    console.log('checking if items are present to fix: ');
+    console.log('#######- DEBUG MODE -#######');
+}
 if (!JSON.parse(resultsFile).findings.length) {
     console.log('No findings in results.json, nothing to fix');
 }
