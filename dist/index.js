@@ -53387,10 +53387,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(5763));
 const run_single_1 = __nccwpck_require__(1733);
 const run_batch_1 = __nccwpck_require__(9924);
+const fs_1 = __importDefault(__nccwpck_require__(7147));
 let credentials = {};
 let options = {};
 function getInputOrEnv(name, required) {
@@ -53418,12 +53422,11 @@ options['createPR'] = getInputOrEnv('createPR', false);
 options['files'] = getInputOrEnv('files', false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
-if (options.DEBUG == 'true') {
-    console.log('#######- DEBUG MODE -#######');
-    console.log('results.json: ', options.file, typeof options.file);
-    console.log('#######- DEBUG MODE -#######');
+const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
+if (!JSON.parse(resultsFile).findings) {
+    console.log('No findings in results.json, nothing to fix');
 }
-if (options.fixType == 'batch') {
+else if (options.fixType == 'batch') {
     console.log('Running Batch Fix');
     (0, run_batch_1.runBatch)(options, credentials);
 }
