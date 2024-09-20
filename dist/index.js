@@ -53423,7 +53423,7 @@ options['files'] = getInputOrEnv('files', false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
 const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
-if (!JSON.parse(resultsFile).findings) {
+if (!JSON.parse(resultsFile).findings.length) {
     console.log('No findings in results.json, nothing to fix');
 }
 else if (options.fixType == 'batch') {

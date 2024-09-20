@@ -38,7 +38,7 @@ options['token'] = getInputOrEnv('token',false);
 
 const resultsFile = fs.readFileSync(options.file, 'utf8')
 
-if (!JSON.parse(resultsFile).findings){ 
+if (!JSON.parse(resultsFile).findings.length){ 
     console.log('No findings in results.json, nothing to fix')
 }
 else if ( options.fixType == 'batch' ){
