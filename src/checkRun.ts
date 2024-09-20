@@ -182,15 +182,6 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
 
         //Let's check if there are multiple hunks on the first fix result
         let hunks = 0
-        /*batchFixResults = {
-    'app/views/userController.py': { flaws: [Array], patch: [Array] },
-    'app/views/resetController.py': { flaws: [Array], patch: [Array] },
-    'app/models.py': { flaws: [Array], patch: [] },
-    'app/templates/app/feed.html': { flaws: [Array], patch: [Array] },
-    'app/views/toolsController.py': { flaws: [Array], patch: [] },
-    'app/views/blabController.py': { flaws: [Array], patch: [Array] },
-    'app/templates/app/profile.html': { flaws: [Array], patch: [Array] }
-  }*/
         for (let key in batchFixResults.results) {
             let patches = batchFixResults.results[key].patch;
             for (let i = 0; i < patches.length; i++) {
