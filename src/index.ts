@@ -37,7 +37,11 @@ options['token'] = getInputOrEnv('token',false);
 
 
 
-
+if (options.DEBUG == 'true'){
+    console.log('#######- DEBUG MODE -#######')
+    console.log('results.json: ',options.file,typeof options.file)
+    console.log('#######- DEBUG MODE -#######')
+}
 
 
 if ( options.fixType == 'batch' ){

@@ -53418,6 +53418,11 @@ options['createPR'] = getInputOrEnv('createPR', false);
 options['files'] = getInputOrEnv('files', false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
+if (options.DEBUG == 'true') {
+    console.log('#######- DEBUG MODE -#######');
+    console.log('results.json: ', options.file, typeof options.file);
+    console.log('#######- DEBUG MODE -#######');
+}
 if (options.fixType == 'batch') {
     console.log('Running Batch Fix');
     (0, run_batch_1.runBatch)(options, credentials);
