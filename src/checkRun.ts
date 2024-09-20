@@ -146,7 +146,6 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
 }
 
 export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any, flawInfo:any) {
-
     const context = github.context
     const repository:any = process.env.GITHUB_REPOSITORY
     const token = core.getInput("token")
