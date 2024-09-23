@@ -52309,6 +52309,7 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                             const cleanedHunk = hunks[j].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
                             const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
                                 status: 'in_progress',
+                                name: "check run name test",
                                 output: {
                                     title: 'Veracode Fix suggestions',
                                     summary: 'Will create Veracode Fix suggestions as PR annotation',
@@ -52320,8 +52321,7 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                                             end_line: endLineNew,
                                             annotation_level: 'warning',
                                             title: 'Securityy findings',
-                                            message: cleanedHunk,
-                                            name: "checrun name test"
+                                            message: cleanedHunk
                                         }
                                     ]
                                 },
