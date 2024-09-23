@@ -52321,6 +52321,7 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                                             annotation_level: 'warning',
                                             title: 'Securityy findings',
                                             message: cleanedHunk,
+                                            name: "checrun name test"
                                         }
                                     ]
                                 },

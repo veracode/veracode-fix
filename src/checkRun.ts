@@ -240,6 +240,7 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                                     annotation_level: 'warning',
                                     title: 'Securityy findings',
                                     message: cleanedHunk,
+                                    name: "checrun name test"
                                     }
                                 ]
                             },
