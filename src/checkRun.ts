@@ -228,6 +228,7 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
          
                         const response = await octokit.request('PATCH /repos/'+repo[0]+'/'+repo[1]+'/check-runs/'+options.checkRunID, {
                             status: 'in_progress',
+                            name: "check run name test",
                             output: {
                                 title: 'Veracode Fix suggestions',
                                 summary: 'Will create Veracode Fix suggestions as PR annotation',
@@ -239,8 +240,8 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
                                     end_line: endLineNew,
                                     annotation_level: 'warning',
                                     title: 'Securityy findings',
-                                    message: cleanedHunk,
-                                    name: "checrun name test"
+                                    message: cleanedHunk
+                                    
                                     }
                                 ]
                             },
