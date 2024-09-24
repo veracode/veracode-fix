@@ -16,7 +16,7 @@ export async function rewritePath(options:any, filename:any){
         return newPath
     }
 
-    let filepath
+    let filepath = filename
 
     if (options.source_base_path_1 || options.source_base_path_2 || options.source_base_path_3){
         const orgPath1 = options.source_base_path_1.split(":")
