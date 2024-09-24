@@ -53820,7 +53820,7 @@ function rewritePath(options, filename) {
                 return newPath;
             });
         }
-        let filepath = filename;
+        let filepath;
         if (options.source_base_path_1 || options.source_base_path_2 || options.source_base_path_3) {
             const orgPath1 = options.source_base_path_1.split(":");
             const orgPath2 = options.source_base_path_2.split(":");
@@ -53862,6 +53862,9 @@ function rewritePath(options, filename) {
                 }
             }
             console.log('Rewritten Filepath: ' + filepath);
+        }
+        else { // if no source_base_path is provided, return the original path
+            filepath = filename;
         }
         return filepath;
     });
