@@ -53863,6 +53863,9 @@ function rewritePath(options, filename) {
             }
             console.log('Rewritten Filepath: ' + filepath);
         }
+        else { // if no source_base_path is provided, return the original path
+            filepath = filename;
+        }
         return filepath;
     });
 }
