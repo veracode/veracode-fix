@@ -191,6 +191,11 @@ export async function runBatch( options:any, credentials:any){
         }
     };
 
+    if (!fs.existsSync('app')) { // nothing to fix as no files with conditions met
+        console.log("nothing to fix as no files with conditions met");
+        process.exit(0);
+    }
+
     //create the tar after all files are created and copied
     // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
     const tarball = execSync('tar -czf app.tar.gz -C app .');

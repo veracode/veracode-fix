@@ -54057,6 +54057,10 @@ function runBatch(options, credentials) {
             }
         }
         ;
+        if (!fs_1.default.existsSync('app')) { // nothing to fix as no files with conditions met
+            console.log("nothing to fix as no files with conditions met");
+            process.exit(0);
+        }
         //create the tar after all files are created and copied
         // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
         const tarball = (0, child_process_1.execSync)('tar -czf app.tar.gz -C app .');
