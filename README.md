@@ -27,7 +27,7 @@ Veracode Fix supports the a few languagess and CWE's right now, please review th
   * fixType
     * The type of fix to generate, either `single` or `batch` 
   * files
-    * Filter on `all` or on `changed` files only. 
+    * Filter on `all` or on `changed` files only. Note: Currently `changed` is supported only when run on a Pull Request.
   
 * Optional
   * cwe
