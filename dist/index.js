@@ -52209,7 +52209,7 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                                     start_line: startLineOriginal,
                                     end_line: endLineNew,
                                     annotation_level: 'warning',
-                                    title: 'Security findings',
+                                    title: 'Security findings between line numbers ' + startLineOriginal + ' and ' + endLineNew,
                                     message: cleanedHunk,
                                 }
                             ]
