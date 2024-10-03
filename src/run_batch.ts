@@ -114,7 +114,7 @@ export async function runBatch( options:any, credentials:any){
                     if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
                         console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is in the list of CWEs to fix, creating flaw info')
                         
-                        if (await checkCWE(initialFlawInfo, options) == true){
+                        if (await checkCWE(initialFlawInfo, options, true) == true){
                             const flawInfo = await createFlawInfo(initialFlawInfo,options)
 
                             if (options.DEBUG == 'true'){
@@ -157,7 +157,7 @@ export async function runBatch( options:any, credentials:any){
                 else {
                     console.log('Fix for all CWEs')
 
-                    if (await checkCWE(initialFlawInfo, options) == true){
+                    if (await checkCWE(initialFlawInfo, options, true) == true){
                         const flawInfo = await createFlawInfo(initialFlawInfo,options)
                         
                         //write flaw info and source file
