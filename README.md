@@ -1,17 +1,17 @@
-# Veracode Fix  Action
-
-
+# Veracode Fix Action
 
 ## About
-This action will use the Veracode's AI assisted remediation service Veracode-Fix. For more information please see the official product page at https://www.veracode.com/fix and the official at https://docs.veracode.com/r/veracode_fix.
+This action will use the Veracode's AI assisted remediation service Veracode Fix. For more information please see the official product page at https://www.veracode.com/fix and the official at https://docs.veracode.com/r/veracode_fix.
+
 The action is based on the results of Veracode's pipeline-scan action. The Veracode pipeline-scan can store results with all flaws identified (`results.json`), or filtered results (`filtered_results.json`). Based on the results you provide to this actions fixes will be created.
-It will take the results file and create fixes for the flaws that are found in the scan. The fixes will be created in the form of a code suggestion that can be applied to the source code. The action will create a comment on the PR with the fixes for every flaw that is fixable. That could lead to a lot of comments on the PR. We reccomend to run it with the batch option.
-If the pipeline-scan for exampe is used with a baseline file to sort out already known flaws and you provide the `filtered_results.json` file as in inptu to tis action, it will only create fixes for the new flaws identified in the scan. 
--> Code suggestions generated will heavily depend on the input data.
 
-The action will also automatically use the first code suggested provied by Veracode Fix. The first suggestion is the most likely to be the best one. However there could be situations where the first suggestion is not the best one. In this case you can use the Veracode Fix solution on your IDE or the Veracode CLI to see more suggestions and apply them manually.
+The action takes the results file as an input, and creates fixes for the flaws that are found in the scan. The fixes will be created in the form of a code suggestion that can be applied to the source code. The action will create a comment on the PR with the fixes for every flaw that is fixable. As this could lead to a lot of comments on the pull request, we recommend to run it with the batch option which creates a single comment.
 
-Veracode Fix supports the a few languagess and CWE's right now, please review the official documentation at https://docs.veracode.com/r/About_Veracode_Fix.
+**Create fixes only for new flaws**: You can create fixes only for newly identified flaws in the scan by using a baseline file with your static CLI scan or pipeline scan. To do this, provide the baseline file as input to the scan, then use the `filtered_results.json` file as an input to this action.
+
+The action will also automatically use the first code suggestion provided by Veracode Fix. The first suggestion is the most likely to be the best one. However, there could be situations where a lower-ranked suggestion is more appropriate. In this case you can use the Veracode Fix solution in your IDE or the Veracode CLI to see more suggestions and apply them manually.
+
+For a list of supported languages and CWEs for Veracode Fix, please review the official documentation at https://docs.veracode.com/r/About_Veracode_Fix.
 
 ## Usage
 
@@ -55,7 +55,7 @@ Veracode Fix supports the a few languagess and CWE's right now, please review th
 - If `prComment` is set to `true` and 'fixType' is set to `batch` the action will create a comment on the PR with a single fixe per file, for every flaw that is fixable. 
 ![](/images/prComment_batchFix.png)
   
-- If `fixType`ist set to `single` and the action runs on a PR, it will create annotations for either changed files or all files, depending on the `files` parameter. This cannot be disabled and should help PR reviewers to see what could be fixed with Veracode Fix. Please keep in mind that this could creat multiple annotations on the same line of code ofthe file which will lead to a situation where you need to carefully decide what has to be put into the file and what not. This is due to the fact that multiple flaws require the same line of code changed.
+- If `fixType`ist set to `single` and the action runs on a PR, it will create annotations for either changed files or all files, depending on the `files` parameter. This cannot be disabled and should help PR reviewers to see what could be fixed with Veracode Fix. Please keep in mind that this could creat multiple annotations on the same line of code of the file which will lead to a situation where you need to carefully decide what has to be put into the file and what not. This is due to the fact that multiple flaws require the same line of code changed.
 ![](/images/checkAnnotationsSingleSameLine.png)
   
 - If `files` is set to `changed` and the action runs on a PR, it will only fix flaws in files that have been changed in the PR. Only works if the action runs on a PR.
@@ -67,11 +67,12 @@ Veracode Fix supports the a few languagess and CWE's right now, please review th
 ![](/images/createPR.png)
 ![](/images/createPRFilesChanged.png)
 
-- If `codeSuggestion` is set to `true` and the action runs on a PR, it will create a code suggestion for every fix that is created. It will give you the posibility to commit the code suggestion back to the source branch. This is only available if the action runs on a PR and will not work in a combination with `prComment=true` and `file=changed`. It will automatically overwrite the `prComment=true` option. The reason for this is that otherwise you would see the code suggestions twice, which doesn't make sense. In addition it will add a little button at the bottom of the code that will let you commit the code suggestion back to the source branch. It also can only work with `files=changed` as tbere is no possibility to comment on unchanged files of the PR.
+- If `codeSuggestion` is set to `true` and the action runs on a PR, it will create a code suggestion for every fix that is created. It will give you the posibility to commit the code suggestion back to the source branch. This is only available if the action runs on a PR and will not work in a combination with `prComment=true` and `file=changed`. It will automatically overwrite the `prComment=true` option. The reason for this is that otherwise you would see the code suggestions twice. In addition it will add a button at the bottom of the code that will let you commit the code suggestion back to the source branch. It also can only work with `files=changed` as tbere is no possibility to comment on unchanged files of the PR.
 
 
 ## Examples  
-All examples follow the same strucutre, the will all `need` the `build` to be finished before the they will start running. Veraocde's static analysis is mainly binary static analysis, therefore a compile/build action is required before a pipeline scan can be started. Please read about the packaging and compilation requirements here: https://docs.veracode.com/r/compilation_packaging.  
+All examples follow the same structure and will all need the `build` to be finished before the they will start running. Veraocde's static analysis requires a compiled or packaged application, therefore a compile/build action is required before a pipeline scan can be started. Please read about the packaging and compilation requirements here: https://docs.veracode.com/r/compilation_packaging.
+
 The examples will checkout the repository, they will download the previously generated build artefact, that is named `verademo.war` and then run the action.  
   
 
