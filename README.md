@@ -115,7 +115,7 @@ jobs:
             name: verademo.war
         - name: pipeline-scan action step
           id: pipelien-scan
-          uses: veracode/Veracode-pipeline-scan-action@v1.0.12
+          uses: veracode/Veracode-pipeline-scan-action@esd-true
           with:
             vid: ${{ secrets.VID }}
             vkey: ${{ secrets.VKEY }}
@@ -123,6 +123,10 @@ jobs:
             request_policy: "VeraDemo Policy"
             debug: 1
             fail_build: false
+         - uses: actions/upload-artifact@v4
+          with:
+            name: Veracode Pipeline-Scan Results
+            path: results.json 
 
   veracode-fix:
     runs-on: ubuntu-latest
@@ -191,7 +195,7 @@ jobs:
             name: verademo.war
         - name: pipeline-scan action step
           id: pipelien-scan
-          uses: veracode/Veracode-pipeline-scan-action@v1.0.12
+          uses: veracode/Veracode-pipeline-scan-action@esd-true
           with:
             vid: ${{ secrets.VID }}
             vkey: ${{ secrets.VKEY }}
@@ -199,6 +203,11 @@ jobs:
             request_policy: "VeraDemo Policy"
             debug: 1
             fail_build: false
+
+        - uses: actions/upload-artifact@v4
+          with:
+            name: Veracode Pipeline-Scan Results
+            path: results.json 
 
   veracode-fix:
     runs-on: ubuntu-latest
@@ -266,7 +275,7 @@ jobs:
             name: verademo.war
         - name: pipeline-scan action step
           id: pipelien-scan
-          uses: veracode/Veracode-pipeline-scan-action@v1.0.12
+          uses: veracode/Veracode-pipeline-scan-action@esd-true
           with:
             vid: ${{ secrets.VID }}
             vkey: ${{ secrets.VKEY }}
@@ -274,6 +283,11 @@ jobs:
             request_policy: "VeraDemo Policy"
             debug: 1
             fail_build: false
+
+        - uses: actions/upload-artifact@v4
+          with:
+            name: Veracode Pipeline-Scan Results
+            path: results.json 
 
   veracode-fix:
     runs-on: ubuntu-latest
