@@ -52399,11 +52399,35 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.checkCWE = void 0;
-function checkCWE(flawInfo, options) {
-    return __awaiter(this, void 0, void 0, function* () {
+const CWESupportMatrix = {
+    "individual": {
+        "java": ["117", "80", "404", "159", "209", "597", "89", "611", "331", "327", "113", "601", "502"],
+        "cs": ["80", "117", "352", "73", "404", "89", "209", "316", "601", "327", "331", "611"],
+        "js": ["80", "117", "89", "73", "601", "352", "78", "209", "327", "312", "614", "311", "611", "113"],
+        "php": ["80", "73", "89", "117"],
+        "py": ["80", "73", "331", "327", "295", "601", "78", "89", "757"],
+        "kotlin": ["80", "89", "113", "117", "331", "404"],
+        "scala": ["611", "117", "80", "78"],
+        "go": ["73", "78", "117"],
+        "ruby": ["73", "80", "89", "117", "601"]
+    },
+    "batch": {
+        "java": ["117", "80", "404", "159", "209", "597", "89", "611", "331", "113"],
+        "cs": ["80", "117", "352", "404", "89", "209", "316", "331", "611"],
+        "js": ["80", "117", "89", "352", "78", "209", "614", "611", "113"],
+        "php": ["80", "89", "117"],
+        "py": ["80", "331", "295", "78", "89", "757"],
+        "kotlin": ["80", "89", "113", "117", "331", "404"],
+        "scala": ["611", "117", "80", "78"],
+        "go": ["73", "78", "117"],
+        "ruby": ["73", "80", "89", "117", "601"]
+    }
+};
+function checkCWE(flawInfo_1, options_1) {
+    return __awaiter(this, arguments, void 0, function* (flawInfo, options, batchFix = false) {
         if (flawInfo.language == 'java') {
             console.log('CWE check for Java');
-            const supportedCWEs = [80, 89, 113, 117, 327, 331, 382, 470, 597, 601];
+            const supportedCWEs = batchFix ? CWESupportMatrix.batch.java : CWESupportMatrix.individual.java;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52425,7 +52449,7 @@ function checkCWE(flawInfo, options) {
         }
         else if (flawInfo.language == 'csharp') {
             console.log('CWE check for C#');
-            const supportedCWEs = [80, 89, 201, 209, 259, 352, 404, 601, 611, 798];
+            const supportedCWEs = batchFix ? CWESupportMatrix.batch.cs : CWESupportMatrix.individual.cs;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52452,7 +52476,7 @@ function checkCWE(flawInfo, options) {
                 console.log('CWE check for JavaScript');
                 console.log('#######- DEBUG MODE -#######');
             }
-            const supportedCWEs = [73, 78, 80, 113, 117, 327, 611, 614];
+            const supportedCWEs = batchFix ? CWESupportMatrix.batch.js : CWESupportMatrix.individual.js;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52474,7 +52498,7 @@ function checkCWE(flawInfo, options) {
         }
         else if (flawInfo.language == 'python') {
             console.log('CWE check for Python');
-            const supportedCWEs = [73, 78, 80, 89, 295, 327, 331, 601, 757];
+            const supportedCWEs = batchFix ? CWESupportMatrix.batch.py : CWESupportMatrix.individual.py;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52496,7 +52520,7 @@ function checkCWE(flawInfo, options) {
         }
         else if (flawInfo.language == 'php') {
             console.log('CWE check for PHP');
-            const supportedCWEs = [73, 80, 89, 117];
+            const supportedCWEs = batchFix ? CWESupportMatrix.batch.php : CWESupportMatrix.individual.php;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52518,7 +52542,7 @@ function checkCWE(flawInfo, options) {
         }
         else if (flawInfo.language == 'scala') {
             console.log('CWE check for Scala');
-            const supportedCWEs = [78, 80, 89, 117, 611];
+            const supportedCWEs = batchFix ? CWESupportMatrix.batch.scala : CWESupportMatrix.individual.scala;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52540,7 +52564,7 @@ function checkCWE(flawInfo, options) {
         }
         else if (flawInfo.language == 'kotlin') {
             console.log('CWE check for Kotlin');
-            const supportedCWEs = [80, 89, 113, 117, 331];
+            const supportedCWEs = batchFix ? CWESupportMatrix.batch.kotlin : CWESupportMatrix.individual.kotlin;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52562,7 +52586,7 @@ function checkCWE(flawInfo, options) {
         }
         else if (flawInfo.language == 'go') {
             console.log('CWE check for Go');
-            const supportedCWEs = [73, 78, 117];
+            const supportedCWEs = batchFix ? CWESupportMatrix.batch.go : CWESupportMatrix.individual.go;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -53987,7 +54011,7 @@ function runBatch(options, credentials) {
                         }
                         if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
                             console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is in the list of CWEs to fix, creating flaw info');
-                            if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                            if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options, true)) == true) {
                                 const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                                 if (options.DEBUG == 'true') {
                                     console.log('#######- DEBUG MODE -#######');
@@ -54026,7 +54050,7 @@ function runBatch(options, credentials) {
                     }
                     else {
                         console.log('Fix for all CWEs');
-                        if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
+                        if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options, true)) == true) {
                             const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                             //write flaw info and source file
                             const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
