@@ -201,10 +201,10 @@ export async function runBatch( options:any, credentials:any){
 
     //create the tar after all files are created and copied
     // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
-    const tarball = execSync('tar -czf app.tar.gz -C app .');
+    const tarball = execSync(`tar -czf app.tar.gz -C ${tempFolder + sourcecodeFolderName} .`);
     console.log('Tar is created');
 
-    const projectID = await uploadBatch(credentials, 'app.tar.gz', options)
+    const projectID = await uploadBatch(credentials, (tempFolder+'app.tar.gz'), options)
     console.log('Project ID is: '+projectID)
 
     const checkBatchFixStatus = await checkFixBatch(credentials, projectID, options)

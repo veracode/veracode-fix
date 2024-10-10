@@ -52622,7 +52622,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.tempFolder = exports.sourcecodeFolderName = void 0;
 exports.sourcecodeFolderName = 'app/';
 //export temp folder value from github action
-exports.tempFolder = process.env.RUNNER_TEMP || '';
+exports.tempFolder = process.env.RUNNER_TEMP ? (process.env.RUNNER_TEMP + '/') : '';
 
 
 /***/ }),
@@ -54110,9 +54110,9 @@ function runBatch(options, credentials) {
         }
         //create the tar after all files are created and copied
         // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
-        const tarball = (0, child_process_1.execSync)('tar -czf app.tar.gz -C app .');
+        const tarball = (0, child_process_1.execSync)(`tar -czf app.tar.gz -C ${constants_2.tempFolder + constants_1.sourcecodeFolderName} .`);
         console.log('Tar is created');
-        const projectID = yield (0, requests_1.uploadBatch)(credentials, 'app.tar.gz', options);
+        const projectID = yield (0, requests_1.uploadBatch)(credentials, (constants_2.tempFolder + 'app.tar.gz'), options);
         console.log('Project ID is: ' + projectID);
         const checkBatchFixStatus = yield (0, requests_1.checkFixBatch)(credentials, projectID, options);
         if (checkBatchFixStatus == 1) {
