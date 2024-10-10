@@ -8,7 +8,10 @@ import { execSync }  from 'child_process';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdateBatch } from './checkRun';
 import { rewritePath } from './rewritePath'
 import { createPR } from './create_pr'
+//app
 
+import { sourcecodeFolderName } from './constants';
+import {tempFolder} from './constants'
 export async function runBatch( options:any, credentials:any){
 
     //read json file
@@ -128,22 +131,22 @@ export async function runBatch( options:any, credentials:any){
                             const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
                             const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
                             console.log('Writing flaw to: app/'+flawFoldername+'/'+flawFilenane)
-                            fs.mkdirSync('app/flaws/'+flawFoldername, { recursive: true });
-                            fs.writeFileSync('app/flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
+                            fs.mkdirSync(tempFolder + sourcecodeFolderName + 'flaws/'+flawFoldername, { recursive: true });
+                            fs.writeFileSync(tempFolder + sourcecodeFolderName + '/flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
 
-                            if (fs.existsSync('app/'+flawInfo.sourceFile)) {
+                            if (fs.existsSync(tempFolder + sourcecodeFolderName + flawInfo.sourceFile)) {
                                 console.log('File exists nothing to do');
                             } else {
                                 console.log('File does not exist, copying file');
                                 let str = flawInfo.sourceFile;
                                 let lastSlashIndex = str.lastIndexOf('/');
                                 let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                if (!fs.existsSync('app/'+strBeforeLastSlash)) {
+                                if (!fs.existsSync(tempFolder + sourcecodeFolderName + strBeforeLastSlash)) {
                                     console.log('Destination directory does not exist lest create it');
-                                    fs.mkdirSync('app/'+strBeforeLastSlash, { recursive: true });
+                                    fs.mkdirSync(tempFolder + sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
                                 }
 
-                                fs.copyFileSync(flawInfo.sourceFile, 'app/'+flawInfo.sourceFile)
+                                fs.copyFileSync(flawInfo.sourceFile, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
                             }
                         }
                         else {
@@ -164,22 +167,22 @@ export async function runBatch( options:any, credentials:any){
                         const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
                         const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
                         console.log('Writing flaw to: app/flaws/'+flawFoldername+'/'+flawFilenane)
-                        fs.mkdirSync('app/flaws/'+flawFoldername, { recursive: true });
-                        fs.writeFileSync('app/flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
+                        fs.mkdirSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername, { recursive: true });
+                        fs.writeFileSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
 
-                        if (fs.existsSync('app/'+flawInfo.sourceFile)) {
+                        if (fs.existsSync(tempFolder + sourcecodeFolderName+flawInfo.sourceFile)) {
                             console.log('File exists nothing to do');
                         } else {
                             console.log('File does not exist, copying file');
                             let str = flawInfo.sourceFile;
                             let lastSlashIndex = str.lastIndexOf('/');
                             let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                            if (!fs.existsSync('app/'+strBeforeLastSlash)) {
+                            if (!fs.existsSync(tempFolder + sourcecodeFolderName+strBeforeLastSlash)) {
                                 console.log('Destination directory does not exist lest create it');
-                                fs.mkdirSync('app/'+strBeforeLastSlash, { recursive: true });
+                                fs.mkdirSync(tempFolder + sourcecodeFolderName+strBeforeLastSlash, { recursive: true });
                             }
 
-                            fs.copyFileSync(flawInfo.sourceFile, 'app/'+flawInfo.sourceFile)
+                            fs.copyFileSync(flawInfo.sourceFile, tempFolder + sourcecodeFolderName+flawInfo.sourceFile)
                         }
 
                     }
@@ -191,7 +194,7 @@ export async function runBatch( options:any, credentials:any){
         }
     };
 
-    if (!fs.existsSync('app')) { // nothing to fix as no files with conditions met
+    if (!fs.existsSync(tempFolder + sourcecodeFolderName)) { // nothing to fix as no files with conditions met
         console.log("nothing to fix as no files with conditions met");
         process.exit(0);
     }

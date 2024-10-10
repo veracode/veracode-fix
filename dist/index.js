@@ -52613,6 +52613,20 @@ exports.checkCWE = checkCWE;
 
 /***/ }),
 
+/***/ 3691:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.tempFolder = exports.sourcecodeFolderName = void 0;
+exports.sourcecodeFolderName = 'app/';
+//export temp folder value from github action
+exports.tempFolder = process.env.RUNNER_TEMP || '';
+
+
+/***/ }),
+
 /***/ 9102:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -53419,6 +53433,8 @@ const core = __importStar(__nccwpck_require__(5763));
 const run_single_1 = __nccwpck_require__(1733);
 const run_batch_1 = __nccwpck_require__(9924);
 const fs_1 = __importDefault(__nccwpck_require__(7147));
+const constants_1 = __nccwpck_require__(3691);
+const constants_2 = __nccwpck_require__(3691);
 let credentials = {};
 let options = {};
 function getInputOrEnv(name, required) {
@@ -53449,6 +53465,9 @@ options['token'] = getInputOrEnv('token', false);
 const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
 if (options.DEBUG == 'true') {
     console.log('#######- DEBUG MODE -#######');
+    console.log('process.env.RUNNER_TEMP= ' + process.env.RUNNER_TEMP);
+    console.log('source folder = ' + constants_1.sourcecodeFolderName);
+    console.log('temp folder = ' + constants_2.tempFolder);
     console.log('results.json: ' + resultsFile);
     console.log('checking if items are present to fix: ');
     console.log('#######- DEBUG MODE -#######');
@@ -53566,6 +53585,7 @@ function upload(platform, tar, options) {
     });
 }
 exports.upload = upload;
+//app
 function uploadBatch(credentials, tar, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
@@ -53926,6 +53946,9 @@ const child_process_1 = __nccwpck_require__(2081);
 const checkRun_1 = __nccwpck_require__(9881);
 const rewritePath_1 = __nccwpck_require__(7415);
 const create_pr_1 = __nccwpck_require__(8931);
+//app
+const constants_1 = __nccwpck_require__(3691);
+const constants_2 = __nccwpck_require__(3691);
 function runBatch(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -54023,9 +54046,9 @@ function runBatch(options, credentials) {
                                 const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
                                 const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
                                 console.log('Writing flaw to: app/' + flawFoldername + '/' + flawFilenane);
-                                fs_1.default.mkdirSync('app/flaws/' + flawFoldername, { recursive: true });
-                                fs_1.default.writeFileSync('app/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
-                                if (fs_1.default.existsSync('app/' + flawInfo.sourceFile)) {
+                                fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername, { recursive: true });
+                                fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + '/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
+                                if (fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile)) {
                                     console.log('File exists nothing to do');
                                 }
                                 else {
@@ -54033,11 +54056,11 @@ function runBatch(options, credentials) {
                                     let str = flawInfo.sourceFile;
                                     let lastSlashIndex = str.lastIndexOf('/');
                                     let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                    if (!fs_1.default.existsSync('app/' + strBeforeLastSlash)) {
+                                    if (!fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash)) {
                                         console.log('Destination directory does not exist lest create it');
-                                        fs_1.default.mkdirSync('app/' + strBeforeLastSlash, { recursive: true });
+                                        fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
                                     }
-                                    fs_1.default.copyFileSync(flawInfo.sourceFile, 'app/' + flawInfo.sourceFile);
+                                    fs_1.default.copyFileSync(flawInfo.sourceFile, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
                                 }
                             }
                             else {
@@ -54056,9 +54079,9 @@ function runBatch(options, credentials) {
                             const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
                             const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
                             console.log('Writing flaw to: app/flaws/' + flawFoldername + '/' + flawFilenane);
-                            fs_1.default.mkdirSync('app/flaws/' + flawFoldername, { recursive: true });
-                            fs_1.default.writeFileSync('app/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
-                            if (fs_1.default.existsSync('app/' + flawInfo.sourceFile)) {
+                            fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername, { recursive: true });
+                            fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
+                            if (fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile)) {
                                 console.log('File exists nothing to do');
                             }
                             else {
@@ -54066,11 +54089,11 @@ function runBatch(options, credentials) {
                                 let str = flawInfo.sourceFile;
                                 let lastSlashIndex = str.lastIndexOf('/');
                                 let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                if (!fs_1.default.existsSync('app/' + strBeforeLastSlash)) {
+                                if (!fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash)) {
                                     console.log('Destination directory does not exist lest create it');
-                                    fs_1.default.mkdirSync('app/' + strBeforeLastSlash, { recursive: true });
+                                    fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
                                 }
-                                fs_1.default.copyFileSync(flawInfo.sourceFile, 'app/' + flawInfo.sourceFile);
+                                fs_1.default.copyFileSync(flawInfo.sourceFile, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
                             }
                         }
                         else {
@@ -54081,7 +54104,7 @@ function runBatch(options, credentials) {
             }
         }
         ;
-        if (!fs_1.default.existsSync('app')) { // nothing to fix as no files with conditions met
+        if (!fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName)) { // nothing to fix as no files with conditions met
             console.log("nothing to fix as no files with conditions met");
             process.exit(0);
         }
@@ -54375,6 +54398,7 @@ function createTar(initialFlawInfo, options) {
         catch (err) {
             // File does not exist
             console.error('Tar cannot be created');
+            process.exit(1); //exit with error since we cannot proceed
         }
     });
 }
