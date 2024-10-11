@@ -73,6 +73,11 @@ export async function runBatch( options:any, credentials:any){
                 language: options.language,
                 sourceFile: sourceFile,
             }
+            if (options.DEBUG == 'true'){
+                console.log('#######- DEBUG MODE -#######')
+                console.log('initialFlawInfo',initialFlawInfo)
+                console.log('#######- DEBUG MODE -#######')
+            }
 
             let include = 0
             if ( options.files == 'changed' ){

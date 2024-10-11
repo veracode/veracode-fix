@@ -53998,6 +53998,11 @@ function runBatch(options, credentials) {
                     language: options.language,
                     sourceFile: sourceFile,
                 };
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('initialFlawInfo', initialFlawInfo);
+                    console.log('#######- DEBUG MODE -#######');
+                }
                 let include = 0;
                 if (options.files == 'changed') {
                     console.log('Checking if file is part of PR');
