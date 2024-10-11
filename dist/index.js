@@ -53588,10 +53588,10 @@ function upload(platform, tar, options) {
 }
 exports.upload = upload;
 //app
-function uploadBatch(credentials, tar, options) {
+function uploadBatch(credentials, tarPath, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
-        const fileBuffer = fs_1.default.readFileSync('app.tar.gz');
+        const fileBuffer = fs_1.default.readFileSync(tarPath);
         const formData = new form_data_1.default();
         formData.append('data', fileBuffer, 'app.tar.gz');
         formData.append('name', 'data');
@@ -54052,7 +54052,7 @@ function runBatch(options, credentials) {
                                 //write flaw info and source file
                                 const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
                                 const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
-                                console.log('Writing flaw to: app/' + flawFoldername + '/' + flawFilenane);
+                                console.log(`Writing flaw to: ${constants_2.tempFolder + constants_1.sourcecodeFolderName}` + flawFoldername + '/' + flawFilenane);
                                 fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername, { recursive: true });
                                 fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + '/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
                                 if (fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile)) {
@@ -54085,7 +54085,7 @@ function runBatch(options, credentials) {
                             //write flaw info and source file
                             const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
                             const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
-                            console.log('Writing flaw to: app/flaws/' + flawFoldername + '/' + flawFilenane);
+                            console.log(`Writing flaw to: ${constants_2.tempFolder + constants_1.sourcecodeFolderName}` + flawFoldername + '/' + flawFilenane);
                             fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername, { recursive: true });
                             fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
                             if (fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile)) {
@@ -54117,7 +54117,7 @@ function runBatch(options, credentials) {
         }
         //create the tar after all files are created and copied
         // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
-        const tarball = (0, child_process_1.execSync)(`tar -czf app.tar.gz -C ${constants_2.tempFolder + constants_1.sourcecodeFolderName} .`);
+        const tarball = (0, child_process_1.execSync)(`tar -czf ${constants_2.tempFolder}app.tar.gz -C ${constants_2.tempFolder + constants_1.sourcecodeFolderName} .`);
         console.log('Tar is created');
         const projectID = yield (0, requests_1.uploadBatch)(credentials, (constants_2.tempFolder + 'app.tar.gz'), options);
         console.log('Project ID is: ' + projectID);

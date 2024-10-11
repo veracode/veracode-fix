@@ -135,7 +135,7 @@ export async function runBatch( options:any, credentials:any){
                             //write flaw info and source file
                             const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
                             const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
-                            console.log('Writing flaw to: app/'+flawFoldername+'/'+flawFilenane)
+                            console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}`+flawFoldername+'/'+flawFilenane)
                             fs.mkdirSync(tempFolder + sourcecodeFolderName + 'flaws/'+flawFoldername, { recursive: true });
                             fs.writeFileSync(tempFolder + sourcecodeFolderName + '/flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
 
@@ -171,7 +171,7 @@ export async function runBatch( options:any, credentials:any){
                         //write flaw info and source file
                         const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
                         const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
-                        console.log('Writing flaw to: app/flaws/'+flawFoldername+'/'+flawFilenane)
+                        console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}`+flawFoldername+'/'+flawFilenane)
                         fs.mkdirSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername, { recursive: true });
                         fs.writeFileSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
 
@@ -206,7 +206,7 @@ export async function runBatch( options:any, credentials:any){
 
     //create the tar after all files are created and copied
     // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
-    const tarball = execSync(`tar -czf app.tar.gz -C ${tempFolder + sourcecodeFolderName} .`);
+    const tarball = execSync(`tar -czf ${tempFolder}app.tar.gz -C ${tempFolder + sourcecodeFolderName} .`);
     console.log('Tar is created');
 
     const projectID = await uploadBatch(credentials, (tempFolder+'app.tar.gz'), options)
