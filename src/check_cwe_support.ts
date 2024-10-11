@@ -1,28 +1,6 @@
+//move  CWESupportmatrix  to constants file and import here
 
-const CWESupportMatrix = {
-    "individual": {
-      "java": ["117", "80", "404", "159", "209", "597", "89", "611", "331", "327", "113", "601", "502"],
-      "cs": ["80", "117", "352", "73", "404", "89", "209", "316", "601", "327", "331", "611"],
-      "js": ["80", "117", "89", "73", "601", "352", "78", "209", "327", "312", "614", "311", "611", "113"],
-      "php": ["80", "73", "89", "117"],
-      "py": ["80", "73", "331", "327", "295", "601", "78", "89", "757"],
-      "kotlin": ["80", "89", "113", "117", "331", "404"],
-      "scala": ["611", "117", "80", "78"],
-      "go": ["73", "78", "117"],
-      "ruby": ["73", "80", "89", "117", "601"]
-    },
-    "batch": {
-      "java": ["117", "80", "404", "159", "209", "597", "89", "611", "331", "113"],
-      "cs": ["80", "117", "352", "404", "89", "209", "316", "331", "611"],
-      "js": ["80", "117", "89", "352", "78", "209", "614", "611", "113"],
-      "php": ["80", "89", "117"],
-      "py": ["80", "331", "295", "78", "89", "757"],
-      "kotlin": ["80", "89", "113", "117", "331", "404"],
-      "scala": ["611", "117", "80", "78"],
-      "go": ["73", "78", "117"],
-      "ruby": ["73", "80", "89", "117", "601"]
-    }
-  }
+import { CWESupportMatrix } from './constants'
 
 export async function checkCWE(flawInfo:any, options:any,batchFix=false){ 
     if (flawInfo.language == 'java'){
@@ -42,7 +20,7 @@ export async function checkCWE(flawInfo:any, options:any,batchFix=false){
             if (options.DEBUG == 'true'){
                 console.log('#######- DEBUG MODE -#######')
                 console.log('check_cwe_support.ts')
-                console.log('Checks - CWE '+flawInfo.CWE+' is not supported Java')
+                console.log('Checks - CWE '+flawInfo.cweID+' is not supported Java')
                 console.log('#######- DEBUG MODE -#######')
             }
             return false

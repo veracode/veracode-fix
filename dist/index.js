@@ -52384,10 +52384,11 @@ exports.updateCheckRunClose = updateCheckRunClose;
 /***/ }),
 
 /***/ 3449:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+//move  CWESupportmatrix  to constants file and import here
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -52399,35 +52400,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.checkCWE = void 0;
-const CWESupportMatrix = {
-    "individual": {
-        "java": ["117", "80", "404", "159", "209", "597", "89", "611", "331", "327", "113", "601", "502"],
-        "cs": ["80", "117", "352", "73", "404", "89", "209", "316", "601", "327", "331", "611"],
-        "js": ["80", "117", "89", "73", "601", "352", "78", "209", "327", "312", "614", "311", "611", "113"],
-        "php": ["80", "73", "89", "117"],
-        "py": ["80", "73", "331", "327", "295", "601", "78", "89", "757"],
-        "kotlin": ["80", "89", "113", "117", "331", "404"],
-        "scala": ["611", "117", "80", "78"],
-        "go": ["73", "78", "117"],
-        "ruby": ["73", "80", "89", "117", "601"]
-    },
-    "batch": {
-        "java": ["117", "80", "404", "159", "209", "597", "89", "611", "331", "113"],
-        "cs": ["80", "117", "352", "404", "89", "209", "316", "331", "611"],
-        "js": ["80", "117", "89", "352", "78", "209", "614", "611", "113"],
-        "php": ["80", "89", "117"],
-        "py": ["80", "331", "295", "78", "89", "757"],
-        "kotlin": ["80", "89", "113", "117", "331", "404"],
-        "scala": ["611", "117", "80", "78"],
-        "go": ["73", "78", "117"],
-        "ruby": ["73", "80", "89", "117", "601"]
-    }
-};
+const constants_1 = __nccwpck_require__(3691);
 function checkCWE(flawInfo_1, options_1) {
     return __awaiter(this, arguments, void 0, function* (flawInfo, options, batchFix = false) {
         if (flawInfo.language == 'java') {
             console.log('CWE check for Java');
-            const supportedCWEs = batchFix ? CWESupportMatrix.batch.java : CWESupportMatrix.individual.java;
+            const supportedCWEs = batchFix ? constants_1.CWESupportMatrix.batch.java : constants_1.CWESupportMatrix.individual.java;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52441,7 +52419,7 @@ function checkCWE(flawInfo_1, options_1) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
                     console.log('check_cwe_support.ts');
-                    console.log('Checks - CWE ' + flawInfo.CWE + ' is not supported Java');
+                    console.log('Checks - CWE ' + flawInfo.cweID + ' is not supported Java');
                     console.log('#######- DEBUG MODE -#######');
                 }
                 return false;
@@ -52449,7 +52427,7 @@ function checkCWE(flawInfo_1, options_1) {
         }
         else if (flawInfo.language == 'csharp') {
             console.log('CWE check for C#');
-            const supportedCWEs = batchFix ? CWESupportMatrix.batch.cs : CWESupportMatrix.individual.cs;
+            const supportedCWEs = batchFix ? constants_1.CWESupportMatrix.batch.cs : constants_1.CWESupportMatrix.individual.cs;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52476,7 +52454,7 @@ function checkCWE(flawInfo_1, options_1) {
                 console.log('CWE check for JavaScript');
                 console.log('#######- DEBUG MODE -#######');
             }
-            const supportedCWEs = batchFix ? CWESupportMatrix.batch.js : CWESupportMatrix.individual.js;
+            const supportedCWEs = batchFix ? constants_1.CWESupportMatrix.batch.js : constants_1.CWESupportMatrix.individual.js;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52498,7 +52476,7 @@ function checkCWE(flawInfo_1, options_1) {
         }
         else if (flawInfo.language == 'python') {
             console.log('CWE check for Python');
-            const supportedCWEs = batchFix ? CWESupportMatrix.batch.py : CWESupportMatrix.individual.py;
+            const supportedCWEs = batchFix ? constants_1.CWESupportMatrix.batch.py : constants_1.CWESupportMatrix.individual.py;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52520,7 +52498,7 @@ function checkCWE(flawInfo_1, options_1) {
         }
         else if (flawInfo.language == 'php') {
             console.log('CWE check for PHP');
-            const supportedCWEs = batchFix ? CWESupportMatrix.batch.php : CWESupportMatrix.individual.php;
+            const supportedCWEs = batchFix ? constants_1.CWESupportMatrix.batch.php : constants_1.CWESupportMatrix.individual.php;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52542,7 +52520,7 @@ function checkCWE(flawInfo_1, options_1) {
         }
         else if (flawInfo.language == 'scala') {
             console.log('CWE check for Scala');
-            const supportedCWEs = batchFix ? CWESupportMatrix.batch.scala : CWESupportMatrix.individual.scala;
+            const supportedCWEs = batchFix ? constants_1.CWESupportMatrix.batch.scala : constants_1.CWESupportMatrix.individual.scala;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52564,7 +52542,7 @@ function checkCWE(flawInfo_1, options_1) {
         }
         else if (flawInfo.language == 'kotlin') {
             console.log('CWE check for Kotlin');
-            const supportedCWEs = batchFix ? CWESupportMatrix.batch.kotlin : CWESupportMatrix.individual.kotlin;
+            const supportedCWEs = batchFix ? constants_1.CWESupportMatrix.batch.kotlin : constants_1.CWESupportMatrix.individual.kotlin;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52586,7 +52564,7 @@ function checkCWE(flawInfo_1, options_1) {
         }
         else if (flawInfo.language == 'go') {
             console.log('CWE check for Go');
-            const supportedCWEs = batchFix ? CWESupportMatrix.batch.go : CWESupportMatrix.individual.go;
+            const supportedCWEs = batchFix ? constants_1.CWESupportMatrix.batch.go : constants_1.CWESupportMatrix.individual.go;
             if (supportedCWEs.includes(flawInfo.cweID)) {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
@@ -52619,10 +52597,34 @@ exports.checkCWE = checkCWE;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.tempFolder = exports.sourcecodeFolderName = void 0;
+exports.CWESupportMatrix = exports.tempFolder = exports.sourcecodeFolderName = void 0;
 exports.sourcecodeFolderName = 'app/';
 //export temp folder value from github action
 exports.tempFolder = process.env.RUNNER_TEMP ? (process.env.RUNNER_TEMP + '/') : '';
+exports.CWESupportMatrix = {
+    "individual": {
+        "java": [117, 80, 404, 159, 209, 597, 89, 611, 331, 327, 113, 601, 502],
+        "cs": [80, 117, 352, 73, 404, 89, 209, 316, 601, 327, 331, 611],
+        "js": [80, 117, 89, 73, 601, 352, 78, 209, 327, 312, 614, 311, 611, 113],
+        "php": [80, 73, 89, 117],
+        "py": [80, 73, 331, 327, 295, 601, 78, 89, 757],
+        "kotlin": [80, 89, 113, 117, 331, 404],
+        "scala": [611, 117, 80, 78],
+        "go": [73, 78, 117],
+        "ruby": [73, 80, 89, 117, 601]
+    },
+    "batch": {
+        "java": [117, 80, 404, 159, 209, 597, 89, 611, 331, 113],
+        "cs": [80, 117, 352, 404, 89, 209, 316, 331, 611],
+        "js": [80, 117, 89, 352, 78, 209, 614, 611, 113],
+        "php": [80, 89, 117],
+        "py": [80, 331, 295, 78, 89, 757],
+        "kotlin": [80, 89, 113, 117, 331, 404],
+        "scala": [611, 117, 80, 78],
+        "go": [73, 78, 117],
+        "ruby": [73, 80, 89, 117, 601]
+    }
+};
 
 
 /***/ }),
