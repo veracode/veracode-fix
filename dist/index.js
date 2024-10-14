@@ -53948,7 +53948,6 @@ const child_process_1 = __nccwpck_require__(2081);
 const checkRun_1 = __nccwpck_require__(9881);
 const rewritePath_1 = __nccwpck_require__(7415);
 const create_pr_1 = __nccwpck_require__(8931);
-//app
 const constants_1 = __nccwpck_require__(3691);
 const constants_2 = __nccwpck_require__(3691);
 function runBatch(options, credentials) {
@@ -54405,7 +54404,6 @@ function createTar(initialFlawInfo, options) {
         catch (err) {
             // File does not exist
             console.error('Tar cannot be created');
-            process.exit(1); //exit with error since we cannot proceed
         }
     });
 }
