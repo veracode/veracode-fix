@@ -8,7 +8,6 @@ import { execSync }  from 'child_process';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdateBatch } from './checkRun';
 import { rewritePath } from './rewritePath'
 import { createPR } from './create_pr'
-//app
 
 import { sourcecodeFolderName } from './constants';
 import {tempFolder} from './constants'
