@@ -53587,7 +53587,6 @@ function upload(platform, tar, options) {
     });
 }
 exports.upload = upload;
-//app
 function uploadBatch(credentials, tarPath, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
@@ -54404,6 +54403,7 @@ function createTar(initialFlawInfo, options) {
         catch (err) {
             // File does not exist
             console.error('Tar cannot be created');
+            process.exit(1); //exit with error since we cannot proceed
         }
     });
 }

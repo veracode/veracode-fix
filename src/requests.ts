@@ -60,7 +60,7 @@ export async function upload(platform:any, tar:any, options:any) {
     }
 
 }
-//app
+
 export async function uploadBatch(credentials:any, tarPath:any, options:any) {
 
     const platform:any = await selectPlatfrom(credentials)
