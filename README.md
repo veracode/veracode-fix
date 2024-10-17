@@ -1,4 +1,4 @@
-# Veracode Fix Action
+# Veracode Fix GitHub Action
 
 ## About
 This action will use the Veracode's AI assisted remediation service Veracode Fix. For more information please see the official product page at https://www.veracode.com/fix and the official at https://docs.veracode.com/r/veracode_fix.
