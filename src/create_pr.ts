@@ -73,8 +73,8 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
 
     //start body of PR comment
     let prCommentBody:any
-    prCommentBody = '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
-    prCommentBody = prCommentBody+'VERACOE-FIX CODE SUGGESTIONS\n'
+    prCommentBody = '![](https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg)\n'
+    prCommentBody = prCommentBody+'VERACODE FIX CODE SUGGESTIONS\n'
     prCommentBody = prCommentBody+'> [!CAUTION]\n'
     prCommentBody = prCommentBody+'***Breaking Flaws identified in code!***\n'
     prCommentBody = prCommentBody+'\n'
