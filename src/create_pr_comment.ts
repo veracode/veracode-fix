@@ -33,7 +33,7 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
 
     //crete comment body
     let commentBody = ''
-    commentBody = commentBody+'![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
+    commentBody = commentBody+'![](https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg)\n'
     commentBody = commentBody+'> [!CAUTION]\n'
     commentBody = commentBody+'***Breaking Flaw identified in code!***\n'
     commentBody = commentBody+'\n'
@@ -115,7 +115,7 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
         let keys = Object.keys(batchFixResults.results);
         console.log('Creating PR comment for '+keys[i])
         
-        commentBody = '![](https://www.veracode.com/sites/default/files/2022-04/logo_1.svg)\n'
+        commentBody = '![](https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg)\n'
         commentBody = commentBody+'> [!CAUTION]\n'
         commentBody = commentBody+'***Breaking Flaws identified in code!***\n'
         commentBody = commentBody+'\n'
