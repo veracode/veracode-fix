@@ -53427,6 +53427,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -53434,7 +53443,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(1453));
 const run_single_1 = __nccwpck_require__(1071);
 const run_batch_1 = __nccwpck_require__(1214);
-const fs_1 = __importDefault(__nccwpck_require__(7147));
+const promises_1 = __importDefault(__nccwpck_require__(3977));
 const constants_1 = __nccwpck_require__(5329);
 const constants_2 = __nccwpck_require__(5329);
 let credentials = {};
@@ -53464,30 +53473,43 @@ options['createPR'] = getInputOrEnv('createPR', false);
 options['files'] = getInputOrEnv('files', false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
-const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
-if (options.DEBUG == 'true') {
-    console.log('#######- DEBUG MODE -#######');
-    console.log('process.env.RUNNER_TEMP= ' + process.env.RUNNER_TEMP);
-    console.log('source folder = ' + constants_1.sourcecodeFolderName);
-    console.log('temp folder = ' + constants_2.tempFolder);
-    console.log('results.json: ' + resultsFile);
-    console.log('checking if items are present to fix: ');
-    console.log('#######- DEBUG MODE -#######');
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('process.env.RUNNER_TEMP= ' + process.env.RUNNER_TEMP);
+                console.log('source folder = ' + constants_1.sourcecodeFolderName);
+                console.log('temp folder = ' + constants_2.tempFolder);
+                console.log('results.json path: ' + options.file);
+                console.log('checking if items are present to fix: ');
+                console.log('#######- DEBUG MODE -#######');
+            }
+            const resultsFile = yield promises_1.default.readFile(options.file, 'utf8');
+            if (!JSON.parse(resultsFile).findings.length) {
+                console.log('No findings in results.json, nothing to fix');
+            }
+            else if (options.fixType == 'batch') {
+                console.log('Running Batch Fix');
+                (0, run_batch_1.runBatch)(options, credentials);
+            }
+            else if (options.fixType == 'single') {
+                console.log('Running Single Fix');
+                (0, run_single_1.runSingle)(options, credentials);
+            }
+            else {
+                console.log('no Fix Type selected');
+                core.setFailed('no Fix Type selected');
+            }
+        }
+        catch (e) {
+            const errorMessage = e instanceof Error ? e.message : e;
+            console.log('error in main file ', errorMessage);
+            core.setFailed('error in main file ' + errorMessage);
+        }
+    });
 }
-if (!JSON.parse(resultsFile).findings.length) {
-    console.log('No findings in results.json, nothing to fix');
-}
-else if (options.fixType == 'batch') {
-    console.log('Running Batch Fix');
-    (0, run_batch_1.runBatch)(options, credentials);
-}
-else if (options.fixType == 'single') {
-    console.log('Running Single Fix');
-    (0, run_single_1.runSingle)(options, credentials);
-}
-else {
-    console.log('no Fix Type selected');
-}
+run();
 
 
 /***/ }),
@@ -53540,6 +53562,7 @@ const fs_1 = __importDefault(__nccwpck_require__(7147));
 const form_data_1 = __importDefault(__nccwpck_require__(8859));
 const select_platform_1 = __nccwpck_require__(4160);
 const github = __importStar(__nccwpck_require__(1538));
+const core = __importStar(__nccwpck_require__(1453));
 // set client identifier
 axios_1.default.defaults.headers.common['X-CLIENT-TYPE'] = 'fix-github-action';
 function upload(platform, tar, options) {
@@ -53566,23 +53589,19 @@ function upload(platform, tar, options) {
             console.log('#######- DEBUG MODE -#######');
         }
         console.log('Uploading data.tar.gz to Veracode');
-        const response = yield axios_1.default.post('https://' + platform.apiUrl + '/fix/v1/project/upload_code', formData, {
-            headers: Object.assign({ 'Authorization': authHeader }, formData.getHeaders())
-        });
-        if (response.status != 200) {
-            console.log('Error uploading data');
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('requests.ts - upload');
-                console.log(response.data);
-                console.log('#######- DEBUG MODE -#######');
-            }
-        }
-        else {
+        try {
+            const response = yield axios_1.default.post('https://' + platform.apiUrl + '/fix/v1/project/upload_code', formData, {
+                headers: Object.assign({ 'Authorization': authHeader }, formData.getHeaders())
+            });
             console.log('Data uploaded successfully');
-            console.log('Project ID is:');
+            console.log('SingleFix Project ID is:');
             console.log(response.data);
             return response.data;
+        }
+        catch (e) {
+            let errorString = e instanceof Error ? e.message : e;
+            console.log('Error uploading single fix data', errorString);
+            core.setFailed('Error uploading single fix data' + errorString);
         }
     });
 }
@@ -53612,23 +53631,19 @@ function uploadBatch(credentials, tarPath, options) {
             console.log('#######- DEBUG MODE -#######');
         }
         console.log('Uploading app.tar.gz to Veracode');
-        const response = yield axios_1.default.post('https://' + platform.apiUrl + '/fix/v1/project/batch_upload', formData, {
-            headers: Object.assign({ 'Authorization': authHeader }, formData.getHeaders())
-        });
-        if (response.status != 200) {
-            console.log('Error uploading data');
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('requests.ts - upload');
-                console.log(response.data);
-                console.log('#######- DEBUG MODE -#######');
-            }
-        }
-        else {
+        try {
+            const response = yield axios_1.default.post('https://' + platform.apiUrl + '/fix/v1/project/batch_upload', formData, {
+                headers: Object.assign({ 'Authorization': authHeader }, formData.getHeaders())
+            });
             console.log('Data uploaded successfully');
-            console.log('Project ID is:');
+            console.log('BatchFix Project ID is:');
             console.log(response.data);
             return response.data;
+        }
+        catch (e) {
+            let errorString = e instanceof Error ? e.message : e;
+            console.log('Error uploading batch fix data', errorString);
+            core.setFailed('Error uploading batch fix data' + errorString);
         }
     });
 }
@@ -53924,6 +53939,29 @@ exports.rewritePath = rewritePath;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -53949,6 +53987,7 @@ const rewritePath_1 = __nccwpck_require__(2449);
 const create_pr_1 = __nccwpck_require__(6511);
 const constants_1 = __nccwpck_require__(5329);
 const constants_2 = __nccwpck_require__(5329);
+const core = __importStar(__nccwpck_require__(1453));
 function runBatch(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -54111,6 +54150,7 @@ function runBatch(options, credentials) {
         ;
         if (!fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName)) { // nothing to fix as no files with conditions met
             console.log("nothing to fix as no files with conditions met");
+            core.info("nothing to fix as no files with conditions met.");
             process.exit(0);
         }
         //create the tar after all files are created and copied
@@ -54152,6 +54192,7 @@ function runBatch(options, credentials) {
                     }
                     else {
                         console.log('... but wea are not running on a pull request');
+                        core.info('comments not generated since not triggered on a pull request');
                     }
                 }
                 if (options.codeSuggestion == 'true') {
@@ -54587,6 +54628,14 @@ module.exports = require("net");
 
 "use strict";
 module.exports = require("node:events");
+
+/***/ }),
+
+/***/ 3977:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:fs/promises");
 
 /***/ }),
 
