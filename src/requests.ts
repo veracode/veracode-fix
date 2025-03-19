@@ -4,6 +4,7 @@ import fs from 'fs';
 import FormData from 'form-data';
 import { selectPlatfrom } from './select_platform';
 import * as github from '@actions/github'
+import * as core from '@actions/core'
 
 // set client identifier
 axios.defaults.headers.common['X-CLIENT-TYPE'] = 'fix-github-action';
@@ -35,30 +36,23 @@ export async function upload(platform:any, tar:any, options:any) {
     }
 
     console.log('Uploading data.tar.gz to Veracode')
-
-    const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/upload_code', formData, {
-        headers: {
-            'Authorization': authHeader,
-            ...formData.getHeaders()
-        }
-    });
-
-    if (response.status != 200){
-        console.log('Error uploading data')
-        if (options.DEBUG == 'true'){
-            console.log('#######- DEBUG MODE -#######')
-            console.log('requests.ts - upload')
-            console.log(response.data)
-            console.log('#######- DEBUG MODE -#######')
-        }
-    }
-    else {
-        console.log('Data uploaded successfully')
-        console.log('Project ID is:')
+    try {
+        const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/upload_code', formData, {
+            headers: {
+                'Authorization': authHeader,
+                ...formData.getHeaders()
+            }
+        });
+        console.log('Data uploaded successfully');
+        console.log('SingleFix Project ID is:');
         console.log(response.data);
         return response.data
+    } catch (e){
+        let errorString = e instanceof Error ? e.message : e;
+        console.log('Error uploading single fix data',errorString);
+        core.setFailed('Error uploading single fix data' + errorString);
+        
     }
-
 }
 
 export async function uploadBatch(credentials:any, tarPath:any, options:any) {
@@ -90,28 +84,21 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
     }
 
     console.log('Uploading app.tar.gz to Veracode')
-
-    const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/batch_upload', formData, {
-        headers: {
-            'Authorization': authHeader,
-            ...formData.getHeaders()
-        }
-    });
-
-    if (response.status != 200){
-        console.log('Error uploading data')
-        if (options.DEBUG == 'true'){
-            console.log('#######- DEBUG MODE -#######')
-            console.log('requests.ts - upload')
-            console.log(response.data)
-            console.log('#######- DEBUG MODE -#######')
-        }
-    }
-    else {
+    try {
+        const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/batch_upload', formData, {
+            headers: {
+                'Authorization': authHeader,
+                ...formData.getHeaders()
+            }
+        });
         console.log('Data uploaded successfully')
-        console.log('Project ID is:')
+        console.log('BatchFix Project ID is:')
         console.log(response.data);
         return response.data
+    } catch (e) {
+        let errorString = e instanceof Error ? e.message : e
+        console.log('Error uploading batch fix data',errorString)
+        core.setFailed('Error uploading batch fix data' + errorString)
     }
 
 }
