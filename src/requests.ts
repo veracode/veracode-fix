@@ -51,6 +51,7 @@ export async function upload(platform:any, tar:any, options:any) {
         let errorString = e instanceof Error ? e.message : e;
         console.log('Error uploading single fix data',errorString);
         core.setFailed('Error uploading single fix data' + errorString);
+        process.exit(1);
         
     }
 }
@@ -99,6 +100,7 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
         let errorString = e instanceof Error ? e.message : e
         console.log('Error uploading batch fix data',errorString)
         core.setFailed('Error uploading batch fix data' + errorString)
+        process.exit();
     }
 
 }

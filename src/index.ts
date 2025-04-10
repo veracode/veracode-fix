@@ -49,10 +49,19 @@ async function run() {
             console.log('checking if items are present to fix: ')
             console.log('#######- DEBUG MODE -#######')
         }
+        const eventName = process.env.GITHUB_EVENT_NAME;
+
+        if (eventName !== 'pull_request') {
+          core.setFailed(
+            ` Veracode Fix Action only supports pull_request events. Current event: ${eventName}`
+          );
+          process.exit();
+        }
         const resultsFile = await fsPromise.readFile(options.file, 'utf8')
 
         if (!JSON.parse(resultsFile).findings.length){ 
             console.log('No findings in results.json, nothing to fix')
+            process.exit(0);
         }
 
         else if ( options.fixType == 'batch' ){
@@ -66,11 +75,13 @@ async function run() {
         else {
             console.log('no Fix Type selected')
             core.setFailed('no Fix Type selected')
+            process.exit(1);
         }
     }catch(e) {
         const errorMessage = e instanceof Error ? e.message : e;
         console.log('error in main file ',errorMessage)
         core.setFailed('error in main file ' + errorMessage)
+        process.exit(1)
     }
     
 }
