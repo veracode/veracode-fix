@@ -53496,7 +53496,7 @@ function run() {
             const eventName = process.env.GITHUB_EVENT_NAME;
             if (eventName !== 'pull_request') {
                 core.setFailed(` Veracode Fix Action only supports pull_request events. Current event: ${eventName}`);
-                process.exit();
+                process.exit(1);
             }
             const resultsFile = yield promises_1.default.readFile(options.file, 'utf8');
             if (!JSON.parse(resultsFile).findings.length) {

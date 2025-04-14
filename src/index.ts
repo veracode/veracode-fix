@@ -55,7 +55,7 @@ async function run() {
           core.setFailed(
             ` Veracode Fix Action only supports pull_request events. Current event: ${eventName}`
           );
-          process.exit();
+          process.exit(1);
         }
         const resultsFile = await fsPromise.readFile(options.file, 'utf8')
 
