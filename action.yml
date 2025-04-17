@@ -9,11 +9,11 @@ inputs:
     required: true
   token:
     description: 'GitHub Token'
-    required: false
+    required: true
     default: ${{ github.token }}
   access_token:
     description: 'GitHub Fine-grained access Token'
-    required: false
+    required: true
   inputFile:
     description: 'Results file from Veracode'
     required: false
