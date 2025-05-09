@@ -11,6 +11,8 @@ import { createPR } from './create_pr'
 
 import { sourcecodeFolderName } from './constants';
 import {tempFolder} from './constants'
+import * as core from '@actions/core'
+
 export async function runBatch( options:any, credentials:any){
 
     //read json file
@@ -200,6 +202,7 @@ export async function runBatch( options:any, credentials:any){
 
     if (!fs.existsSync(tempFolder + sourcecodeFolderName)) { // nothing to fix as no files with conditions met
         console.log("nothing to fix as no files with conditions met");
+        core.info("nothing to fix as no files with conditions met.");
         process.exit(0);
     }
 
@@ -249,6 +252,7 @@ export async function runBatch( options:any, credentials:any){
                 }
                 else {
                     console.log('... but wea are not running on a pull request')
+                    core.info('comments not generated since not triggered on a pull request')
                 }
             }
 
