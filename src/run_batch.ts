@@ -29,7 +29,7 @@ export async function runBatch( options:any, credentials:any){
             console.log('#######- DEBUG MODE -#######')
             console.log('run_batch.ts - runBatch()')
             console.log('Files part of PR:')
-            console.log(filesPartOfPR)
+            // console.log(filesPartOfPR)
             console.log('#######- DEBUG MODE -#######')
         }
         

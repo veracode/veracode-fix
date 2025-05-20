@@ -28,7 +28,7 @@ export async function upload(platform:any, tar:any, options:any) {
         console.log('#######- DEBUG MODE -#######')
         console.log('requests.ts - upload')
         console.log('Formdata created')
-        console.log(formData)
+        // console.log(formData)
         console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: fix/v1/project/upload_code'+' Method: POST')
         console.log('Auth header created')
         console.log(authHeader)
@@ -77,10 +77,10 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
         console.log('#######- DEBUG MODE -#######')
         console.log('requests.ts - upload')
         console.log('Formdata created')
-        console.log(formData)
+        // console.log(formData)
         console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: fix/v1/project/batch_upload'+' Method: POST')
         console.log('Auth header created')
-        console.log(authHeader)
+        // console.log(authHeader)
         console.log('#######- DEBUG MODE -#######')
     }
 
@@ -94,7 +94,7 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
         });
         console.log('Data uploaded successfully')
         console.log('BatchFix Project ID is:')
-        console.log(response.data);
+        // console.log(response.data);
         return response.data
     } catch (e) {
         let errorString = e instanceof Error ? e.message : e
