@@ -39,7 +39,7 @@ options['token'] = getInputOrEnv('token',false);
 
 async function run() {
     try {
-       
+        console.log('Fix action is starting')
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
             console.log('process.env.RUNNER_TEMP= ' +process.env.RUNNER_TEMP)
@@ -50,8 +50,8 @@ async function run() {
             console.log('#######- DEBUG MODE -#######')
         }
         const eventName = process.env.GITHUB_EVENT_NAME;
-
         if (eventName !== 'pull_request') {
+          console.log('Veracode Fix Action only supports pull_request events. eventName = ' + eventName)
           core.setFailed(
             ` Veracode Fix Action only supports pull_request events. Current event: ${eventName}`
           );

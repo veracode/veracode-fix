@@ -20,10 +20,11 @@ export async function runBatch( options:any, credentials:any){
     const jsonData = JSON.parse(jsonRead);
     const jsonFindings = jsonData.findings
     const flawCount = jsonFindings.length
-    console.log('Number of flaws: '+flawCount)
+    console.log('runBatch Number of flaws: '+flawCount)
 
     let filesPartOfPR:any = {}
     if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
+        console.log('runBatch: getFilesPartOfPR')
         filesPartOfPR = await getFilesPartOfPR(options)
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
@@ -34,7 +35,15 @@ export async function runBatch( options:any, credentials:any){
         }
         
         
+    } else {
+        console.log('This is not a PR - This should not happen')
+        core.setFailed(
+            ` Veracode Fix Action only supports pull_request events. Current event: ${process.env.GITHUB_EVENT_NAME}`
+        );  
+        process.exit(1)
     }
+    console.log('runBatch: Number of files changed in PR: ' + filesPartOfPR.length);
+
 
     //loop through json file and create a new array
     let i = 0
@@ -53,7 +62,7 @@ export async function runBatch( options:any, credentials:any){
     //loop through the new array per source file and find fixable flaws, supported CWE's and CWE's to be fixed
     let sourceFiles = Object.keys(flawArray);
     const sourceFilesCount = sourceFiles.length
-    console.log('Number of source files with flaws: '+sourceFilesCount)
+    console.log('runBatch: Number of source files with flaws: '+sourceFilesCount)
     for (let i = 0; i < sourceFilesCount; i++) {
 
         console.log('#############################\n\n')
@@ -209,10 +218,15 @@ export async function runBatch( options:any, credentials:any){
     //create the tar after all files are created and copied
     // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
     const tarball = execSync(`tar -czf ${tempFolder}app.tar.gz -C ${tempFolder + sourcecodeFolderName} .`);
-    console.log('Tar is created');
+    console.log('runBatch: Tar is created');
+    //print size of file for debug
+    const fileSizeInBytes = fs.statSync(tempFolder+'app.tar.gz').size;
+    const fileSizeInMB = fileSizeInBytes / (1024 * 1024);
+    console.log('runBatch: Tar size: '+fileSizeInMB+' MB');
 
+    console.log('runBatch: Uploading tar to Fix')
     const projectID = await uploadBatch(credentials, (tempFolder+'app.tar.gz'), options)
-    console.log('Project ID is: '+projectID)
+    console.log('runBatch: Project ID is: '+projectID)
 
     const checkBatchFixStatus = await checkFixBatch(credentials, projectID, options)
 

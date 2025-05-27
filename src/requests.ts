@@ -72,6 +72,33 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
           url: '/fix/v1/project/batch_upload',
           method: 'POST',
     })
+    axios.interceptors.request.use(request => {
+        let formDataSize = 0;
+        if (request.data instanceof FormData) {
+            const formDataBuffer = Buffer.from(request.data.getBuffer());
+            formDataSize = formDataBuffer.length;
+        }
+        
+        console.log('uploadBatch Starting Request:', {
+            url: request.url,
+            method: request.method,
+            headers: request.headers,
+            data: request.data ? 'FormData present' : 'No data',
+            formDataSize: formDataSize ? `${formDataSize} bytes` : 'N/A'
+        });
+        return request;
+    });
+
+    axios.interceptors.response.use(response => {
+        console.log('uploadBatch Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+            data: response.data
+        });
+        return response;
+    });
+
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
@@ -83,24 +110,26 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
         // console.log(authHeader)
         console.log('#######- DEBUG MODE -#######')
     }
-
+    console.log('ViD: '+platform.cleanedID+' Host: '+platform.apiUrl+' URL: fix/v1/project/batch_upload'+' Method: POST')
+    
     console.log('Uploading app.tar.gz to Veracode')
+    
     try {
         const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/batch_upload', formData, {
             headers: {
                 'Authorization': authHeader,
                 ...formData.getHeaders()
-            }
+            },
         });
-        console.log('Data uploaded successfully')
-        console.log('BatchFix Project ID is:')
+        console.log('uploadBatch: Data uploaded successfully')
+        // console.log('BatchFix Project ID is:')
         // console.log(response.data);
         return response.data
     } catch (e) {
         let errorString = e instanceof Error ? e.message : e
-        console.log('Error uploading batch fix data',errorString)
-        core.setFailed('Error uploading batch fix data' + errorString)
-        process.exit();
+        console.log('uploadBatch: Error uploading batch fix data',errorString)
+        core.setFailed('uploadBatch: Error uploading batch fix data' + errorString)
+        process.exit(1);
     }
 
 }
@@ -271,7 +300,6 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
 }
 
 export async function getFilesPartOfPR(options:any) {
-
     const octokit = github.getOctokit(options.token);
 
     const context = github.context

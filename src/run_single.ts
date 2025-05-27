@@ -9,6 +9,7 @@ import { createCheckRun, updateCheckRunClose, updateCheckRunUpdate } from './che
 import { getFilesPartOfPR } from './requests';
 import { rewritePath } from './rewritePath'
 import { createCodeSuggestion } from './create_code_suggestion';
+import * as core from '@actions/core'
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -31,6 +32,12 @@ export async function runSingle(options: any, credentials: any) {
             let checkRunID = await createCheckRun(options)
             options['checkRunID'] = checkRunID
             console.log('Check Run ID is: '+checkRunID)
+        } else {
+            console.log('This is not a PR - This should not happen')
+            core.setFailed(
+                ` Veracode Fix Action only supports pull_request events. Current event: ${process.env.GITHUB_EVENT_NAME}`
+              );
+            process.exit(1)
         }
     }
 

@@ -53484,6 +53484,7 @@ options['token'] = getInputOrEnv('token', false);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            console.log('Fix action is starting');
             if (options.DEBUG == 'true') {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('process.env.RUNNER_TEMP= ' + process.env.RUNNER_TEMP);
@@ -53495,6 +53496,7 @@ function run() {
             }
             const eventName = process.env.GITHUB_EVENT_NAME;
             if (eventName !== 'pull_request') {
+                console.log('Veracode Fix Action only supports pull_request events. eventName = ' + eventName);
                 core.setFailed(` Veracode Fix Action only supports pull_request events. Current event: ${eventName}`);
                 process.exit(1);
             }
@@ -53598,7 +53600,7 @@ function upload(platform, tar, options) {
             console.log('#######- DEBUG MODE -#######');
             console.log('requests.ts - upload');
             console.log('Formdata created');
-            console.log(formData);
+            // console.log(formData)
             console.log('ViD: ' + platform.cleanedID + ' Key: ' + platform.cleanedKEY + ' Host: ' + platform.apiUrl + ' URL: fix/v1/project/upload_code' + ' Method: POST');
             console.log('Auth header created');
             console.log(authHeader);
@@ -53637,31 +53639,56 @@ function uploadBatch(credentials, tarPath, options) {
             url: '/fix/v1/project/batch_upload',
             method: 'POST',
         });
+        axios_1.default.interceptors.request.use(request => {
+            let formDataSize = 0;
+            if (request.data instanceof form_data_1.default) {
+                const formDataBuffer = Buffer.from(request.data.getBuffer());
+                formDataSize = formDataBuffer.length;
+            }
+            console.log('uploadBatch Starting Request:', {
+                url: request.url,
+                method: request.method,
+                headers: request.headers,
+                data: request.data ? 'FormData present' : 'No data',
+                formDataSize: formDataSize ? `${formDataSize} bytes` : 'N/A'
+            });
+            return request;
+        });
+        axios_1.default.interceptors.response.use(response => {
+            console.log('uploadBatch Response:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+                data: response.data
+            });
+            return response;
+        });
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('requests.ts - upload');
             console.log('Formdata created');
-            console.log(formData);
+            // console.log(formData)
             console.log('ViD: ' + platform.cleanedID + ' Key: ' + platform.cleanedKEY + ' Host: ' + platform.apiUrl + ' URL: fix/v1/project/batch_upload' + ' Method: POST');
             console.log('Auth header created');
-            console.log(authHeader);
+            // console.log(authHeader)
             console.log('#######- DEBUG MODE -#######');
         }
+        console.log('ViD: ' + platform.cleanedID + ' Host: ' + platform.apiUrl + ' URL: fix/v1/project/batch_upload' + ' Method: POST');
         console.log('Uploading app.tar.gz to Veracode');
         try {
             const response = yield axios_1.default.post('https://' + platform.apiUrl + '/fix/v1/project/batch_upload', formData, {
-                headers: Object.assign({ 'Authorization': authHeader }, formData.getHeaders())
+                headers: Object.assign({ 'Authorization': authHeader }, formData.getHeaders()),
             });
-            console.log('Data uploaded successfully');
-            console.log('BatchFix Project ID is:');
-            console.log(response.data);
+            console.log('uploadBatch: Data uploaded successfully');
+            // console.log('BatchFix Project ID is:')
+            // console.log(response.data);
             return response.data;
         }
         catch (e) {
             let errorString = e instanceof Error ? e.message : e;
-            console.log('Error uploading batch fix data', errorString);
-            core.setFailed('Error uploading batch fix data' + errorString);
-            process.exit();
+            console.log('uploadBatch: Error uploading batch fix data', errorString);
+            core.setFailed('uploadBatch: Error uploading batch fix data' + errorString);
+            process.exit(1);
         }
     });
 }
@@ -54013,18 +54040,25 @@ function runBatch(options, credentials) {
         const jsonData = JSON.parse(jsonRead);
         const jsonFindings = jsonData.findings;
         const flawCount = jsonFindings.length;
-        console.log('Number of flaws: ' + flawCount);
+        console.log('runBatch Number of flaws: ' + flawCount);
         let filesPartOfPR = {};
         if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
+            console.log('runBatch: getFilesPartOfPR');
             filesPartOfPR = yield (0, requests_1.getFilesPartOfPR)(options);
             if (options.DEBUG == 'true') {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('run_batch.ts - runBatch()');
                 console.log('Files part of PR:');
-                console.log(filesPartOfPR);
+                // console.log(filesPartOfPR)
                 console.log('#######- DEBUG MODE -#######');
             }
         }
+        else {
+            console.log('This is not a PR - This should not happen');
+            core.setFailed(` Veracode Fix Action only supports pull_request events. Current event: ${process.env.GITHUB_EVENT_NAME}`);
+            process.exit(1);
+        }
+        console.log('runBatch: Number of files changed in PR: ' + filesPartOfPR.length);
         //loop through json file and create a new array
         let i = 0;
         let flawArray = {};
@@ -54039,7 +54073,7 @@ function runBatch(options, credentials) {
         //loop through the new array per source file and find fixable flaws, supported CWE's and CWE's to be fixed
         let sourceFiles = Object.keys(flawArray);
         const sourceFilesCount = sourceFiles.length;
-        console.log('Number of source files with flaws: ' + sourceFilesCount);
+        console.log('runBatch: Number of source files with flaws: ' + sourceFilesCount);
         for (let i = 0; i < sourceFilesCount; i++) {
             console.log('#############################\n\n');
             let sourceFile = sourceFiles[i];
@@ -54174,9 +54208,14 @@ function runBatch(options, credentials) {
         //create the tar after all files are created and copied
         // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
         const tarball = (0, child_process_1.execSync)(`tar -czf ${constants_2.tempFolder}app.tar.gz -C ${constants_2.tempFolder + constants_1.sourcecodeFolderName} .`);
-        console.log('Tar is created');
+        console.log('runBatch: Tar is created');
+        //print size of file for debug
+        const fileSizeInBytes = fs_1.default.statSync(constants_2.tempFolder + 'app.tar.gz').size;
+        const fileSizeInMB = fileSizeInBytes / (1024 * 1024);
+        console.log('runBatch: Tar size: ' + fileSizeInMB + ' MB');
+        console.log('runBatch: Uploading tar to Fix');
         const projectID = yield (0, requests_1.uploadBatch)(credentials, (constants_2.tempFolder + 'app.tar.gz'), options);
-        console.log('Project ID is: ' + projectID);
+        console.log('runBatch: Project ID is: ' + projectID);
         const checkBatchFixStatus = yield (0, requests_1.checkFixBatch)(credentials, projectID, options);
         if (checkBatchFixStatus == 1) {
             console.log('Batch Fixs are ready to be reviewed');
@@ -54258,6 +54297,29 @@ exports.runBatch = runBatch;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -54283,6 +54345,7 @@ const checkRun_1 = __nccwpck_require__(9881);
 const requests_2 = __nccwpck_require__(6034);
 const rewritePath_1 = __nccwpck_require__(7415);
 const create_code_suggestion_1 = __nccwpck_require__(3334);
+const core = __importStar(__nccwpck_require__(5763));
 function runSingle(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -54302,6 +54365,11 @@ function runSingle(options, credentials) {
                 let checkRunID = yield (0, checkRun_1.createCheckRun)(options);
                 options['checkRunID'] = checkRunID;
                 console.log('Check Run ID is: ' + checkRunID);
+            }
+            else {
+                console.log('This is not a PR - This should not happen');
+                core.setFailed(` Veracode Fix Action only supports pull_request events. Current event: ${process.env.GITHUB_EVENT_NAME}`);
+                process.exit(1);
             }
         }
         //loop through json file
