@@ -54163,7 +54163,7 @@ function createPR(fixResults, options, flawArray) {
                 message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
                 committer: {
                     name: 'Veracode Fix Bot',
-                    email: 'octocat@github.com'
+                    email: options.committerEmail || 'veracode-fix-bot@users.noreply.github.com'
                 },
                 content: Buffer.from(updatedContent).toString('base64'),
                 sha: fileSha,
@@ -54506,6 +54506,7 @@ options['createPR'] = getInputOrEnv('createPR', false);
 options['files'] = getInputOrEnv('files', false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
+options['committerEmail'] = getInputOrEnv('committerEmail', false);
 const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
 if (options.DEBUG == 'true') {
     console.log('#######- DEBUG MODE -#######');
