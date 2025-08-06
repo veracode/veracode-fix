@@ -1,6 +1,7 @@
 import {Octokit} from '@octokit/rest';
 import * as github from '@actions/github'
 import * as core from '@actions/core'
+import { unsetProxy, restoreProxy } from './proxy'
 
 export async function createCheckRun(options:any) {
     const context = github.context
@@ -10,6 +11,9 @@ export async function createCheckRun(options:any) {
     const commentID:any = context.payload.pull_request?.number
     const commitID = context.payload.pull_request?.head.sha
 
+    // Disable proxy for GitHub API calls
+    const originalProxySettings = unsetProxy();
+    
     const octokit = new Octokit({
         auth: token
     })
@@ -31,9 +35,16 @@ export async function createCheckRun(options:any) {
             }
         })
         console.log('Check run created')
+        
+        // Restore proxy settings
+        restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
+        
         return response.data.id
     } catch (error:any) {
         core.info(error);
+        
+        // Restore proxy settings even on error
+        restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
     }
 
 }
@@ -54,6 +65,9 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
         console.log('#######- DEBUG MODE -#######')
     }
 
+    // Disable proxy for GitHub API calls
+    const originalProxySettings = unsetProxy();
+    
     const octokit = new Octokit({
         auth: token
     })
@@ -143,6 +157,9 @@ export async function updateCheckRunUpdate(options:any, commentBody:any, fixResu
         console.log(error.response)
         core.info(error);
     }
+    
+    // Restore proxy settings
+    restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
 }
 
 export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any, flawInfo:any) {
@@ -161,6 +178,9 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
         console.log('#######- DEBUG MODE -#######')
     }
 
+    // Disable proxy for GitHub API calls
+    const originalProxySettings = unsetProxy();
+    
     const octokit = new Octokit({
         auth: token
     })
@@ -266,6 +286,9 @@ export async function updateCheckRunUpdateBatch(options:any, batchFixResults:any
         console.log(error.response)
         core.info(error);
     }
+    
+    // Restore proxy settings
+    restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
 }
 
 
@@ -278,6 +301,9 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
     const commentID:any = context.payload.pull_request?.number
     const commitID = context.payload.pull_request?.head.sha
 
+    // Disable proxy for GitHub API calls
+    const originalProxySettings = unsetProxy();
+    
     const octokit = new Octokit({
         auth: token
     })
@@ -291,8 +317,14 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
             }
         });
         console.log('Check run closed')
+        
+        // Restore proxy settings
+        restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
     } catch (error:any) {
         console.log(error.response)
         core.info(error);
+        
+        // Restore proxy settings even on error
+        restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
     }
 }

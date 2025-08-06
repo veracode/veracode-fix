@@ -2,6 +2,7 @@ import { Octokit } from "@octokit/rest";
 import * as github from '@actions/github'
 import * as Diff from 'diff';
 import * as fs from 'fs-extra';
+import { unsetProxy, restoreProxy } from './proxy'
 
 export async function createPR(fixResults:any, options:any, flawArray:any){
 
@@ -37,6 +38,9 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
     }
 
 
+    // Disable proxy for GitHub API calls
+    const originalProxySettings = unsetProxy();
+    
     const octokit = new Octokit({
         auth: options.token
     })
@@ -202,4 +206,7 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
         console.log(createPR)
         console.log('#######- DEBUG MODE -#######')
     }
+    
+    // Restore proxy settings
+    restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
 }

@@ -1,12 +1,33 @@
-import axios from 'axios';
 import {calculateAuthorizationHeader} from './auth'
 import fs from 'fs';
 import FormData from 'form-data';
 import { selectPlatfrom } from './select_platform';
 import * as github from '@actions/github'
+import { unsetProxy, restoreProxy } from './proxy'
 
-// set client identifier
-axios.defaults.headers.common['X-CLIENT-TYPE'] = 'fix-github-action';
+// Helper function to make fetch requests with proper error handling
+async function makeFetchRequest(url: string, options: RequestInit): Promise<any> {
+    try {
+        const response = await fetch(url, options);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+        } else {
+            return await response.text();
+        }
+    } catch (error) {
+        console.error('Fetch request failed:', error);
+        throw error;
+    }
+}
+
+// Client identifier is now set in individual request headers
 
 export async function upload(platform:any, tar:any, options:any) {
 
@@ -36,27 +57,31 @@ export async function upload(platform:any, tar:any, options:any) {
 
     console.log('Uploading data.tar.gz to Veracode')
 
-    const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/upload_code', formData, {
+    // Fetch will automatically pick up proxy environment variables
+    const response = await makeFetchRequest('https://'+platform.apiUrl+'/fix/v1/project/upload_code', {
+        method: 'POST',
         headers: {
             'Authorization': authHeader,
+            'X-CLIENT-TYPE': 'fix-github-action',
             ...formData.getHeaders()
-        }
+        },
+        body: formData as any // Type assertion to handle form-data package
     });
 
-    if (response.status != 200){
+    if (!response){
         console.log('Error uploading data')
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - upload')
-            console.log(response.data)
+            console.log(response)
             console.log('#######- DEBUG MODE -#######')
         }
     }
     else {
         console.log('Data uploaded successfully')
         console.log('Project ID is:')
-        console.log(response.data);
-        return response.data
+        console.log(response);
+        return response
     }
 
 }
@@ -91,27 +116,31 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
 
     console.log('Uploading app.tar.gz to Veracode')
 
-    const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/batch_upload', formData, {
+    // Fetch will automatically pick up proxy environment variables
+    const response = await makeFetchRequest('https://'+platform.apiUrl+'/fix/v1/project/batch_upload', {
+        method: 'POST',
         headers: {
             'Authorization': authHeader,
+            'X-CLIENT-TYPE': 'fix-github-action',
             ...formData.getHeaders()
-        }
+        },
+        body: formData as any // Type assertion to handle form-data package
     });
 
-    if (response.status != 200){
+    if (!response){
         console.log('Error uploading data')
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - upload')
-            console.log(response.data)
+            console.log(response)
             console.log('#######- DEBUG MODE -#######')
         }
     }
     else {
         console.log('Data uploaded successfully')
         console.log('Project ID is:')
-        console.log(response.data);
-        return response.data
+        console.log(response);
+        return response
     }
 
 }
@@ -140,14 +169,17 @@ async function makeRequest(platform:any, projectId:any, options:any) {
         console.log('#######- DEBUG MODE -#######')
     }
 
-    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results', {
+    // Fetch will automatically pick up proxy environment variables
+    const response = await makeFetchRequest('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results', {
+        method: 'GET',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CLIENT-TYPE': 'fix-github-action'
         }
-    })
+    });
 
-     if (!response.data) {
+     if (!response) {
         console.log('Response is empty. Retrying in 10 seconds.');
         await new Promise(resolve => setTimeout(resolve, 10000));
         return await makeRequest(platform, projectId, options);
@@ -157,10 +189,10 @@ async function makeRequest(platform:any, projectId:any, options:any) {
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - cehckFix')
             console.log('Response:')
-            console.log(response.data);
+            console.log(response);
             console.log('#######- DEBUG MODE -#######')
         }
-        return response.data;
+        return response;
     }
 }
 
@@ -191,15 +223,18 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
         console.log('#######- DEBUG MODE -#######')
     }
 
-    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_status', {
+    // Fetch will automatically pick up proxy environment variables
+    const response = await makeFetchRequest('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_status', {
+        method: 'GET',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CLIENT-TYPE': 'fix-github-action'
         }
-    })
+    });
 
 
-     if (!response.data) {
+     if (!response) {
         console.log('Response is empty. Something went wrong. No fixes generarted. ');
         return 0
     } else {
@@ -209,18 +244,18 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - makeRequestBatch')
             console.log('Response:')
-            console.log(response.data);
+            console.log(response);
             console.log('#######- DEBUG MODE -#######')
         }
 
-        if ( response.data.hasMore == true){
+        if ( response.hasMore == true){
             console.log('More fixes are being generated. Retrying in 10 seconds.');
 
             if (options.DEBUG == 'true'){
                 console.log('#######- DEBUG MODE -#######')
                 console.log('requests.ts - makeRequestBatch')
                 console.log('Response:')
-                console.log(response.data);
+                console.log(response);
                 console.log('#######- DEBUG MODE -#######')
             }
 
@@ -256,16 +291,17 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
         console.log('#######- DEBUG MODE -#######')
     }
 
-    
-
-    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_results', {
+    // Fetch will automatically pick up proxy environment variables
+    const response = await makeFetchRequest('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_results', {
+        method: 'GET',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CLIENT-TYPE': 'fix-github-action'
         }
-    })
+    });
 
-     if (!response.data) {
+     if (!response) {
         console.log('Response is empty. Something went wrong. No fixes generarted. ');
         return 0
     } else {
@@ -274,14 +310,17 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - pullBatchFixResults')
             console.log('Response:')
-            console.log(response.data);
+            console.log(response);
             console.log('#######- DEBUG MODE -#######')
         }
-        return response.data;
+        return response;
     }
 }
 
 export async function getFilesPartOfPR(options:any) {
+
+    // Disable proxy for GitHub API calls
+    const originalProxySettings = unsetProxy();
 
     const octokit = github.getOctokit(options.token);
 
@@ -327,5 +366,9 @@ export async function getFilesPartOfPR(options:any) {
         console.log(files);
         console.log('#######- DEBUG MODE -#######')
     }
+    
+    // Restore proxy settings
+    restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
+    
     return files;
 }

@@ -1,6 +1,7 @@
 import {Octokit} from '@octokit/rest';
 import * as github from '@actions/github'
 import * as core from '@actions/core'
+import { unsetProxy, restoreProxy } from './proxy'
 
 export async function createCodeSuggestion(options:any, fixResults:any, flawInfo:any){
     const context = github.context
@@ -19,6 +20,9 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
         console.log('#######- DEBUG MODE -#######')
     }
 
+    // Disable proxy for GitHub API calls
+    const originalProxySettings = unsetProxy();
+    
     const octokit = new Octokit({
         auth: token
     })
@@ -97,4 +101,6 @@ export async function createCodeSuggestion(options:any, fixResults:any, flawInfo
         core.info(error);
     }
     
+    // Restore proxy settings
+    restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
 }

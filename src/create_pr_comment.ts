@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import fs from 'fs';
+import { unsetProxy, restoreProxy } from './proxy'
 
 export async function createPRComment(results:any, options:any, flawInfo:any){
 
@@ -84,6 +85,9 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
         
         //add PR Comment
         try {
+            // Disable proxy for GitHub API calls
+            const originalProxySettings = unsetProxy();
+            
             const octokit = github.getOctokit(token);
 
             const { data: comment } = await octokit.rest.issues.createComment({
@@ -93,6 +97,9 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
                 body: commentBody,
             });
             core.info('Adding scan results as comment to PR #'+commentID)
+            
+            // Restore proxy settings
+            restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
         } catch (error:any) {
             core.info(error);
         }
@@ -160,6 +167,9 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
             const commitID = context.payload.pull_request?.head.sha
 
             try {
+                // Disable proxy for GitHub API calls
+                const originalProxySettings = unsetProxy();
+                
                 const octokit = github.getOctokit(token);
     
                 const { data: comment } = await octokit.rest.issues.createComment({
@@ -169,6 +179,9 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
                     body: commentBody,
                 });
                 console.log('Adding scan results as comment to PR #'+commentID)
+                
+                // Restore proxy settings
+                restoreProxy(originalProxySettings.httpProxy, originalProxySettings.httpsProxy);
             } catch (error:any) {
                 console.log(error);
             }
