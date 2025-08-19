@@ -133,7 +133,7 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
             message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
             committer: {
               name: 'Veracode Fix Bot',
-              email: 'octocat@github.com'
+              email: options.emailForCommits
             },
             content: Buffer.from(updatedContent).toString('base64'),
             sha: fileSha,
