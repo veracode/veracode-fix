@@ -58,7 +58,7 @@ inputs:
     required: false
     default: 'false'
   emailForCommits:
-    description: 'Specify an email that should be used for commits. The defaukt value is octocat@github.com'
+    description: 'Specify an email that should be used for commits. The default value is octocat@github.com'
     required: true
     default: 'octocat@github.com'
     
