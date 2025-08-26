@@ -37,6 +37,7 @@ options['createPR'] = getInputOrEnv('createPR',false);
 options['files'] = getInputOrEnv('files',false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion',false);
 options['token'] = getInputOrEnv('token',false);
+options['emailForCommits'] = getInputOrEnv('emailForCommits',false);
 
 const resultsFile = fs.readFileSync(options.file, 'utf8')
 
