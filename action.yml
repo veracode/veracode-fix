@@ -11,9 +11,6 @@ inputs:
     description: 'GitHub Token'
     required: true
     default: ${{ github.token }}
-  access_token:
-    description: 'GitHub Fine-grained access Token'
-    required: true
   inputFile:
     description: 'Results file from Veracode'
     required: false
