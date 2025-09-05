@@ -52614,13 +52614,15 @@ exports.CWESupportMatrix = {
         "ruby": [73, 80, 89, 117, 601]
     },
     "batch": {
-        "java": [117, 80, 404, 159, 209, 597, 89, 611, 331, 113],
-        "cs": [80, 117, 352, 404, 89, 209, 316, 331, 611],
-        "js": [80, 117, 89, 352, 78, 209, 614, 611, 113],
+        // Updated based on official Veracode Fix documentation
+        // https://docs.veracode.com/r/About_Veracode_Fix#supported-cwes
+        "java": [80, 89, 113, 117, 159, 209, 327, 331, 404, 597, 611],
+        "cs": [80, 89, 117, 209, 316, 327, 331, 352, 404, 611],
+        "js": [80, 89, 113, 117, 209, 352, 611, 614],
         "php": [80, 89, 117],
-        "py": [80, 331, 295, 78, 89, 757],
+        "py": [78, 80, 89, 295, 331, 757],
         "kotlin": [80, 89, 113, 117, 331, 404],
-        "scala": [611, 117, 80, 78],
+        "scala": [78, 80, 117, 611],
         "go": [73, 78, 117],
         "ruby": [73, 80, 89, 117, 601]
     }
@@ -53458,7 +53460,6 @@ options['source_base_path_1'] = getInputOrEnv('source_base_path_1', false);
 options['source_base_path_2'] = getInputOrEnv('source_base_path_2', false);
 options['source_base_path_3'] = getInputOrEnv('source_base_path_3', false);
 options['DEBUG'] = getInputOrEnv('debug', false);
-options['language'] = getInputOrEnv('language', false);
 options['prComment'] = getInputOrEnv('prComment', false);
 options['createPR'] = getInputOrEnv('createPR', false);
 options['files'] = getInputOrEnv('files', false);
@@ -53489,6 +53490,153 @@ else if (options.fixType == 'single') {
 else {
     console.log('no Fix Type selected');
 }
+
+
+/***/ }),
+
+/***/ 2499:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+/**
+ * Language detection utility based on file extensions
+ * Maps file extensions to programming languages supported by Veracode
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isLanguageSupported = exports.getSupportedLanguages = exports.detectLanguageFromFile = void 0;
+function detectLanguageFromFile(filePath) {
+    var _a, _b;
+    if (!filePath) {
+        return 'unknown';
+    }
+    // Extract file extension
+    const extension = (_a = filePath.split('.').pop()) === null || _a === void 0 ? void 0 : _a.toLowerCase();
+    if (!extension) {
+        return 'unknown';
+    }
+    // Map file extensions to Veracode-supported languages
+    const extensionToLanguage = {
+        // Java
+        'java': 'java',
+        // C# / .NET
+        'cs': 'csharp',
+        'csx': 'csharp',
+        // JavaScript / TypeScript
+        'js': 'javascript',
+        'jsx': 'javascript',
+        'ts': 'javascript',
+        'tsx': 'javascript',
+        'mjs': 'javascript',
+        'cjs': 'javascript',
+        // PHP
+        'php': 'php',
+        'phtml': 'php',
+        'php3': 'php',
+        'php4': 'php',
+        'php5': 'php',
+        'php7': 'php',
+        'php8': 'php',
+        // Python
+        'py': 'python',
+        'pyw': 'python',
+        'pyi': 'python',
+        'pyc': 'python',
+        'pyo': 'python',
+        'pyd': 'python',
+        // Kotlin
+        'kt': 'kotlin',
+        'kts': 'kotlin',
+        // Scala
+        'scala': 'scala',
+        'sc': 'scala',
+        // Go
+        'go': 'go',
+        // Ruby
+        'rb': 'ruby',
+        'rbw': 'ruby',
+        'rake': 'ruby',
+        'gemspec': 'ruby',
+        'podspec': 'ruby',
+        'thor': 'ruby',
+        'jbuilder': 'ruby',
+        'ru': 'ruby',
+        'rbx': 'ruby',
+        'rjs': 'ruby',
+        'irbrc': 'ruby',
+        'pryrc': 'ruby',
+        'Guardfile': 'ruby',
+        'Procfile': 'ruby',
+        'config.ru': 'ruby',
+        'Capfile': 'ruby',
+        'Gemfile': 'ruby',
+        'Rakefile': 'ruby',
+        'Vagrantfile': 'ruby',
+        'Berksfile': 'ruby',
+        'Cheffile': 'ruby',
+        'Podfile': 'ruby',
+        'Fastfile': 'ruby',
+        'Appfile': 'ruby',
+        'Deliverfile': 'ruby',
+        'Matchfile': 'ruby',
+        'Scanfile': 'ruby',
+        'Gymfile': 'ruby',
+        'Snapfile': 'ruby',
+        'Precheckfile': 'ruby',
+        'Screengrabfile': 'ruby',
+        'Trainfile': 'ruby',
+        'Supplyfile': 'ruby',
+        'Pemfile': 'ruby',
+        'Sighfile': 'ruby',
+        'Producefile': 'ruby',
+        'Pilotfile': 'ruby',
+        'Spaceshipfile': 'ruby',
+        'Credentialsfile': 'ruby',
+        'Framefile': 'ruby'
+    };
+    const detectedLanguage = extensionToLanguage[extension];
+    if (detectedLanguage) {
+        return detectedLanguage;
+    }
+    // Check for special cases or patterns in filename
+    const fileName = ((_b = filePath.split('/').pop()) === null || _b === void 0 ? void 0 : _b.toLowerCase()) || '';
+    // Check for common configuration files that might indicate language
+    if (fileName === 'pom.xml' || fileName === 'build.gradle' || fileName === 'build.gradle.kts') {
+        return 'java';
+    }
+    if (fileName === 'package.json' || fileName === 'yarn.lock' || fileName === 'package-lock.json') {
+        return 'javascript';
+    }
+    if (fileName === 'requirements.txt' || fileName === 'setup.py' || fileName === 'pyproject.toml') {
+        return 'python';
+    }
+    if (fileName === 'composer.json' || fileName === 'composer.lock') {
+        return 'php';
+    }
+    if (fileName === 'go.mod' || fileName === 'go.sum') {
+        return 'go';
+    }
+    if (fileName === 'gemfile' || fileName === 'gemfile.lock') {
+        return 'ruby';
+    }
+    // Default to unknown if no match found
+    return 'unknown';
+}
+exports.detectLanguageFromFile = detectLanguageFromFile;
+/**
+ * Get supported languages for Veracode
+ */
+function getSupportedLanguages() {
+    return ['java', 'csharp', 'javascript', 'php', 'python', 'kotlin', 'scala', 'go', 'ruby'];
+}
+exports.getSupportedLanguages = getSupportedLanguages;
+/**
+ * Check if a detected language is supported by Veracode
+ */
+function isLanguageSupported(language) {
+    return getSupportedLanguages().includes(language);
+}
+exports.isLanguageSupported = isLanguageSupported;
 
 
 /***/ }),
@@ -53948,6 +54096,7 @@ const child_process_1 = __nccwpck_require__(5317);
 const checkRun_1 = __nccwpck_require__(6417);
 const rewritePath_1 = __nccwpck_require__(1417);
 const create_pr_1 = __nccwpck_require__(5889);
+const languageDetection_1 = __nccwpck_require__(2499);
 const constants_1 = __nccwpck_require__(5080);
 const constants_2 = __nccwpck_require__(5080);
 function runBatch(options, credentials) {
@@ -53992,15 +54141,22 @@ function runBatch(options, credentials) {
             let flawCount = flawArray[sourceFile].length;
             console.log('Number of flaws for ' + sourceFile + ': ' + flawCount);
             for (j = 0; j < flawCount; j++) {
+                // Auto-detect language from source file
+                const detectedLanguage = (0, languageDetection_1.detectLanguageFromFile)(sourceFile);
+                if (!(0, languageDetection_1.isLanguageSupported)(detectedLanguage)) {
+                    console.log(`Skipping issue ${flawArray[sourceFile][j].issue_id}: Language '${detectedLanguage}' is not supported for file ${sourceFile}`);
+                    continue;
+                }
                 const initialFlawInfo = {
                     resultsFile: options.file,
                     issuedID: flawArray[sourceFile][j].issue_id,
                     cweID: parseInt(flawArray[sourceFile][j].cwe_id),
-                    language: options.language,
+                    language: detectedLanguage,
                     sourceFile: sourceFile,
                 };
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
+                    console.log('Detected Language: ' + detectedLanguage);
                     console.log('initialFlawInfo', initialFlawInfo);
                     console.log('#######- DEBUG MODE -#######');
                 }
@@ -54070,7 +54226,7 @@ function runBatch(options, credentials) {
                                 }
                             }
                             else {
-                                console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + options.language);
+                                console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + detectedLanguage);
                             }
                         }
                         else {
@@ -54103,7 +54259,7 @@ function runBatch(options, credentials) {
                             }
                         }
                         else {
-                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + options.language);
+                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + detectedLanguage);
                         }
                     }
                 }
@@ -54225,6 +54381,7 @@ const checkRun_1 = __nccwpck_require__(6417);
 const requests_2 = __nccwpck_require__(3098);
 const rewritePath_1 = __nccwpck_require__(1417);
 const create_code_suggestion_1 = __nccwpck_require__(6025);
+const languageDetection_1 = __nccwpck_require__(2499);
 function runSingle(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -54249,16 +54406,23 @@ function runSingle(options, credentials) {
         //loop through json file
         let i = 0;
         for (i = 0; i < flawCount; i++) {
+            // Auto-detect language from source file
+            const detectedLanguage = (0, languageDetection_1.detectLanguageFromFile)(jsonFindings[i].files.source_file.file);
+            if (!(0, languageDetection_1.isLanguageSupported)(detectedLanguage)) {
+                console.log(`Skipping issue ${jsonFindings[i].issue_id}: Language '${detectedLanguage}' is not supported for file ${jsonFindings[i].files.source_file.file}`);
+                continue;
+            }
             const initialFlawInfo = {
                 resultsFile: options.file,
                 issuedID: jsonFindings[i].issue_id,
                 cweID: parseInt(jsonFindings[i].cwe_id),
-                language: options.language,
+                language: detectedLanguage,
                 sourceFile: jsonFindings[i].files.source_file.file,
             };
             if (options.DEBUG == 'true') {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('run_single.ts - runSingle()');
+                console.log('Detected Language: ' + detectedLanguage);
                 console.log('Initial Flaw Info');
                 console.log(initialFlawInfo);
                 console.log('#######- DEBUG MODE -#######');
@@ -54319,7 +54483,7 @@ function runSingle(options, credentials) {
                                 }
                             }
                             else {
-                                console.log('CWE ' + initialFlawInfo.cweID + ' is not supported ' + options.language);
+                                console.log('CWE ' + initialFlawInfo.cweID + ' is not supported for ' + detectedLanguage);
                             }
                         }
                         else {
@@ -54330,7 +54494,7 @@ function runSingle(options, credentials) {
                 else {
                     console.log('Run Fix for all CWEs');
                     if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
-                        console.log('CWE ' + initialFlawInfo.cweID + ' is supported for ' + options.language);
+                        console.log('CWE ' + initialFlawInfo.cweID + ' is supported for ' + detectedLanguage);
                         const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
                         const tar = yield createTar(initialFlawInfo, options);
                         const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
@@ -54354,7 +54518,7 @@ function runSingle(options, credentials) {
                         }
                     }
                     else {
-                        console.log('CWE ' + initialFlawInfo.cweID + ' is NOT supported for ' + options.language);
+                        console.log('CWE ' + initialFlawInfo.cweID + ' is NOT supported for ' + detectedLanguage);
                     }
                 }
             }

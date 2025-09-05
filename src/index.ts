@@ -31,7 +31,6 @@ options['source_base_path_1'] = getInputOrEnv('source_base_path_1',false);
 options['source_base_path_2'] = getInputOrEnv('source_base_path_2',false);
 options['source_base_path_3'] = getInputOrEnv('source_base_path_3',false);
 options['DEBUG'] = getInputOrEnv('debug',false);
-options['language'] = getInputOrEnv('language',false);
 options['prComment'] = getInputOrEnv('prComment',false);
 options['createPR'] = getInputOrEnv('createPR',false);
 options['files'] = getInputOrEnv('files',false);

@@ -38,9 +38,6 @@ inputs:
     description: 'Debug mode'
     required: false
     default: 'false'
-  language:
-    description: 'Language'
-    required: false
   prComment:
     description: 'Create comments for fixes on PRs'
     required: false

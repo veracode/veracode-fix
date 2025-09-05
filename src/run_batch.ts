@@ -8,6 +8,7 @@ import { execSync }  from 'child_process';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdateBatch } from './checkRun';
 import { rewritePath } from './rewritePath'
 import { createPR } from './create_pr'
+import { detectLanguageFromFile, isLanguageSupported } from './languageDetection';
 
 import { sourcecodeFolderName } from './constants';
 import {tempFolder} from './constants'
@@ -65,15 +66,24 @@ export async function runBatch( options:any, credentials:any){
 
         for (j = 0; j < flawCount; j++) {
 
+            // Auto-detect language from source file
+            const detectedLanguage = detectLanguageFromFile(sourceFile);
+            
+            if (!isLanguageSupported(detectedLanguage)) {
+                console.log(`Skipping issue ${flawArray[sourceFile][j].issue_id}: Language '${detectedLanguage}' is not supported for file ${sourceFile}`);
+                continue;
+            }
+
             const initialFlawInfo = {
                 resultsFile: options.file,
                 issuedID: flawArray[sourceFile][j].issue_id,
                 cweID: parseInt(flawArray[sourceFile][j].cwe_id),
-                language: options.language,
+                language: detectedLanguage,
                 sourceFile: sourceFile,
             }
             if (options.DEBUG == 'true'){
                 console.log('#######- DEBUG MODE -#######')
+                console.log('Detected Language: ' + detectedLanguage)
                 console.log('initialFlawInfo',initialFlawInfo)
                 console.log('#######- DEBUG MODE -#######')
             }
@@ -154,7 +164,7 @@ export async function runBatch( options:any, credentials:any){
                             }
                         }
                         else {
-                            console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is not supported for '+options.language)
+                            console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is not supported for '+detectedLanguage)
                         }
                     }
                     else {
@@ -191,7 +201,7 @@ export async function runBatch( options:any, credentials:any){
 
                     }
                     else {
-                        console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is not supported for '+options.language)
+                        console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is not supported for '+detectedLanguage)
                     }
                 }
             }

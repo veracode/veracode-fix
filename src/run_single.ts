@@ -9,6 +9,7 @@ import { createCheckRun, updateCheckRunClose, updateCheckRunUpdate } from './che
 import { getFilesPartOfPR } from './requests';
 import { rewritePath } from './rewritePath'
 import { createCodeSuggestion } from './create_code_suggestion';
+import { detectLanguageFromFile, isLanguageSupported } from './languageDetection';
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -40,17 +41,26 @@ export async function runSingle(options: any, credentials: any) {
     let i = 0
     for (i = 0; i < flawCount; i++) {
 
+        // Auto-detect language from source file
+        const detectedLanguage = detectLanguageFromFile(jsonFindings[i].files.source_file.file);
+        
+        if (!isLanguageSupported(detectedLanguage)) {
+            console.log(`Skipping issue ${jsonFindings[i].issue_id}: Language '${detectedLanguage}' is not supported for file ${jsonFindings[i].files.source_file.file}`);
+            continue;
+        }
+
         const initialFlawInfo = {
             resultsFile: options.file,
             issuedID: jsonFindings[i].issue_id,
             cweID: parseInt(jsonFindings[i].cwe_id),
-            language: options.language,
+            language: detectedLanguage,
             sourceFile: jsonFindings[i].files.source_file.file,
         }
 
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
             console.log('run_single.ts - runSingle()')
+            console.log('Detected Language: ' + detectedLanguage)
             console.log('Initial Flaw Info')
             console.log(initialFlawInfo)
             console.log('#######- DEBUG MODE -#######')
@@ -119,7 +129,7 @@ export async function runSingle(options: any, credentials: any) {
                             }   
                         }
                         else {
-                            console.log('CWE '+initialFlawInfo.cweID+' is not supported '+options.language)
+                            console.log('CWE '+initialFlawInfo.cweID+' is not supported for '+detectedLanguage)
                         }
                     }
                     else {
@@ -131,7 +141,7 @@ export async function runSingle(options: any, credentials: any) {
             else {
                 console.log('Run Fix for all CWEs')
                 if (await checkCWE(initialFlawInfo, options) == true){
-                    console.log('CWE '+initialFlawInfo.cweID+' is supported for '+options.language)
+                    console.log('CWE '+initialFlawInfo.cweID+' is supported for '+detectedLanguage)
                     const choosePlatform = await selectPlatfrom(credentials)
                     const tar = await createTar(initialFlawInfo,options)
                     const uploadTar = await upload(choosePlatform, tar, options)
@@ -156,7 +166,7 @@ export async function runSingle(options: any, credentials: any) {
                     }
                 }
                 else {
-                    console.log('CWE '+initialFlawInfo.cweID+' is NOT supported for '+options.language)
+                    console.log('CWE '+initialFlawInfo.cweID+' is NOT supported for '+detectedLanguage)
                 }
             }
         }
