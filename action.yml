@@ -25,15 +25,6 @@ inputs:
   cwe:
     description: 'CWE to fix'
     required: false
-  source_base_path_1:
-    description: 'Rewrite path 1'
-    required: false
-  source_base_path_2:
-    description: 'Rwrite path 2'
-    required: false
-  source_base_path_3:
-    description: 'Rewrite path 3'
-    required: false
   debug:
     description: 'Debug mode'
     required: false

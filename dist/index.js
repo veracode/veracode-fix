@@ -52651,6 +52651,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createFlawInfo = void 0;
 const fs_1 = __importDefault(__nccwpck_require__(9896));
+const path_1 = __importDefault(__nccwpck_require__(6928));
 const rewritePath_1 = __nccwpck_require__(1417);
 function createFlawInfo(flawInfo, options) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -52738,78 +52739,17 @@ function createFlawInfo(flawInfo, options) {
             console.log('No flows 2');
         }
         const filename = resultArray.files.source_file.file;
-        let filepath = yield (0, rewritePath_1.rewritePath)(options, filename);
-        /*
-        this moved into a dedicated file
-            //rewrite path
-            async function replacePath (rewrite:any, path:any){
-                const replaceValues = rewrite.split(":")
-                const newPath = path.replace(replaceValues[0],replaceValues[1])
-        
-                if (options.DEBUG == 'true'){
-                    console.log('#######- DEBUG MODE -#######')
-                    console.log('createFlawInfo.ts')
-                    console.log('Value 1:'+replaceValues[0]+' Value 2: '+replaceValues[1]+' old path: '+path)
-                    console.log('new Path:'+newPath)
-                    console.log('#######- DEBUG MODE -#######')
-                }
-        
-                return newPath
-            }
-        
-            
-            let filepath
-        
-            if (options.source_base_path_1 || options.source_base_path_2 || options.source_base_path_3){
-                const orgPath1 = options.source_base_path_1.split(":")
-                const orgPath2 = options.source_base_path_2.split(":")
-                const orgPath3 = options.source_base_path_3.split(":")
-        
-                if (options.DEBUG == 'true'){
-                    console.log('#######- DEBUG MODE -#######')
-                    console.log('createFlawInfo.ts')
-                    console.log('path1: '+orgPath1[0]+':'+orgPath1[1]+' path2: '+orgPath2[0]+':'+orgPath2[1]+' path3: '+orgPath3[0]+':'+orgPath3[1])
-                    console.log('#######- DEBUG MODE -#######')
-                }
-        
-        
-                if( filename.includes(orgPath1[0])) {
-                    filepath = await replacePath(options.source_base_path_1, filename)
-        
-                    if (options.DEBUG == 'true'){
-                        console.log('#######- DEBUG MODE -#######')
-                        console.log('createFlawInfo.ts')
-                        console.log('file path1: '+filename)
-                        console.log('Filepath rewrite 1: '+filepath);
-                        console.log('#######- DEBUG MODE -#######')
-                    }
-                }
-                else if (filename.includes(orgPath2[0])){
-                    filepath = await replacePath(options.source_base_path_2, filename)
-        
-                    if (options.DEBUG == 'true'){
-                        console.log('#######- DEBUG MODE -#######')
-                        console.log('createFlawInfo.ts')
-                        console.log('file path2: '+filename)
-                        console.log('Filepath rewrite 2: '+filepath);
-                        console.log('#######- DEBUG MODE -#######')
-                    }
-                }
-                else if (filename.includes(orgPath3[0])){
-                    filepath = await replacePath(options.source_base_path_3, filename)
-        
-                    if (options.DEBUG == 'true'){
-                        console.log('#######- DEBUG MODE -#######')
-                        console.log('createFlawInfo.ts')
-                        console.log('file path3: '+filename)
-                        console.log('Filepath rewrite 3: '+filepath);
-                        console.log('#######- DEBUG MODE -#######')
-                    }
-                }
-                console.log('Rewritten Filepath: '+filepath);
-            }
-        */
-        if (filepath == undefined) {
+        //get current directory
+        const dir = process.cwd();
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('createFlawInfo.ts');
+            console.log('Searching for file: ' + filename + ' in directory: ' + dir);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        const filenameOnly = path_1.default.basename(flawInfo.sourceFile);
+        let filepath = yield (0, rewritePath_1.searchFile)(dir, filenameOnly, options);
+        if (filepath == undefined || filepath === '') {
             filepath = filename;
         }
         //add flow to flaw info
@@ -53456,9 +53396,6 @@ credentials['vkey'] = getInputOrEnv('vkey', true);
 options['cwe'] = getInputOrEnv('cwe', false);
 options['file'] = getInputOrEnv('inputFile', true);
 options['fixType'] = getInputOrEnv('fixType', true);
-options['source_base_path_1'] = getInputOrEnv('source_base_path_1', false);
-options['source_base_path_2'] = getInputOrEnv('source_base_path_2', false);
-options['source_base_path_3'] = getInputOrEnv('source_base_path_3', false);
 options['DEBUG'] = getInputOrEnv('debug', false);
 options['prComment'] = getInputOrEnv('prComment', false);
 options['createPR'] = getInputOrEnv('createPR', false);
@@ -53983,7 +53920,7 @@ exports.getFilesPartOfPR = getFilesPartOfPR;
 /***/ }),
 
 /***/ 1417:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -53996,74 +53933,57 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.rewritePath = void 0;
+exports.searchFile = exports.rewritePath = void 0;
+const fs_1 = __importDefault(__nccwpck_require__(9896));
+const path_1 = __importDefault(__nccwpck_require__(6928));
 function rewritePath(options, filename) {
     return __awaiter(this, void 0, void 0, function* () {
-        function replacePath(rewrite, path) {
-            return __awaiter(this, void 0, void 0, function* () {
-                const replaceValues = rewrite.split(":");
-                const newPath = path.replace(replaceValues[0], replaceValues[1]);
-                if (options.DEBUG == 'true') {
-                    console.log('#######- DEBUG MODE -#######');
-                    console.log('rewritePath.ts');
-                    console.log('Value 1:' + replaceValues[0] + ' Value 2: ' + replaceValues[1] + ' old path: ' + path);
-                    console.log('new Path:' + newPath);
-                    console.log('#######- DEBUG MODE -#######');
-                }
-                return newPath;
-            });
-        }
-        let filepath;
-        if (options.source_base_path_1 || options.source_base_path_2 || options.source_base_path_3) {
-            const orgPath1 = options.source_base_path_1.split(":");
-            const orgPath2 = options.source_base_path_2.split(":");
-            const orgPath3 = options.source_base_path_3.split(":");
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('rewritePath.ts');
-                console.log('path1: ' + orgPath1[0] + ':' + orgPath1[1] + ' path2: ' + orgPath2[0] + ':' + orgPath2[1] + ' path3: ' + orgPath3[0] + ':' + orgPath3[1]);
-                console.log('#######- DEBUG MODE -#######');
-            }
-            if (filename.includes(orgPath1[0])) {
-                filepath = yield replacePath(options.source_base_path_1, filename);
-                if (options.DEBUG == 'true') {
-                    console.log('#######- DEBUG MODE -#######');
-                    console.log('rewritePath.ts');
-                    console.log('file path1: ' + filename);
-                    console.log('Filepath rewrite 1: ' + filepath);
-                    console.log('#######- DEBUG MODE -#######');
-                }
-            }
-            else if (filename.includes(orgPath2[0])) {
-                filepath = yield replacePath(options.source_base_path_2, filename);
-                if (options.DEBUG == 'true') {
-                    console.log('#######- DEBUG MODE -#######');
-                    console.log('rewritePath.ts');
-                    console.log('file path2: ' + filename);
-                    console.log('Filepath rewrite 2: ' + filepath);
-                    console.log('#######- DEBUG MODE -#######');
-                }
-            }
-            else if (filename.includes(orgPath3[0])) {
-                filepath = yield replacePath(options.source_base_path_3, filename);
-                if (options.DEBUG == 'true') {
-                    console.log('#######- DEBUG MODE -#######');
-                    console.log('rewritePath.ts');
-                    console.log('file path3: ' + filename);
-                    console.log('Filepath rewrite 3: ' + filepath);
-                    console.log('#######- DEBUG MODE -#######');
-                }
-            }
-            console.log('Rewritten Filepath: ' + filepath);
-        }
-        else { // if no source_base_path is provided, return the original path
-            filepath = filename;
-        }
-        return filepath;
+        // Legacy function - now just returns the original filename
+        // Auto-detection is handled in createFlawInfo.ts
+        return filename;
     });
 }
 exports.rewritePath = rewritePath;
+function searchFile(dir, filename, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (options.DEBUG === 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('rewritePath.ts');
+            console.log(`Searching for file: ${filename} in directory: ${dir}`);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        let result = null;
+        const files = fs_1.default.readdirSync(dir);
+        for (const file of files) {
+            if (file === '.git' || file === '.metadata' || file === 'app')
+                continue;
+            const fullPath = path_1.default.join(dir, file);
+            const stat = fs_1.default.statSync(fullPath);
+            if (stat.isDirectory()) {
+                result = yield searchFile(fullPath, filename, options);
+                if (result)
+                    break;
+            }
+            else if (file === filename) {
+                console.log(`File found: ${fullPath}`);
+                result = fullPath;
+                break;
+            }
+        }
+        if (options.DEBUG === 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('rewritePath.ts');
+            console.log(`Result: ${result}`);
+            console.log('#######- DEBUG MODE -#######');
+        }
+        return result || ''; // Return empty string if result is null
+    });
+}
+exports.searchFile = searchFile;
 
 
 /***/ }),
