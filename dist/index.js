@@ -52125,8 +52125,8 @@ function createCheckRun(options) {
                 status: 'in_progress',
                 output: {
                     title: 'Veracode Fix suggestions',
-                    summary: 'Will create Veracode Fix suggestions as PR comments',
-                    text: 'Will create Veracode Fix suggestions as PR comments'
+                    summary: 'Will create Veracode Fix suggestions as PR annotations',
+                    text: 'Will create Veracode Fix suggestions as PR annotations'
                 },
                 headers: {
                     'X-GitHub-Api-Version': '2022-11-28'
@@ -52165,8 +52165,9 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
             console.log('Start line: ' + flawInfo.line);
             const end_line = flawInfo.line + 20;
             console.log('End line: ' + end_line);
+            // Collect all annotations first
+            let allAnnotations = [];
             //Let's check if there are multiple hunks on the first fix result
-            let hunks = 0;
             if (fixResults[0].indexOf('@@') > 0) {
                 //first remove the first part of the result that include the file names and path, we don't need that for the annotation
                 const firstFixResult = fixResults[0];
@@ -52197,36 +52198,39 @@ function updateCheckRunUpdate(options, commentBody, fixResults, flawInfo) {
                         console.log('#######- DEBUG MODE -#######');
                     }
                     const cleanedHunk = hunks[i].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-                    const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
-                        status: 'in_progress',
-                        output: {
-                            title: 'Veracode Fix suggestions',
-                            summary: 'Will create Veracode Fix suggestions as PR comments',
-                            text: 'Will create Veracode Fix suggestions as PR comments',
-                            annotations: [
-                                {
-                                    path: flawInfo.sourceFile,
-                                    start_line: startLineOriginal,
-                                    end_line: endLineNew,
-                                    annotation_level: 'warning',
-                                    title: 'Security findings between line numbers ' + startLineOriginal + ' and ' + endLineNew,
-                                    message: cleanedHunk,
-                                }
-                            ]
-                        },
-                        headers: {
-                            'X-GitHub-Api-Version': '2022-11-28'
-                        }
+                    // Add annotation to collection instead of sending immediately
+                    allAnnotations.push({
+                        path: flawInfo.sourceFile,
+                        start_line: startLineOriginal,
+                        end_line: endLineNew,
+                        annotation_level: 'warning',
+                        title: 'Security findings between line numbers ' + startLineOriginal + ' and ' + endLineNew,
+                        message: cleanedHunk,
                     });
-                    console.log('Check run updated');
-                    if (options.DEBUG == 'true') {
-                        console.log('#######- DEBUG MODE -#######');
-                        console.log('checkRun.ts - updateCheckRunUpdate');
-                        console.log(response);
-                        console.log('#######- DEBUG MODE -#######');
-                    }
                 }
                 ;
+            }
+            // Send all annotations in a single update
+            if (allAnnotations.length > 0) {
+                const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
+                    status: 'in_progress',
+                    output: {
+                        title: 'Veracode Fix suggestions',
+                        summary: 'Will create Veracode Fix suggestions as PR annotations',
+                        text: 'Will create Veracode Fix suggestions as PR annotations',
+                        annotations: allAnnotations
+                    },
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                console.log('Check run updated with ' + allAnnotations.length + ' annotations');
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('checkRun.ts - updateCheckRunUpdate');
+                    console.log(response);
+                    console.log('#######- DEBUG MODE -#######');
+                }
             }
         }
         catch (error) {
@@ -52266,8 +52270,9 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                 console.log('End line: ' + end_line);
                 console.log('#######- DEBUG MODE -#######');
             }
+            // Collect all annotations first
+            let allAnnotations = [];
             //Let's check if there are multiple hunks on the first fix result
-            let hunks = 0;
             for (let key in batchFixResults.results) {
                 let patches = batchFixResults.results[key].patch;
                 for (let i = 0; i < patches.length; i++) {
@@ -52307,38 +52312,41 @@ function updateCheckRunUpdateBatch(options, batchFixResults, flawInfo) {
                                 console.log('#######- DEBUG MODE -#######');
                             }
                             const cleanedHunk = hunks[j].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-                            const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
-                                status: 'in_progress',
-                                output: {
-                                    title: 'Veracode Fix suggestions',
-                                    summary: 'Will create Veracode Fix suggestions as PR annotation',
-                                    text: 'Will create Veracode Fix suggestions as PR annotation',
-                                    annotations: [
-                                        {
-                                            path: cleanedSourceFile,
-                                            start_line: startLineOriginal,
-                                            end_line: endLineNew,
-                                            annotation_level: 'warning',
-                                            title: 'Security findings between line numbers ' + startLineOriginal + ' and ' + endLineNew,
-                                            message: cleanedHunk,
-                                        }
-                                    ]
-                                },
-                                headers: {
-                                    'X-GitHub-Api-Version': '2022-11-28'
-                                }
+                            // Add annotation to collection instead of sending immediately
+                            allAnnotations.push({
+                                path: cleanedSourceFile,
+                                start_line: startLineOriginal,
+                                end_line: endLineNew,
+                                annotation_level: 'warning',
+                                title: 'Security findings between line numbers ' + startLineOriginal + ' and ' + endLineNew,
+                                message: cleanedHunk,
                             });
-                            console.log('Check run updated');
-                            if (options.DEBUG == 'true') {
-                                console.log('#######- DEBUG MODE -#######');
-                                console.log('checkRun.ts - updateCheckRunUpdateBatch');
-                                console.log('Response');
-                                console.log(response);
-                                console.log('#######- DEBUG MODE -#######');
-                            }
                         }
                         ;
                     }
+                }
+            }
+            // Send all annotations in a single update
+            if (allAnnotations.length > 0) {
+                const response = yield octokit.request('PATCH /repos/' + repo[0] + '/' + repo[1] + '/check-runs/' + options.checkRunID, {
+                    status: 'in_progress',
+                    output: {
+                        title: 'Veracode Fix suggestions',
+                        summary: 'Will create Veracode Fix suggestions as PR annotation',
+                        text: 'Will create Veracode Fix suggestions as PR annotation',
+                        annotations: allAnnotations
+                    },
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                console.log('Check run updated with ' + allAnnotations.length + ' annotations');
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('checkRun.ts - updateCheckRunUpdateBatch');
+                    console.log('Response');
+                    console.log(response);
+                    console.log('#######- DEBUG MODE -#######');
                 }
             }
         }
