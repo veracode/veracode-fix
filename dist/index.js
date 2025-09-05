@@ -52752,9 +52752,19 @@ function createFlawInfo(flawInfo, options) {
         if (filepath == undefined || filepath === '') {
             filepath = filename;
         }
+        // Normalize the path for display purposes (remove GitHub Actions runner prefix)
+        const normalizedPath = (0, rewritePath_1.normalizePathForDisplay)(filepath);
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('createFlawInfo.ts');
+            console.log('Full path: ' + filepath);
+            console.log('Normalized path: ' + normalizedPath);
+            console.log('#######- DEBUG MODE -#######');
+        }
         //add flow to flaw info
         const fullFlawInfo = {
-            "sourceFile": filepath,
+            "sourceFile": normalizedPath, // Use normalized path for display
+            "sourceFileFull": filepath, // Keep full path for file operations
             "function": resultArray.files.source_file.function_name,
             "line": resultArray.files.source_file.line,
             "CWEId": resultArray.cwe_id,
@@ -53937,7 +53947,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.searchFile = exports.rewritePath = void 0;
+exports.normalizePathForDisplay = exports.searchFile = exports.rewritePath = void 0;
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const path_1 = __importDefault(__nccwpck_require__(6928));
 function rewritePath(options, filename) {
@@ -53984,6 +53994,44 @@ function searchFile(dir, filename, options) {
     });
 }
 exports.searchFile = searchFile;
+/**
+ * Normalizes file paths by removing GitHub Actions runner working directory prefix
+ * and returning only the relative path from the repository root
+ */
+function normalizePathForDisplay(fullPath, repositoryRoot) {
+    if (!fullPath) {
+        return fullPath;
+    }
+    // If repositoryRoot is provided, use it as the base
+    if (repositoryRoot) {
+        const relativePath = path_1.default.relative(repositoryRoot, fullPath);
+        return relativePath.startsWith('..') ? fullPath : relativePath;
+    }
+    // Try to detect GitHub Actions runner paths
+    const githubActionsPatterns = [
+        /^\/home\/runner\/work\/[^\/]+\/[^\/]+\/(.+)$/, // /home/runner/work/repo-owner/repo-name/...
+        /^\/github\/workspace\/(.+)$/, // /github/workspace/...
+        /^\/Users\/[^\/]+\/work\/[^\/]+\/[^\/]+\/(.+)$/ // /Users/username/work/repo-owner/repo-name/...
+    ];
+    for (const pattern of githubActionsPatterns) {
+        const match = fullPath.match(pattern);
+        if (match) {
+            return match[1];
+        }
+    }
+    // If no pattern matches, try to find the repository root by looking for .git directory
+    let currentDir = path_1.default.dirname(fullPath);
+    while (currentDir !== path_1.default.dirname(currentDir)) {
+        if (fs_1.default.existsSync(path_1.default.join(currentDir, '.git'))) {
+            const relativePath = path_1.default.relative(currentDir, fullPath);
+            return relativePath;
+        }
+        currentDir = path_1.default.dirname(currentDir);
+    }
+    // If all else fails, return the original path
+    return fullPath;
+}
+exports.normalizePathForDisplay = normalizePathForDisplay;
 
 
 /***/ }),
@@ -54142,7 +54190,9 @@ function runBatch(options, credentials) {
                                         console.log('Destination directory does not exist lest create it');
                                         fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
                                     }
-                                    fs_1.default.copyFileSync(flawInfo.sourceFile, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
+                                    // Use sourceFileFull for file operations
+                                    const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
+                                    fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
                                 }
                             }
                             else {
@@ -54175,7 +54225,9 @@ function runBatch(options, credentials) {
                                     console.log('Destination directory does not exist lest create it');
                                     fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
                                 }
-                                fs_1.default.copyFileSync(flawInfo.sourceFile, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
+                                // Use sourceFileFull for file operations
+                                const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
+                                fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
                             }
                         }
                         else {
@@ -54468,7 +54520,8 @@ function createTar(initialFlawInfo, options) {
             console.log(JSON.stringify(flawInfo));
             console.log('#######- DEBUG MODE -#######');
         }
-        const filepath = flawInfo.sourceFile;
+        // Use sourceFileFull for file operations, fallback to sourceFile for backward compatibility
+        const filepath = flawInfo.sourceFileFull || flawInfo.sourceFile;
         fs_1.default.accessSync(filepath, fs_1.default.constants.F_OK);
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');

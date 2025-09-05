@@ -160,7 +160,9 @@ export async function runBatch( options:any, credentials:any){
                                     fs.mkdirSync(tempFolder + sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
                                 }
 
-                                fs.copyFileSync(flawInfo.sourceFile, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
+                                // Use sourceFileFull for file operations
+                                const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
+                                fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
                             }
                         }
                         else {
@@ -196,7 +198,9 @@ export async function runBatch( options:any, credentials:any){
                                 fs.mkdirSync(tempFolder + sourcecodeFolderName+strBeforeLastSlash, { recursive: true });
                             }
 
-                            fs.copyFileSync(flawInfo.sourceFile, tempFolder + sourcecodeFolderName+flawInfo.sourceFile)
+                            // Use sourceFileFull for file operations
+                            const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
+                            fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName+flawInfo.sourceFile)
                         }
 
                     }

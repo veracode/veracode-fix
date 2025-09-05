@@ -198,7 +198,8 @@ async function createTar(initialFlawInfo:any, options:any){
         console.log('#######- DEBUG MODE -#######')
     }
     
-    const filepath = flawInfo.sourceFile
+    // Use sourceFileFull for file operations, fallback to sourceFile for backward compatibility
+    const filepath = flawInfo.sourceFileFull || flawInfo.sourceFile
 
     fs.accessSync(filepath, fs.constants.F_OK);
 

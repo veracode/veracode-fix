@@ -46,3 +46,46 @@ export async function searchFile(dir: string, filename: string, options: Options
     
     return result || ''; // Return empty string if result is null
 }
+
+/**
+ * Normalizes file paths by removing GitHub Actions runner working directory prefix
+ * and returning only the relative path from the repository root
+ */
+export function normalizePathForDisplay(fullPath: string, repositoryRoot?: string): string {
+    if (!fullPath) {
+        return fullPath;
+    }
+
+    // If repositoryRoot is provided, use it as the base
+    if (repositoryRoot) {
+        const relativePath = path.relative(repositoryRoot, fullPath);
+        return relativePath.startsWith('..') ? fullPath : relativePath;
+    }
+
+    // Try to detect GitHub Actions runner paths
+    const githubActionsPatterns = [
+        /^\/home\/runner\/work\/[^\/]+\/[^\/]+\/(.+)$/,  // /home/runner/work/repo-owner/repo-name/...
+        /^\/github\/workspace\/(.+)$/,                   // /github/workspace/...
+        /^\/Users\/[^\/]+\/work\/[^\/]+\/[^\/]+\/(.+)$/ // /Users/username/work/repo-owner/repo-name/...
+    ];
+
+    for (const pattern of githubActionsPatterns) {
+        const match = fullPath.match(pattern);
+        if (match) {
+            return match[1];
+        }
+    }
+
+    // If no pattern matches, try to find the repository root by looking for .git directory
+    let currentDir = path.dirname(fullPath);
+    while (currentDir !== path.dirname(currentDir)) {
+        if (fs.existsSync(path.join(currentDir, '.git'))) {
+            const relativePath = path.relative(currentDir, fullPath);
+            return relativePath;
+        }
+        currentDir = path.dirname(currentDir);
+    }
+
+    // If all else fails, return the original path
+    return fullPath;
+}

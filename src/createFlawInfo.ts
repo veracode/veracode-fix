@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { searchFile } from './rewritePath'
+import { searchFile, normalizePathForDisplay } from './rewritePath'
 
 export async function createFlawInfo(flawInfo:any,options:any){
 
@@ -118,9 +118,21 @@ export async function createFlawInfo(flawInfo:any,options:any){
         filepath = filename
     }
 
+    // Normalize the path for display purposes (remove GitHub Actions runner prefix)
+    const normalizedPath = normalizePathForDisplay(filepath);
+    
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('createFlawInfo.ts')
+        console.log('Full path: '+filepath)
+        console.log('Normalized path: '+normalizedPath)
+        console.log('#######- DEBUG MODE -#######')
+    }
+
     //add flow to flaw info
     const fullFlawInfo = {
-        "sourceFile": filepath,
+        "sourceFile": normalizedPath,  // Use normalized path for display
+        "sourceFileFull": filepath,    // Keep full path for file operations
         "function": resultArray.files.source_file.function_name,
         "line": resultArray.files.source_file.line,
         "CWEId": resultArray.cwe_id,
