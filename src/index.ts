@@ -80,13 +80,13 @@ async function main() {
                 const prNumber = context.payload.pull_request?.number
                 const token = options.token
                 
-                if (!owner || !repo || !prNumber || !token) {
-                    console.log('Missing required parameters for GitHub App comment')
-                } else {
-                    await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount)
-                    console.log('✅ Veracode app comment posted successfully')
-                    return // Exit early, don't run the traditional fix process
-                }
+                       if (!owner || !repo || !prNumber || !token) {
+                           console.log('Missing required parameters for GitHub App comment')
+                       } else {
+                           await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file)
+                           console.log('✅ Veracode app comment posted successfully')
+                           return // Exit early, don't run the traditional fix process
+                       }
             } catch (error) {
                 console.log('Error posting GitHub App comment, falling back to traditional process:', error)
             }
@@ -107,12 +107,12 @@ async function main() {
                     // Check if Veracode GitHub App is installed
                     const appInstalled = await isVeracodeAppInstalled(token, owner, repo)
                     
-                    if (appInstalled) {
-                        console.log('✅ Veracode GitHub App is installed, posting app comment...')
-                        await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount)
-                        console.log('✅ Veracode app comment posted successfully')
-                        return // Exit early, don't run the traditional fix process
-                    } else {
+                           if (appInstalled) {
+                               console.log('✅ Veracode GitHub App is installed, posting app comment...')
+                               await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file)
+                               console.log('✅ Veracode app comment posted successfully')
+                               return // Exit early, don't run the traditional fix process
+                           } else {
                         console.log('❌ Veracode GitHub App is not installed, running traditional fix process...')
                     }
                 }

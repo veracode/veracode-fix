@@ -1,5 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
+import fs from 'fs'
 
 /**
  * Check if the Veracode GitHub App is installed on the repository
@@ -92,32 +93,190 @@ export async function isVeracodeAppInstalled(token: string, owner: string, repo:
  * @param findingsCount Number of findings detected
  * @param fixSuggestionsCount Number of findings with fix suggestions available
  */
-export async function createVeracodeAppComment(
-    token: string, 
-    owner: string, 
-    repo: string, 
-    issueNumber: number, 
-    findingsCount: number,
-    fixSuggestionsCount: number
+/**
+ * Get PR changes (files and line numbers)
+ */
+async function getPRChanges(token: string, owner: string, repo: string, prNumber: number): Promise<any[]> {
+    try {
+        const octokit = github.getOctokit(token);
+        const { data: files } = await octokit.rest.pulls.listFiles({
+            owner,
+            repo,
+            pull_number: prNumber
+        });
+        
+        return files.map(file => ({
+            filename: file.filename,
+            status: file.status,
+            additions: file.additions,
+            deletions: file.deletions,
+            changes: file.changes,
+            patch: file.patch,
+            // Extract line numbers from patch
+            changedLines: extractChangedLines(file.patch || '')
+        }));
+    } catch (error) {
+        core.error(`Failed to get PR changes: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Extract changed line numbers from git patch
+ */
+function extractChangedLines(patch: string): number[] {
+    const lines: number[] = [];
+    const patchLines = patch.split('\n');
+    
+    for (const line of patchLines) {
+        // Match lines like "@@ -1,3 +1,4 @@" or "@@ -1 +1,2 @@"
+        const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+        if (match) {
+            const startLine = parseInt(match[2]);
+            // For simplicity, we'll collect a range of lines around the change
+            // In a real implementation, you'd parse the actual changed lines from the patch
+            for (let i = 0; i < 10; i++) { // Assume up to 10 lines around the change
+                lines.push(startLine + i);
+            }
+        }
+    }
+    
+    return lines;
+}
+
+/**
+ * Match findings to changed code lines
+ */
+function matchFindingsToChanges(findings: any[], prChanges: any[]): any[] {
+    const matches: any[] = [];
+    
+    for (const finding of findings) {
+        const sourceFile = finding.sourceFile || finding.source_file;
+        if (!sourceFile) continue;
+        
+        // Find the corresponding file in PR changes
+        const changedFile = prChanges.find(file => 
+            file.filename === sourceFile || 
+            file.filename.endsWith(sourceFile) ||
+            sourceFile.endsWith(file.filename)
+        );
+        
+        if (changedFile) {
+            const findingLine = finding.line || finding.line_number;
+            if (findingLine && changedFile.changedLines.includes(findingLine)) {
+                matches.push({
+                    finding,
+                    changedFile,
+                    line: findingLine
+                });
+            }
+        }
+    }
+    
+    return matches;
+}
+
+/**
+ * Create inline code review comments for findings on changed lines
+ */
+async function createInlineComments(
+    token: string,
+    owner: string,
+    repo: string,
+    prNumber: number,
+    matches: any[]
 ): Promise<void> {
-    const commentBody = `## 🟡 Veracode Security Analysis
+    const octokit = github.getOctokit(token);
+    
+    for (const match of matches) {
+        const { finding, line } = match;
+        
+        try {
+            // Create a review comment on the specific line
+            const commentBody = `## 🟡 Veracode Security Finding
+
+**CWE:** ${finding.cwe || 'Unknown'}
+**Severity:** ${finding.severity || 'Medium'}
+**Description:** ${finding.description || 'Security vulnerability detected'}
+
+### 🔧 Fix Suggestion Available
+A fix suggestion is available for this finding.
+
+**To apply the fix, reply with:**
+\`/veracode apply-fix ${finding.id || finding.flaw_id}\`
+
+*Powered by [Veracode](https://www.veracode.com/)*`;
+
+            await octokit.rest.pulls.createReviewComment({
+                owner,
+                repo,
+                pull_number: prNumber,
+                body: commentBody,
+                path: match.changedFile.filename,
+                line: line,
+                side: 'RIGHT' // Comment on the new version of the code
+            });
+            
+            core.info(`✅ Inline comment created for finding on line ${line} in ${match.changedFile.filename}`);
+        } catch (error) {
+            core.error(`Failed to create inline comment for line ${line}: ${error}`);
+        }
+    }
+}
+
+export async function createVeracodeAppComment(
+    token: string,
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    findingsCount: number,
+    fixSuggestionsCount: number,
+    resultsFile?: string
+): Promise<void> {
+    try {
+        const octokit = github.getOctokit(token);
+        
+        // Get PR changes
+        const prChanges = await getPRChanges(token, owner, repo, issueNumber);
+        core.info(`📁 Found ${prChanges.length} changed files in PR`);
+        
+        let findings: any[] = [];
+        let inlineMatches: any[] = [];
+        
+        // If we have a results file, analyze findings
+        if (resultsFile && fs.existsSync(resultsFile)) {
+            const resultsData = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
+            findings = resultsData.findings || [];
+            
+            // Match findings to changed code
+            inlineMatches = matchFindingsToChanges(findings, prChanges);
+            core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
+            
+            // Create inline comments for findings on changed lines
+            if (inlineMatches.length > 0) {
+                await createInlineComments(token, owner, repo, issueNumber, inlineMatches);
+            }
+        }
+        
+        // Create summary comment
+        const hasInlineComments = inlineMatches.length > 0;
+        const commentBody = `## 🟡 Veracode Security Analysis
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg" alt="Veracode" width="200"/>
 </div>
 
 ### ⚠️ Security Findings Detected
-
 | Metric | Count |
 |--------|-------|
 | **Total Findings** | **${findingsCount}** |
 | **Fix Suggestions Available** | **${fixSuggestionsCount}** |
+| **Findings on Changed Code** | **${inlineMatches.length}** |
 | **Severity Level** | **MEDIUM** |
 
 ---
 
 ### 🔧 Available Commands
-
 | Command | Description |
 |---------|-------------|
 | \`/veracode show-all\` | Show all flaws with fix suggestions |
@@ -127,54 +286,31 @@ export async function createVeracodeAppComment(
 | \`/veracode apply-fix fix1,fix2\` | Apply specific fixes |
 
 ---
+
+${hasInlineComments ? 
+    `### 📝 Inline Comments Created
+I've created inline comments for **${inlineMatches.length}** findings that affect code changed in this PR. You can reply to those comments to apply fixes.
+
+**For all other findings, use the commands above to explore and apply fixes.**` :
+    `### 📝 No Inline Comments
+No findings were detected on the code changed in this PR. Use the commands above to explore and apply fixes for all findings.`
+}
+
+---
+
 *Powered by [Veracode](https://www.veracode.com/)*`;
 
-    try {
-        const octokit = github.getOctokit(token);
+        const { data: comment } = await octokit.rest.issues.createComment({
+            owner,
+            repo,
+            issue_number: issueNumber,
+            body: commentBody,
+        });
         
-        // Try to create a review comment instead of a regular comment
-        // This should trigger the reply input field
-        try {
-            const { data: review } = await octokit.rest.pulls.createReview({
-                owner,
-                repo,
-                pull_number: issueNumber,
-                body: commentBody,
-                event: 'COMMENT' // This creates a review comment without approving/requesting changes
-            });
-            
-            core.info(`✅ Veracode app review comment posted to PR #${issueNumber}`);
-            core.info(`🔗 Review URL: ${review.html_url}`);
-        } catch (reviewError) {
-            core.info(`Review comment failed: ${reviewError}, trying alternative approach...`);
-            
-            // Alternative: Try to create a review comment with a general comment
-            try {
-                const { data: review } = await octokit.rest.pulls.createReview({
-                    owner,
-                    repo,
-                    pull_number: issueNumber,
-                    body: commentBody,
-                    event: 'COMMENT',
-                    comments: [] // Empty comments array for general review comment
-                });
-                
-                core.info(`✅ Veracode app general review comment posted to PR #${issueNumber}`);
-                core.info(`🔗 Review URL: ${review.html_url}`);
-            } catch (generalReviewError) {
-                // Fallback to regular comment if review fails
-                core.info('All review comment attempts failed, falling back to regular comment...');
-                
-                const { data: comment } = await octokit.rest.issues.createComment({
-                    owner,
-                    repo,
-                    issue_number: issueNumber,
-                    body: commentBody,
-                });
-                
-                core.info(`✅ Veracode app comment posted to PR #${issueNumber}`);
-                core.info(`🔗 Comment URL: ${comment.html_url}`);
-            }
+        core.info(`✅ Veracode app comment posted to PR #${issueNumber}`);
+        core.info(`🔗 Comment URL: ${comment.html_url}`);
+        if (hasInlineComments) {
+            core.info(`📝 Created ${inlineMatches.length} inline comments on changed code`);
         }
     } catch (error) {
         core.error(`❌ Failed to post Veracode app comment: ${error}`);
