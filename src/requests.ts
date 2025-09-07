@@ -284,7 +284,7 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
         //upload the file as an artifact
         const artifactName = 'veracode-fix-results-debug';
         const artifact = require('@actions/artifact');
-        const artifactClient = artifact.create();
+        const artifactClient = artifact.default;
         const rootDirectory = process.cwd();
         const filesToUpload = ['batch_fix_results.json'];
         await artifactClient.uploadArtifact(artifactName, filesToUpload, rootDirectory);

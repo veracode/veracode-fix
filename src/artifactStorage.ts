@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import create from '@actions/artifact'
+import artifact from '@actions/artifact'
 import fs from 'fs'
 import path from 'path'
 
@@ -50,7 +50,7 @@ export async function saveFindingsArtifact(
         
         // Upload as GitHub Actions artifact
         try {
-            const artifactClient = create;
+            const artifactClient = artifact;
             const artifactName = 'veracode-findings-debug';
             const rootDirectory = process.cwd();
             const filesToUpload = [
@@ -106,7 +106,7 @@ export async function saveFixResultsArtifact(
         
         // Upload as GitHub Actions artifact
         try {
-            const artifactClient = create;
+            const artifactClient = artifact;
             const artifactName = 'veracode-fix-results-debug';
             const rootDirectory = process.cwd();
             const filesToUpload = ['veracode-fix-results-debug.json'];
