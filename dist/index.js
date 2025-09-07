@@ -52599,6 +52599,157 @@ exports.checkCWE = checkCWE;
 
 /***/ }),
 
+/***/ 7866:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createVeracodeAppComment = exports.isVeracodeAppInstalled = void 0;
+const core = __importStar(__nccwpck_require__(2831));
+const github = __importStar(__nccwpck_require__(5371));
+/**
+ * Check if the Veracode GitHub App is installed on the repository
+ * @param token GitHub token
+ * @param owner Repository owner
+ * @param repo Repository name
+ * @returns Promise<boolean> True if app is installed, false otherwise
+ */
+function isVeracodeAppInstalled(token, owner, repo) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const octokit = github.getOctokit(token);
+            // Get the repository information
+            const { data: repoData } = yield octokit.rest.repos.get({
+                owner,
+                repo
+            });
+            // Check if the Veracode app is installed by looking for it in the repository
+            // We'll check for the app by looking for a specific app installation
+            // The app ID should be configured in the environment or as a parameter
+            const appId = process.env.VERACODE_APP_ID || '1907493'; // Default to your app ID
+            try {
+                // Try to get app installations for the repository
+                const { data: installations } = yield octokit.rest.apps.listInstallations({
+                    per_page: 100
+                });
+                // Check if our Veracode app is in the list
+                const veracodeApp = installations.find((installation) => installation.app_id.toString() === appId);
+                return !!veracodeApp;
+            }
+            catch (error) {
+                // If we can't check installations, assume app is not installed
+                core.info('Could not check app installations, assuming app is not installed');
+                return false;
+            }
+        }
+        catch (error) {
+            core.info('Error checking if Veracode app is installed: ' + error);
+            return false;
+        }
+    });
+}
+exports.isVeracodeAppInstalled = isVeracodeAppInstalled;
+/**
+ * Create a single PR comment with Veracode branding and command instructions
+ * @param token GitHub token
+ * @param owner Repository owner
+ * @param repo Repository name
+ * @param issueNumber PR number
+ * @param findingsCount Number of findings detected
+ */
+function createVeracodeAppComment(token, owner, repo, issueNumber, findingsCount) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const commentBody = `## 🟡 Veracode Security Analysis
+
+<div align="center">
+  <img src="https://www.veracode.com/sites/default/files/2021-08/veracode-logo.png" alt="Veracode" width="200"/>
+</div>
+
+### ⚠️ Security Findings Detected
+
+| Metric | Count |
+|--------|-------|
+| **Total Flaws** | **${findingsCount}** |
+| **Fix Suggestions Available** | **${findingsCount}** |
+| **Severity Level** | **MEDIUM** |
+
+---
+
+### 🔧 Available Commands
+
+Use these commands to interact with Veracode Fix suggestions:
+
+| Command | Description |
+|---------|-------------|
+| \`/veracode show-all\` | Show all flaws with fix suggestions |
+| \`/veracode fix-all\` | Apply all available fixes |
+| \`/veracode filter-cwe CWE-117,CWE-89\` | Filter by specific CWE numbers |
+| \`/veracode filter-commit\` | Show only flaws in changed files |
+| \`/veracode apply-fix fix1,fix2\` | Apply specific fixes |
+
+---
+
+### ℹ️ About Veracode Fix
+
+Veracode Fix provides intelligent remediation suggestions for security vulnerabilities. Use the commands above to review and apply fixes to your code.
+
+---
+*Powered by [Veracode](https://www.veracode.com/)*`;
+        try {
+            const octokit = github.getOctokit(token);
+            const { data: comment } = yield octokit.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: commentBody,
+            });
+            core.info(`✅ Veracode app comment posted to PR #${issueNumber}`);
+            core.info(`🔗 Comment URL: ${comment.html_url}`);
+        }
+        catch (error) {
+            core.error(`❌ Failed to post Veracode app comment: ${error}`);
+            throw error;
+        }
+    });
+}
+exports.createVeracodeAppComment = createVeracodeAppComment;
+
+
+/***/ }),
+
 /***/ 5080:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -53387,6 +53538,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -53394,6 +53554,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2831));
 const run_single_1 = __nccwpck_require__(638);
 const run_batch_1 = __nccwpck_require__(8200);
+const check_github_app_1 = __nccwpck_require__(7866);
+const github = __importStar(__nccwpck_require__(5371));
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const constants_1 = __nccwpck_require__(5080);
 const constants_2 = __nccwpck_require__(5080);
@@ -53421,30 +53583,74 @@ options['files'] = getInputOrEnv('files', false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
 options['emailForCommits'] = getInputOrEnv('emailForCommits', false);
-const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
-if (options.DEBUG == 'true') {
-    console.log('#######- DEBUG MODE -#######');
-    console.log('process.env.RUNNER_TEMP= ' + process.env.RUNNER_TEMP);
-    console.log('source folder = ' + constants_1.sourcecodeFolderName);
-    console.log('temp folder = ' + constants_2.tempFolder);
-    console.log('results.json: ' + resultsFile);
-    console.log('checking if items are present to fix: ');
-    console.log('#######- DEBUG MODE -#######');
+function main() {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b;
+        const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
+        const results = JSON.parse(resultsFile);
+        const findingsCount = results.findings.length;
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######');
+            console.log('process.env.RUNNER_TEMP= ' + process.env.RUNNER_TEMP);
+            console.log('source folder = ' + constants_1.sourcecodeFolderName);
+            console.log('temp folder = ' + constants_2.tempFolder);
+            console.log('results.json: ' + resultsFile);
+            console.log('checking if items are present to fix: ');
+            console.log('#######- DEBUG MODE -#######');
+        }
+        // Check if we're running on a pull request
+        const context = github.context;
+        const isPR = context.payload.pull_request;
+        if (isPR && findingsCount > 0) {
+            console.log('Running on a PR with findings, checking for Veracode GitHub App...');
+            try {
+                const repository = ((_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')) || [];
+                const owner = repository[0];
+                const repo = repository[1];
+                const prNumber = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.number;
+                const token = options.token;
+                if (!owner || !repo || !prNumber || !token) {
+                    console.log('Missing required parameters for GitHub App check');
+                }
+                else {
+                    // Check if Veracode GitHub App is installed
+                    const appInstalled = yield (0, check_github_app_1.isVeracodeAppInstalled)(token, owner, repo);
+                    if (appInstalled) {
+                        console.log('✅ Veracode GitHub App is installed, posting app comment...');
+                        yield (0, check_github_app_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount);
+                        console.log('✅ Veracode app comment posted successfully');
+                        return; // Exit early, don't run the traditional fix process
+                    }
+                    else {
+                        console.log('❌ Veracode GitHub App is not installed, running traditional fix process...');
+                    }
+                }
+            }
+            catch (error) {
+                console.log('Error checking GitHub App, falling back to traditional process:', error);
+            }
+        }
+        if (!findingsCount) {
+            console.log('No findings in results.json, nothing to fix');
+        }
+        else if (options.fixType == 'batch') {
+            console.log('Running Batch Fix');
+            (0, run_batch_1.runBatch)(options, credentials);
+        }
+        else if (options.fixType == 'single') {
+            console.log('Running Single Fix');
+            (0, run_single_1.runSingle)(options, credentials);
+        }
+        else {
+            console.log('no Fix Type selected');
+        }
+    });
 }
-if (!JSON.parse(resultsFile).findings.length) {
-    console.log('No findings in results.json, nothing to fix');
-}
-else if (options.fixType == 'batch') {
-    console.log('Running Batch Fix');
-    (0, run_batch_1.runBatch)(options, credentials);
-}
-else if (options.fixType == 'single') {
-    console.log('Running Single Fix');
-    (0, run_single_1.runSingle)(options, credentials);
-}
-else {
-    console.log('no Fix Type selected');
-}
+// Run the main function
+main().catch(error => {
+    console.error('Error in main function:', error);
+    process.exit(1);
+});
 
 
 /***/ }),
