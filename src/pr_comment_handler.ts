@@ -326,21 +326,32 @@ async function createInlineComments(
                             if (flaw.issueId === finding.issue_id && flaw.patches && flaw.patches.length > 0) {
                                 core.info(`🔍 Found fix suggestion for issue ${finding.issue_id} in batch results`);
                                 
-                                // Get the first patch (as requested by user)
-                                const firstPatch = flaw.patches[0];
-                                if (firstPatch && firstPatch.indexOf('@@') > 0) {
-                                    // Parse the git diff to extract the suggested code
-                                    const cleanedResults = firstPatch.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
-                                    const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
-                                    if (hunks.length > 0) {
-                                        const cleanedHunk = hunks[0].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-                                        const cleanedHunkLines = cleanedHunk.split('\n')
-                                            .filter((line: string) => !line.startsWith('-'))
-                                            .map((line: string) => line.replace(/^\+/, ''));
-                                        
-                                        // Show the full diff hunk in the comment
-                                        fixSuggestion = cleanedHunk;
-                                        core.info(`🔍 Extracted full diff hunk: ${fixSuggestion.substring(0, 200)}...`);
+                                // Get all patches and combine them
+                                const allPatches = flaw.patches;
+                                if (allPatches && allPatches.length > 0) {
+                                    let combinedDiff = '';
+                                    
+                                    for (let i = 0; i < allPatches.length; i++) {
+                                        const patch = allPatches[i];
+                                        if (patch && patch.indexOf('@@') > 0) {
+                                            // Parse the git diff to extract the suggested code
+                                            const cleanedResults = patch.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                                            const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
+                                            
+                                            for (const hunk of hunks) {
+                                                if (hunk.trim()) {
+                                                    const cleanedHunk = hunk.replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
+                                                    if (cleanedHunk.trim()) {
+                                                        combinedDiff += cleanedHunk + '\n';
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (combinedDiff.trim()) {
+                                        fixSuggestion = combinedDiff.trim();
+                                        core.info(`🔍 Extracted combined diff from ${allPatches.length} patches: ${fixSuggestion.substring(0, 200)}...`);
                                     }
                                 }
                                 break;
