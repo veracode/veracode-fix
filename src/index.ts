@@ -1,7 +1,8 @@
 import * as core from '@actions/core'
 import { runSingle } from './run_single';
 import { runBatch } from './run_batch';
-import { isVeracodeAppInstalled, createVeracodeAppComment } from './check_github_app';
+import { isVeracodeAppInstalled, createVeracodeAppComment } from './pr_comment_handler';
+import { saveFindingsArtifact } from './artifactStorage';
 import * as github from '@actions/github';
 import fs from 'fs';
 import { json } from 'stream/consumers';
@@ -42,6 +43,18 @@ async function main() {
     const resultsFile = fs.readFileSync(options.file, 'utf8')
     const results = JSON.parse(resultsFile)
     const findingsCount = results.findings.length
+    
+    // Save findings as artifact for debugging (always, regardless of mode)
+    try {
+        await saveFindingsArtifact(results.findings, [], [], { 
+            fixType: options.fixType,
+            resultsFile: resultsFile,
+            findingsCount: findingsCount
+        })
+        console.log('📁 Findings artifact saved for debugging')
+    } catch (error) {
+        console.log('Warning: Failed to save findings artifact:', error)
+    }
     
     // Calculate how many findings actually have fix suggestions available
     // This would need to be determined based on your Veracode results structure

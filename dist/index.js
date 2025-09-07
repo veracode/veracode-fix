@@ -51990,6 +51990,131 @@ try {
 
 /***/ }),
 
+/***/ 3825:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.saveFixResultsArtifact = exports.saveFindingsArtifact = void 0;
+const core = __importStar(__nccwpck_require__(2831));
+const fs_1 = __importDefault(__nccwpck_require__(9896));
+const path_1 = __importDefault(__nccwpck_require__(6928));
+/**
+ * Save findings data as artifact for debugging
+ */
+function saveFindingsArtifact(findings, prChanges, matches, additionalData) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const artifactData = {
+                timestamp: new Date().toISOString(),
+                totalFindings: findings.length,
+                prChanges: prChanges || [],
+                matches: matches || [],
+                additionalData: additionalData || {},
+                findings: findings.map(finding => {
+                    var _a;
+                    return ({
+                        issue_id: finding.issue_id,
+                        cwe_id: finding.cwe_id,
+                        severity: finding.severity,
+                        issue_type: finding.issue_type,
+                        availableFields: Object.keys(finding),
+                        sourceFile: (_a = finding.files) === null || _a === void 0 ? void 0 : _a.source_file,
+                        fixResults: finding.fix_results,
+                        fixSuggestions: finding.fix_suggestions,
+                        recommendations: finding.recommendations,
+                        // Include the full finding for detailed analysis
+                        fullFinding: finding
+                    });
+                })
+            };
+            const artifactPath = path_1.default.join(process.cwd(), 'veracode-findings-debug.json');
+            fs_1.default.writeFileSync(artifactPath, JSON.stringify(artifactData, null, 2));
+            core.info(`📁 Saved findings debug data to: ${artifactPath}`);
+            core.info(`📊 Artifact contains ${findings.length} findings and ${(matches === null || matches === void 0 ? void 0 : matches.length) || 0} matches`);
+            // Also save individual findings for easier analysis
+            findings.forEach((finding, index) => {
+                const findingPath = path_1.default.join(process.cwd(), `finding-${finding.issue_id || index}.json`);
+                fs_1.default.writeFileSync(findingPath, JSON.stringify(finding, null, 2));
+            });
+            core.info(`📁 Saved ${findings.length} individual finding files for detailed analysis`);
+            // Set output for GitHub Actions to upload artifacts
+            core.setOutput('artifact-path', artifactPath);
+            core.setOutput('artifact-created', 'true');
+        }
+        catch (error) {
+            core.error(`Failed to save findings artifact: ${error}`);
+        }
+    });
+}
+exports.saveFindingsArtifact = saveFindingsArtifact;
+/**
+ * Save fix results as artifact for debugging
+ */
+function saveFixResultsArtifact(fixResults, sourceFile, additionalData) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const artifactData = {
+                timestamp: new Date().toISOString(),
+                sourceFile: sourceFile,
+                totalFixResults: fixResults.length,
+                additionalData: additionalData || {},
+                fixResults: fixResults
+            };
+            const artifactPath = path_1.default.join(process.cwd(), 'veracode-fix-results-debug.json');
+            fs_1.default.writeFileSync(artifactPath, JSON.stringify(artifactData, null, 2));
+            core.info(`📁 Saved fix results debug data to: ${artifactPath}`);
+            core.info(`📊 Artifact contains ${fixResults.length} fix results`);
+            // Set output for GitHub Actions to upload artifacts
+            core.setOutput('fix-results-artifact-path', artifactPath);
+            core.setOutput('fix-results-artifact-created', 'true');
+        }
+        catch (error) {
+            core.error(`Failed to save fix results artifact: ${error}`);
+        }
+    });
+}
+exports.saveFixResultsArtifact = saveFixResultsArtifact;
+
+
+/***/ }),
+
 /***/ 8486:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -52595,552 +52720,6 @@ function checkCWE(flawInfo_1, options_1) {
     });
 }
 exports.checkCWE = checkCWE;
-
-
-/***/ }),
-
-/***/ 7866:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createVeracodeAppComment = exports.isVeracodeAppInstalled = void 0;
-const core = __importStar(__nccwpck_require__(2831));
-const github = __importStar(__nccwpck_require__(5371));
-const fs_1 = __importDefault(__nccwpck_require__(9896));
-const path_1 = __importDefault(__nccwpck_require__(6928));
-const rewritePath_1 = __nccwpck_require__(1417);
-/**
- * Generate a basic fix suggestion based on CWE type
- */
-function generateBasicFixSuggestion(cwe, description) {
-    const cweNumber = cwe.replace('CWE-', '').replace('cwe-', '');
-    switch (cweNumber) {
-        case '117': // Improper Output Neutralization for Logs
-            return `logger.info("Query executed for user: " + blabberUsername);`;
-        case '89': // SQL Injection
-            return `String sql = "SELECT * FROM users WHERE id = ?";
-PreparedStatement stmt = connection.prepareStatement(sql);
-stmt.setString(1, userId);`;
-        case '78': // OS Command Injection
-            return `ProcessBuilder pb = new ProcessBuilder("safe-command", sanitizedInput);
-Process process = pb.start();`;
-        case '80': // Cross-Site Scripting (XSS)
-            return `response.getWriter().write(escapeHtml(userInput));`;
-        default:
-            return `// Fix for CWE-${cweNumber}: ${description}
-// Please review the security finding and apply appropriate remediation
-// Consider using secure coding practices and input validation
-// For more information, see: https://cwe.mitre.org/data/definitions/${cweNumber}.html`;
-    }
-}
-/**
- * Check if the Veracode GitHub App is installed on the repository
- * @param token GitHub token
- * @param owner Repository owner
- * @param repo Repository name
- * @returns Promise<boolean> True if app is installed, false otherwise
- */
-function isVeracodeAppInstalled(token, owner, repo) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const octokit = github.getOctokit(token);
-            // The app ID is the same across all installations - it's the unique identifier for the GitHub App
-            const appId = process.env.VERACODE_APP_ID || '1907493'; // Default to your app ID
-            // Method 1: Try to get the app information directly by slug
-            try {
-                const { data: appData } = yield octokit.rest.apps.getBySlug({
-                    app_slug: 'veracode-fix-for-github' // This should match your app's slug
-                });
-                if (appData.id.toString() === appId) {
-                    core.info('✅ Veracode app found by slug');
-                    return true;
-                }
-            }
-            catch (error) {
-                core.info('Could not find app by slug: ' + (error.message || error));
-            }
-            // Method 2: Check if we can access the app's installation for this repository
-            // This is more reliable as it checks the actual installation
-            try {
-                const { data: installation } = yield octokit.rest.apps.getRepoInstallation({
-                    owner,
-                    repo
-                });
-                if (installation.app_id.toString() === appId) {
-                    core.info('✅ Veracode app installation found for repository');
-                    return true;
-                }
-            }
-            catch (error) {
-                core.info('Could not find app installation for repository: ' + (error.message || error));
-            }
-            // Method 3: List all installations and check if our app is there
-            try {
-                const { data: installations } = yield octokit.rest.apps.listInstallations({
-                    per_page: 100
-                });
-                const veracodeApp = installations.find((installation) => installation.app_id.toString() === appId);
-                if (veracodeApp) {
-                    core.info('✅ Veracode app found in installations list');
-                    return true;
-                }
-            }
-            catch (error) {
-                core.info('Could not list app installations: ' + (error.message || error));
-            }
-            // Method 4: Check if the token has sufficient permissions by trying a simple API call
-            try {
-                const { data: repoData } = yield octokit.rest.repos.get({
-                    owner,
-                    repo
-                });
-                core.info('✅ Token has repository access, but app detection failed');
-            }
-            catch (error) {
-                core.info('❌ Token lacks sufficient permissions: ' + (error.message || error));
-            }
-            core.info('❌ Veracode app not found using any method');
-            return false;
-        }
-        catch (error) {
-            core.info('Error checking if Veracode app is installed: ' + (error.message || error));
-            return false;
-        }
-    });
-}
-exports.isVeracodeAppInstalled = isVeracodeAppInstalled;
-/**
- * Create a single PR comment with Veracode branding and command instructions
- * @param token GitHub token
- * @param owner Repository owner
- * @param repo Repository name
- * @param issueNumber PR number
- * @param findingsCount Number of findings detected
- * @param fixSuggestionsCount Number of findings with fix suggestions available
- */
-/**
- * Get PR changes (files and line numbers)
- */
-function getPRChanges(token, owner, repo, prNumber) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const octokit = github.getOctokit(token);
-            const { data: files } = yield octokit.rest.pulls.listFiles({
-                owner,
-                repo,
-                pull_number: prNumber
-            });
-            return files.map(file => {
-                core.info(`📁 Processing file: ${file.filename}`);
-                if (file.patch) {
-                    core.info(`📝 Patch preview: ${file.patch.substring(0, 200)}...`);
-                }
-                const changedLines = extractChangedLines(file.patch || '');
-                return {
-                    filename: file.filename,
-                    status: file.status,
-                    additions: file.additions,
-                    deletions: file.deletions,
-                    changes: file.changes,
-                    patch: file.patch,
-                    // Extract line numbers from patch
-                    changedLines: changedLines
-                };
-            });
-        }
-        catch (error) {
-            core.error(`Failed to get PR changes: ${error}`);
-            return [];
-        }
-    });
-}
-/**
- * Extract changed line numbers from git patch
- */
-function extractChangedLines(patch) {
-    const lines = [];
-    const patchLines = patch.split('\n');
-    let currentLine = 0;
-    let inHunk = false;
-    for (const line of patchLines) {
-        if (line.startsWith('@@')) {
-            // Parse hunk header like "@@ -44,6 +44,12 @@"
-            const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-            if (match) {
-                currentLine = parseInt(match[2]); // Start line in new version
-                inHunk = true;
-                core.info(`📝 Starting hunk at line ${currentLine}`);
-            }
-        }
-        else if (inHunk) {
-            if (line.startsWith('+') && !line.startsWith('+++')) {
-                // This is an added line
-                lines.push(currentLine);
-                core.info(`📝 Added line ${currentLine}: ${line.substring(1, 50)}...`);
-                currentLine++;
-            }
-            else if (line.startsWith('-') && !line.startsWith('---')) {
-                // This is a removed line, don't increment currentLine
-                core.info(`📝 Removed line ${currentLine}: ${line.substring(1, 50)}...`);
-            }
-            else if (line.startsWith('\\')) {
-                // End of patch
-                inHunk = false;
-            }
-            else if (line.trim() === '') {
-                // Empty line, still increment
-                currentLine++;
-            }
-            else {
-                // Regular context line, increment counter
-                currentLine++;
-            }
-        }
-    }
-    core.info(`📝 Total changed lines extracted: ${lines.length} - ${lines.join(', ')}`);
-    return [...new Set(lines)]; // Remove duplicates
-}
-/**
- * Match findings to changed code lines
- */
-function matchFindingsToChanges(findings, prChanges, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d;
-        const matches = [];
-        core.info(`🔍 Matching ${findings.length} findings against ${prChanges.length} changed files`);
-        for (const finding of findings) {
-            // Get the source file from the finding (same structure as in createFlawInfo.ts)
-            const sourceFile = (_b = (_a = finding.files) === null || _a === void 0 ? void 0 : _a.source_file) === null || _b === void 0 ? void 0 : _b.file;
-            if (!sourceFile) {
-                core.info(`⚠️  Finding ${finding.issue_id || 'unknown'} has no sourceFile`);
-                continue;
-            }
-            core.info(`🔍 Checking finding in file: ${sourceFile}`);
-            // Use the same file search logic as createFlawInfo.ts
-            const filenameOnly = path_1.default.basename(sourceFile);
-            const dir = process.cwd();
-            let actualFilePath = yield (0, rewritePath_1.searchFile)(dir, filenameOnly, options);
-            if (!actualFilePath || actualFilePath === '') {
-                actualFilePath = sourceFile;
-            }
-            // Normalize the path for comparison
-            const normalizedPath = (0, rewritePath_1.normalizePathForDisplay)(actualFilePath);
-            core.info(`🔍 Actual file path: ${actualFilePath}`);
-            core.info(`🔍 Normalized path: ${normalizedPath}`);
-            // Find the corresponding file in PR changes
-            const changedFile = prChanges.find(file => {
-                const isExactMatch = file.filename === normalizedPath;
-                const isEndsWithMatch = file.filename.endsWith(normalizedPath);
-                const isSourceEndsWithMatch = normalizedPath.endsWith(file.filename);
-                if (isExactMatch || isEndsWithMatch || isSourceEndsWithMatch) {
-                    core.info(`✅ Found matching file: ${file.filename} (exact: ${isExactMatch}, endsWith: ${isEndsWithMatch}, sourceEndsWith: ${isSourceEndsWithMatch})`);
-                    return true;
-                }
-                return false;
-            });
-            if (changedFile) {
-                const findingLine = (_d = (_c = finding.files) === null || _c === void 0 ? void 0 : _c.source_file) === null || _d === void 0 ? void 0 : _d.line;
-                core.info(`🔍 Finding line: ${findingLine}, Changed lines: ${changedFile.changedLines.slice(0, 10).join(', ')}${changedFile.changedLines.length > 10 ? '...' : ''}`);
-                if (findingLine && changedFile.changedLines.includes(findingLine)) {
-                    core.info(`✅ Match found: ${sourceFile}:${findingLine}`);
-                    matches.push({
-                        finding,
-                        changedFile,
-                        line: findingLine
-                    });
-                }
-                else {
-                    core.info(`❌ No line match: finding line ${findingLine} not in changed lines`);
-                }
-            }
-            else {
-                core.info(`❌ No file match for: ${sourceFile} (normalized: ${normalizedPath})`);
-                // Log all changed files for debugging
-                core.info(`📁 Changed files: ${prChanges.map(f => f.filename).join(', ')}`);
-            }
-        }
-        core.info(`🎯 Total matches found: ${matches.length}`);
-        return matches;
-    });
-}
-/**
- * Create inline code review comments for findings on changed lines
- */
-function createInlineComments(token, owner, repo, prNumber, matches) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a;
-        const octokit = github.getOctokit(token);
-        // First, get the PR details to get the commit SHA
-        const { data: pr } = yield octokit.rest.pulls.get({
-            owner,
-            repo,
-            pull_number: prNumber
-        });
-        const commitSha = pr.head.sha;
-        core.info(`📝 Using commit SHA: ${commitSha}`);
-        for (const match of matches) {
-            const { finding, line } = match;
-            try {
-                // Debug: Log the finding structure to see what fix suggestion data is available
-                core.info(`🔍 Finding structure for issue ${finding.issue_id}:`);
-                core.info(`🔍 Available fields: ${Object.keys(finding).join(', ')}`);
-                if ((_a = finding.files) === null || _a === void 0 ? void 0 : _a.source_file) {
-                    core.info(`🔍 Source file fields: ${Object.keys(finding.files.source_file).join(', ')}`);
-                }
-                // Debug: Check for fix-related fields
-                if (finding.fix_results) {
-                    core.info(`🔍 Fix results found: ${finding.fix_results.length} results`);
-                    if (finding.fix_results.length > 0) {
-                        core.info(`🔍 First fix result preview: ${finding.fix_results[0].substring(0, 200)}...`);
-                    }
-                }
-                if (finding.fix_suggestions) {
-                    core.info(`🔍 Fix suggestions found: ${finding.fix_suggestions.length} suggestions`);
-                }
-                if (finding.recommendations) {
-                    core.info(`🔍 Recommendations found: ${finding.recommendations.length} recommendations`);
-                }
-                // Get the fix suggestion from the finding - check multiple possible locations
-                let fixSuggestion = finding.fix_suggestion ||
-                    finding.suggestion ||
-                    finding.recommendation ||
-                    finding.fix_recommendation ||
-                    finding.remediation ||
-                    finding.fix ||
-                    finding.code_fix ||
-                    finding.suggested_fix;
-                // Check if there are fix results in the finding (similar to create_code_suggestion.ts)
-                if (!fixSuggestion && finding.fix_results && finding.fix_results.length > 0) {
-                    // Extract the fix suggestion from the first fix result
-                    const firstFixResult = finding.fix_results[0];
-                    if (firstFixResult && firstFixResult.indexOf('@@') > 0) {
-                        // Clean the fix result to extract just the suggested code
-                        const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
-                        const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
-                        if (hunks.length > 0) {
-                            const cleanedHunk = hunks[0].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-                            const cleanedHunkLines = cleanedHunk.split('\n')
-                                .filter((line) => !line.startsWith('-'))
-                                .map((line) => line.replace(/^\+/, ''));
-                            fixSuggestion = cleanedHunkLines.join('\n');
-                        }
-                    }
-                }
-                core.info(`🔍 Fix suggestion found: ${fixSuggestion ? 'YES' : 'NO'}`);
-                if (fixSuggestion) {
-                    core.info(`🔍 Fix suggestion content: ${fixSuggestion.substring(0, 100)}...`);
-                }
-                let finalFixSuggestion = fixSuggestion;
-                let hasFixSuggestion = fixSuggestion && fixSuggestion.trim() !== '';
-                // Debug: Log the final fix suggestion
-                core.info(`🔧 Final fix suggestion: ${finalFixSuggestion}`);
-                core.info(`🔧 Has fix suggestion: ${hasFixSuggestion}`);
-                // Create a review comment with code suggestion
-                const commentBody = `## 🟡 Veracode Code Fix Suggestions
-
-**CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
-**Severity:** ${finding.severity || 'Medium'}
-**Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
-
-${hasFixSuggestion ?
-                    `### 🔧 Code Fix Available
-**Suggested Fix:**
-\`\`\`java
-${finalFixSuggestion}
-\`\`\`
-
-**To apply the fix, reply with:**
-\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`` :
-                    `### ⚠️ Security Finding Detected
-This security finding has been identified. Please review and apply appropriate remediation.
-
-**For more information, reply with:**
-\`/veracode show-details ${finding.issue_id || finding.id || finding.flaw_id}\``}
-
-*Powered by [Veracode](https://www.veracode.com/)*`;
-                // Create the review comment (without suggestions - they're not supported in createReviewComment)
-                yield octokit.rest.pulls.createReviewComment({
-                    owner,
-                    repo,
-                    pull_number: prNumber,
-                    body: commentBody,
-                    commit_id: commitSha,
-                    path: match.changedFile.filename,
-                    line: line,
-                    side: 'RIGHT' // Comment on the new version of the code
-                });
-                core.info(`✅ Inline comment created for finding on line ${line} in ${match.changedFile.filename}`);
-            }
-            catch (error) {
-                core.error(`Failed to create inline comment for line ${line}: ${error}`);
-                // Try alternative approach - create a general review comment
-                try {
-                    core.info(`🔄 Trying alternative approach for line ${line}...`);
-                    // Get the fix suggestion for fallback too
-                    const fixSuggestion = finding.fix_suggestion || finding.suggestion || finding.recommendation;
-                    let finalFixSuggestion = fixSuggestion;
-                    let hasFixSuggestion = fixSuggestion && fixSuggestion.trim() !== '';
-                    yield octokit.rest.pulls.createReview({
-                        owner,
-                        repo,
-                        pull_number: prNumber,
-                        body: `## 🟡 Veracode Code Fix Suggestions on ${match.changedFile.filename}:${line}
-
-**CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
-**Severity:** ${finding.severity || 'Medium'}
-**Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
-
-${hasFixSuggestion ?
-                            `### 🔧 Code Fix Available
-**Suggested Fix:**
-\`\`\`java
-${finalFixSuggestion}
-\`\`\`
-
-**To apply the fix, reply with:**
-\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`` :
-                            `### ⚠️ Security Finding Detected
-This security finding has been identified. Please review and apply appropriate remediation.
-
-**For more information, reply with:**
-\`/veracode show-details ${finding.issue_id || finding.id || finding.flaw_id}\``}
-
-*Powered by [Veracode](https://www.veracode.com/)*`,
-                        event: 'COMMENT'
-                    });
-                    core.info(`✅ Alternative review comment created for line ${line}`);
-                }
-                catch (altError) {
-                    core.error(`Alternative approach also failed for line ${line}: ${altError}`);
-                }
-            }
-        }
-    });
-}
-function createVeracodeAppComment(token, owner, repo, issueNumber, findingsCount, fixSuggestionsCount, resultsFile, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const octokit = github.getOctokit(token);
-            // Get PR changes
-            const prChanges = yield getPRChanges(token, owner, repo, issueNumber);
-            core.info(`📁 Found ${prChanges.length} changed files in PR`);
-            let findings = [];
-            let inlineMatches = [];
-            // If we have a results file, analyze findings
-            if (resultsFile && fs_1.default.existsSync(resultsFile)) {
-                const resultsData = JSON.parse(fs_1.default.readFileSync(resultsFile, 'utf8'));
-                findings = resultsData.findings || [];
-                core.info(`📊 Loaded ${findings.length} findings from results file`);
-                if (findings.length > 0) {
-                    core.info(`📄 Sample finding: ${JSON.stringify(findings[0], null, 2)}`);
-                }
-                // Match findings to changed code
-                inlineMatches = yield matchFindingsToChanges(findings, prChanges, options || {});
-                core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
-                // Create inline comments for findings on changed lines
-                if (inlineMatches.length > 0) {
-                    yield createInlineComments(token, owner, repo, issueNumber, inlineMatches);
-                }
-            }
-            else {
-                core.info(`⚠️  No results file provided or file doesn't exist: ${resultsFile}`);
-            }
-            // Create summary comment
-            const hasInlineComments = inlineMatches.length > 0;
-            const commentBody = `## 🟡 Veracode Security Analysis
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg" alt="Veracode" width="200"/>
-</div>
-
-### ⚠️ Security Findings Detected
-| Metric | Count |
-|--------|-------|
-| **Total Findings** | **${findingsCount}** |
-| **Fix Suggestions Available** | **${fixSuggestionsCount}** |
-| **Findings on Changed Code** | **${inlineMatches.length}** |
-| **Severity Level** | **MEDIUM** |
-
----
-
-### 🔧 Available Commands
-| Command | Description |
-|---------|-------------|
-| \`/veracode show-all\` | Show all flaws with fix suggestions |
-| \`/veracode fix-all\` | Apply all available fixes |
-| \`/veracode filter-cwe CWE-117,CWE-89\` | Filter by specific CWE numbers |
-| \`/veracode filter-commit\` | Show only flaws in changed files |
-| \`/veracode apply-fix fix1,fix2\` | Apply specific fixes |
-
----
-
-${hasInlineComments ?
-                `### 📝 Inline Comments Created
-I've created inline comments for **${inlineMatches.length}** findings that affect code changed in this PR. You can reply to those comments to apply fixes.
-
-**For all other findings, use the commands above to explore and apply fixes.**` :
-                `### 📝 No Inline Comments
-No findings were detected on the code changed in this PR. Use the commands above to explore and apply fixes for all findings.`}
-
----
-
-*Powered by [Veracode](https://www.veracode.com/)*`;
-            const { data: comment } = yield octokit.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: issueNumber,
-                body: commentBody,
-            });
-            core.info(`✅ Veracode app comment posted to PR #${issueNumber}`);
-            core.info(`🔗 Comment URL: ${comment.html_url}`);
-            if (hasInlineComments) {
-                core.info(`📝 Created ${inlineMatches.length} inline comments on changed code`);
-            }
-        }
-        catch (error) {
-            core.error(`❌ Failed to post Veracode app comment: ${error}`);
-            throw error;
-        }
-    });
-}
-exports.createVeracodeAppComment = createVeracodeAppComment;
 
 
 /***/ }),
@@ -53949,7 +53528,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2831));
 const run_single_1 = __nccwpck_require__(638);
 const run_batch_1 = __nccwpck_require__(8200);
-const check_github_app_1 = __nccwpck_require__(7866);
+const pr_comment_handler_1 = __nccwpck_require__(4863);
+const artifactStorage_1 = __nccwpck_require__(3825);
 const github = __importStar(__nccwpck_require__(5371));
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const constants_1 = __nccwpck_require__(5080);
@@ -53985,6 +53565,18 @@ function main() {
         const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
         const results = JSON.parse(resultsFile);
         const findingsCount = results.findings.length;
+        // Save findings as artifact for debugging (always, regardless of mode)
+        try {
+            yield (0, artifactStorage_1.saveFindingsArtifact)(results.findings, [], [], {
+                fixType: options.fixType,
+                resultsFile: resultsFile,
+                findingsCount: findingsCount
+            });
+            console.log('📁 Findings artifact saved for debugging');
+        }
+        catch (error) {
+            console.log('Warning: Failed to save findings artifact:', error);
+        }
         // Calculate how many findings actually have fix suggestions available
         // This would need to be determined based on your Veracode results structure
         // For now, we'll estimate that not all findings have fix suggestions
@@ -54020,7 +53612,7 @@ function main() {
                         console.log('Missing required parameters for GitHub App comment');
                     }
                     else {
-                        yield (0, check_github_app_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options);
+                        yield (0, pr_comment_handler_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options);
                         console.log('✅ Veracode app comment posted successfully');
                         return; // Exit early, don't run the traditional fix process
                     }
@@ -54043,10 +53635,10 @@ function main() {
                     }
                     else {
                         // Check if Veracode GitHub App is installed
-                        const appInstalled = yield (0, check_github_app_1.isVeracodeAppInstalled)(token, owner, repo);
+                        const appInstalled = yield (0, pr_comment_handler_1.isVeracodeAppInstalled)(token, owner, repo);
                         if (appInstalled) {
                             console.log('✅ Veracode GitHub App is installed, posting app comment...');
-                            yield (0, check_github_app_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options);
+                            yield (0, pr_comment_handler_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options);
                             console.log('✅ Veracode app comment posted successfully');
                             return; // Exit early, don't run the traditional fix process
                         }
@@ -54232,6 +53824,555 @@ function isLanguageSupported(language) {
     return getSupportedLanguages().includes(language);
 }
 exports.isLanguageSupported = isLanguageSupported;
+
+
+/***/ }),
+
+/***/ 4863:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createVeracodeAppComment = exports.isVeracodeAppInstalled = void 0;
+const core = __importStar(__nccwpck_require__(2831));
+const github = __importStar(__nccwpck_require__(5371));
+const fs_1 = __importDefault(__nccwpck_require__(9896));
+const path_1 = __importDefault(__nccwpck_require__(6928));
+const rewritePath_1 = __nccwpck_require__(1417);
+const artifactStorage_1 = __nccwpck_require__(3825);
+/**
+ * Generate a basic fix suggestion based on CWE type
+ */
+function generateBasicFixSuggestion(cwe, description) {
+    const cweNumber = cwe.replace('CWE-', '').replace('cwe-', '');
+    switch (cweNumber) {
+        case '117': // Improper Output Neutralization for Logs
+            return `logger.info("Query executed for user: " + blabberUsername);`;
+        case '89': // SQL Injection
+            return `String sql = "SELECT * FROM users WHERE id = ?";
+PreparedStatement stmt = connection.prepareStatement(sql);
+stmt.setString(1, userId);`;
+        case '78': // OS Command Injection
+            return `ProcessBuilder pb = new ProcessBuilder("safe-command", sanitizedInput);
+Process process = pb.start();`;
+        case '80': // Cross-Site Scripting (XSS)
+            return `response.getWriter().write(escapeHtml(userInput));`;
+        default:
+            return `// Fix for CWE-${cweNumber}: ${description}
+// Please review the security finding and apply appropriate remediation
+// Consider using secure coding practices and input validation
+// For more information, see: https://cwe.mitre.org/data/definitions/${cweNumber}.html`;
+    }
+}
+/**
+ * Check if the Veracode GitHub App is installed on the repository
+ * @param token GitHub token
+ * @param owner Repository owner
+ * @param repo Repository name
+ * @returns Promise<boolean> True if app is installed, false otherwise
+ */
+function isVeracodeAppInstalled(token, owner, repo) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const octokit = github.getOctokit(token);
+            // The app ID is the same across all installations - it's the unique identifier for the GitHub App
+            const appId = process.env.VERACODE_APP_ID || '1907493'; // Default to your app ID
+            // Method 1: Try to get the app information directly by slug
+            try {
+                const { data: appData } = yield octokit.rest.apps.getBySlug({
+                    app_slug: 'veracode-fix-for-github' // This should match your app's slug
+                });
+                if (appData.id.toString() === appId) {
+                    core.info('✅ Veracode app found by slug');
+                    return true;
+                }
+            }
+            catch (error) {
+                core.info('Could not find app by slug: ' + (error.message || error));
+            }
+            // Method 2: Check if we can access the app's installation for this repository
+            // This is more reliable as it checks the actual installation
+            try {
+                const { data: installation } = yield octokit.rest.apps.getRepoInstallation({
+                    owner,
+                    repo
+                });
+                if (installation.app_id.toString() === appId) {
+                    core.info('✅ Veracode app installation found for repository');
+                    return true;
+                }
+            }
+            catch (error) {
+                core.info('Could not find app installation for repository: ' + (error.message || error));
+            }
+            // Method 3: List all installations and check if our app is there
+            try {
+                const { data: installations } = yield octokit.rest.apps.listInstallations({
+                    per_page: 100
+                });
+                const veracodeApp = installations.find((installation) => installation.app_id.toString() === appId);
+                if (veracodeApp) {
+                    core.info('✅ Veracode app found in installations list');
+                    return true;
+                }
+            }
+            catch (error) {
+                core.info('Could not list app installations: ' + (error.message || error));
+            }
+            // Method 4: Check if the token has sufficient permissions by trying a simple API call
+            try {
+                const { data: repoData } = yield octokit.rest.repos.get({
+                    owner,
+                    repo
+                });
+                core.info('✅ Token has repository access, but app detection failed');
+            }
+            catch (error) {
+                core.info('❌ Token lacks sufficient permissions: ' + (error.message || error));
+            }
+            core.info('❌ Veracode app not found using any method');
+            return false;
+        }
+        catch (error) {
+            core.info('Error checking if Veracode app is installed: ' + (error.message || error));
+            return false;
+        }
+    });
+}
+exports.isVeracodeAppInstalled = isVeracodeAppInstalled;
+/**
+ * Create a single PR comment with Veracode branding and command instructions
+ * @param token GitHub token
+ * @param owner Repository owner
+ * @param repo Repository name
+ * @param issueNumber PR number
+ * @param findingsCount Number of findings detected
+ * @param fixSuggestionsCount Number of findings with fix suggestions available
+ */
+/**
+ * Get PR changes (files and line numbers)
+ */
+function getPRChanges(token, owner, repo, prNumber) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const octokit = github.getOctokit(token);
+            const { data: files } = yield octokit.rest.pulls.listFiles({
+                owner,
+                repo,
+                pull_number: prNumber
+            });
+            return files.map(file => {
+                core.info(`📁 Processing file: ${file.filename}`);
+                if (file.patch) {
+                    core.info(`📝 Patch preview: ${file.patch.substring(0, 200)}...`);
+                }
+                const changedLines = extractChangedLines(file.patch || '');
+                return {
+                    filename: file.filename,
+                    status: file.status,
+                    additions: file.additions,
+                    deletions: file.deletions,
+                    changes: file.changes,
+                    patch: file.patch,
+                    // Extract line numbers from patch
+                    changedLines: changedLines
+                };
+            });
+        }
+        catch (error) {
+            core.error(`Failed to get PR changes: ${error}`);
+            return [];
+        }
+    });
+}
+/**
+ * Extract changed line numbers from git patch
+ */
+function extractChangedLines(patch) {
+    const lines = [];
+    const patchLines = patch.split('\n');
+    let currentLine = 0;
+    let inHunk = false;
+    for (const line of patchLines) {
+        if (line.startsWith('@@')) {
+            // Parse hunk header like "@@ -44,6 +44,12 @@"
+            const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+            if (match) {
+                currentLine = parseInt(match[2]); // Start line in new version
+                inHunk = true;
+                core.info(`📝 Starting hunk at line ${currentLine}`);
+            }
+        }
+        else if (inHunk) {
+            if (line.startsWith('+') && !line.startsWith('+++')) {
+                // This is an added line
+                lines.push(currentLine);
+                core.info(`📝 Added line ${currentLine}: ${line.substring(1, 50)}...`);
+                currentLine++;
+            }
+            else if (line.startsWith('-') && !line.startsWith('---')) {
+                // This is a removed line, don't increment currentLine
+                core.info(`📝 Removed line ${currentLine}: ${line.substring(1, 50)}...`);
+            }
+            else if (line.startsWith('\\')) {
+                // End of patch
+                inHunk = false;
+            }
+            else if (line.trim() === '') {
+                // Empty line, still increment
+                currentLine++;
+            }
+            else {
+                // Regular context line, increment counter
+                currentLine++;
+            }
+        }
+    }
+    core.info(`📝 Total changed lines extracted: ${lines.length} - ${lines.join(', ')}`);
+    return [...new Set(lines)]; // Remove duplicates
+}
+/**
+ * Match findings to changed code lines
+ */
+function matchFindingsToChanges(findings, prChanges, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b, _c, _d;
+        const matches = [];
+        core.info(`🔍 Matching ${findings.length} findings against ${prChanges.length} changed files`);
+        for (const finding of findings) {
+            // Get the source file from the finding (same structure as in createFlawInfo.ts)
+            const sourceFile = (_b = (_a = finding.files) === null || _a === void 0 ? void 0 : _a.source_file) === null || _b === void 0 ? void 0 : _b.file;
+            if (!sourceFile) {
+                core.info(`⚠️  Finding ${finding.issue_id || 'unknown'} has no sourceFile`);
+                continue;
+            }
+            core.info(`🔍 Checking finding in file: ${sourceFile}`);
+            // Use the same file search logic as createFlawInfo.ts
+            const filenameOnly = path_1.default.basename(sourceFile);
+            const dir = process.cwd();
+            let actualFilePath = yield (0, rewritePath_1.searchFile)(dir, filenameOnly, options);
+            if (!actualFilePath || actualFilePath === '') {
+                actualFilePath = sourceFile;
+            }
+            // Normalize the path for comparison
+            const normalizedPath = (0, rewritePath_1.normalizePathForDisplay)(actualFilePath);
+            core.info(`🔍 Actual file path: ${actualFilePath}`);
+            core.info(`🔍 Normalized path: ${normalizedPath}`);
+            // Find the corresponding file in PR changes
+            const changedFile = prChanges.find(file => {
+                const isExactMatch = file.filename === normalizedPath;
+                const isEndsWithMatch = file.filename.endsWith(normalizedPath);
+                const isSourceEndsWithMatch = normalizedPath.endsWith(file.filename);
+                if (isExactMatch || isEndsWithMatch || isSourceEndsWithMatch) {
+                    core.info(`✅ Found matching file: ${file.filename} (exact: ${isExactMatch}, endsWith: ${isEndsWithMatch}, sourceEndsWith: ${isSourceEndsWithMatch})`);
+                    return true;
+                }
+                return false;
+            });
+            if (changedFile) {
+                const findingLine = (_d = (_c = finding.files) === null || _c === void 0 ? void 0 : _c.source_file) === null || _d === void 0 ? void 0 : _d.line;
+                core.info(`🔍 Finding line: ${findingLine}, Changed lines: ${changedFile.changedLines.slice(0, 10).join(', ')}${changedFile.changedLines.length > 10 ? '...' : ''}`);
+                if (findingLine && changedFile.changedLines.includes(findingLine)) {
+                    core.info(`✅ Match found: ${sourceFile}:${findingLine}`);
+                    matches.push({
+                        finding,
+                        changedFile,
+                        line: findingLine
+                    });
+                }
+                else {
+                    core.info(`❌ No line match: finding line ${findingLine} not in changed lines`);
+                }
+            }
+            else {
+                core.info(`❌ No file match for: ${sourceFile} (normalized: ${normalizedPath})`);
+                // Log all changed files for debugging
+                core.info(`📁 Changed files: ${prChanges.map(f => f.filename).join(', ')}`);
+            }
+        }
+        core.info(`🎯 Total matches found: ${matches.length}`);
+        return matches;
+    });
+}
+/**
+ * Create inline code review comments for findings on changed lines
+ */
+function createInlineComments(token, owner, repo, prNumber, matches) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        const octokit = github.getOctokit(token);
+        // First, get the PR details to get the commit SHA
+        const { data: pr } = yield octokit.rest.pulls.get({
+            owner,
+            repo,
+            pull_number: prNumber
+        });
+        const commitSha = pr.head.sha;
+        core.info(`📝 Using commit SHA: ${commitSha}`);
+        for (const match of matches) {
+            const { finding, line } = match;
+            try {
+                // Debug: Log the finding structure to see what fix suggestion data is available
+                core.info(`🔍 Finding structure for issue ${finding.issue_id}:`);
+                core.info(`🔍 Available fields: ${Object.keys(finding).join(', ')}`);
+                if ((_a = finding.files) === null || _a === void 0 ? void 0 : _a.source_file) {
+                    core.info(`🔍 Source file fields: ${Object.keys(finding.files.source_file).join(', ')}`);
+                }
+                // Debug: Check for fix-related fields
+                if (finding.fix_results) {
+                    core.info(`🔍 Fix results found: ${finding.fix_results.length} results`);
+                    if (finding.fix_results.length > 0) {
+                        core.info(`🔍 First fix result preview: ${finding.fix_results[0].substring(0, 200)}...`);
+                    }
+                }
+                if (finding.fix_suggestions) {
+                    core.info(`🔍 Fix suggestions found: ${finding.fix_suggestions.length} suggestions`);
+                }
+                if (finding.recommendations) {
+                    core.info(`🔍 Recommendations found: ${finding.recommendations.length} recommendations`);
+                }
+                // Get the fix suggestion from the finding - check multiple possible locations
+                let fixSuggestion = finding.fix_suggestion ||
+                    finding.suggestion ||
+                    finding.recommendation ||
+                    finding.fix_recommendation ||
+                    finding.remediation ||
+                    finding.fix ||
+                    finding.code_fix ||
+                    finding.suggested_fix;
+                // Check if there are fix results in the finding (similar to create_code_suggestion.ts)
+                if (!fixSuggestion && finding.fix_results && finding.fix_results.length > 0) {
+                    // Extract the fix suggestion from the first fix result
+                    const firstFixResult = finding.fix_results[0];
+                    if (firstFixResult && firstFixResult.indexOf('@@') > 0) {
+                        // Clean the fix result to extract just the suggested code
+                        const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                        const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
+                        if (hunks.length > 0) {
+                            const cleanedHunk = hunks[0].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
+                            const cleanedHunkLines = cleanedHunk.split('\n')
+                                .filter((line) => !line.startsWith('-'))
+                                .map((line) => line.replace(/^\+/, ''));
+                            fixSuggestion = cleanedHunkLines.join('\n');
+                        }
+                    }
+                }
+                core.info(`🔍 Fix suggestion found: ${fixSuggestion ? 'YES' : 'NO'}`);
+                if (fixSuggestion) {
+                    core.info(`🔍 Fix suggestion content: ${fixSuggestion.substring(0, 100)}...`);
+                }
+                let finalFixSuggestion = fixSuggestion;
+                let hasFixSuggestion = fixSuggestion && fixSuggestion.trim() !== '';
+                // Debug: Log the final fix suggestion
+                core.info(`🔧 Final fix suggestion: ${finalFixSuggestion}`);
+                core.info(`🔧 Has fix suggestion: ${hasFixSuggestion}`);
+                // Create a review comment with code suggestion
+                const commentBody = `## 🟡 Veracode Code Fix Suggestions
+
+**CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
+**Severity:** ${finding.severity || 'Medium'}
+**Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
+
+${hasFixSuggestion ?
+                    `### 🔧 Code Fix Available
+**Suggested Fix:**
+\`\`\`java
+${finalFixSuggestion}
+\`\`\`
+
+**To apply the fix, reply with:**
+\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`` :
+                    `### ⚠️ Security Finding Detected
+This security finding has been identified. Please review and apply appropriate remediation.
+
+**For more information, reply with:**
+\`/veracode show-details ${finding.issue_id || finding.id || finding.flaw_id}\``}
+
+*Powered by [Veracode](https://www.veracode.com/)*`;
+                // Create the review comment (without suggestions - they're not supported in createReviewComment)
+                yield octokit.rest.pulls.createReviewComment({
+                    owner,
+                    repo,
+                    pull_number: prNumber,
+                    body: commentBody,
+                    commit_id: commitSha,
+                    path: match.changedFile.filename,
+                    line: line,
+                    side: 'RIGHT' // Comment on the new version of the code
+                });
+                core.info(`✅ Inline comment created for finding on line ${line} in ${match.changedFile.filename}`);
+            }
+            catch (error) {
+                core.error(`Failed to create inline comment for line ${line}: ${error}`);
+                // Try alternative approach - create a general review comment
+                try {
+                    core.info(`🔄 Trying alternative approach for line ${line}...`);
+                    // Get the fix suggestion for fallback too
+                    const fixSuggestion = finding.fix_suggestion || finding.suggestion || finding.recommendation;
+                    let finalFixSuggestion = fixSuggestion;
+                    let hasFixSuggestion = fixSuggestion && fixSuggestion.trim() !== '';
+                    yield octokit.rest.pulls.createReview({
+                        owner,
+                        repo,
+                        pull_number: prNumber,
+                        body: `## 🟡 Veracode Code Fix Suggestions on ${match.changedFile.filename}:${line}
+
+**CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
+**Severity:** ${finding.severity || 'Medium'}
+**Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
+
+${hasFixSuggestion ?
+                            `### 🔧 Code Fix Available
+**Suggested Fix:**
+\`\`\`java
+${finalFixSuggestion}
+\`\`\`
+
+**To apply the fix, reply with:**
+\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`` :
+                            `### ⚠️ Security Finding Detected
+This security finding has been identified. Please review and apply appropriate remediation.
+
+**For more information, reply with:**
+\`/veracode show-details ${finding.issue_id || finding.id || finding.flaw_id}\``}
+
+*Powered by [Veracode](https://www.veracode.com/)*`,
+                        event: 'COMMENT'
+                    });
+                    core.info(`✅ Alternative review comment created for line ${line}`);
+                }
+                catch (altError) {
+                    core.error(`Alternative approach also failed for line ${line}: ${altError}`);
+                }
+            }
+        }
+    });
+}
+function createVeracodeAppComment(token, owner, repo, issueNumber, findingsCount, fixSuggestionsCount, resultsFile, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const octokit = github.getOctokit(token);
+            // Get PR changes
+            const prChanges = yield getPRChanges(token, owner, repo, issueNumber);
+            core.info(`📁 Found ${prChanges.length} changed files in PR`);
+            let findings = [];
+            let inlineMatches = [];
+            // If we have a results file, analyze findings
+            if (resultsFile && fs_1.default.existsSync(resultsFile)) {
+                const resultsData = JSON.parse(fs_1.default.readFileSync(resultsFile, 'utf8'));
+                findings = resultsData.findings || [];
+                core.info(`📊 Loaded ${findings.length} findings from results file`);
+                if (findings.length > 0) {
+                    core.info(`📄 Sample finding: ${JSON.stringify(findings[0], null, 2)}`);
+                }
+                // Match findings to changed code
+                inlineMatches = yield matchFindingsToChanges(findings, prChanges, options || {});
+                core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
+                // Save findings data as artifact for debugging
+                yield (0, artifactStorage_1.saveFindingsArtifact)(findings, prChanges, inlineMatches);
+                // Create inline comments for findings on changed lines
+                if (inlineMatches.length > 0) {
+                    yield createInlineComments(token, owner, repo, issueNumber, inlineMatches);
+                }
+            }
+            else {
+                core.info(`⚠️  No results file provided or file doesn't exist: ${resultsFile}`);
+            }
+            // Create summary comment
+            const hasInlineComments = inlineMatches.length > 0;
+            const commentBody = `## 🟡 Veracode Security Analysis
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg" alt="Veracode" width="200"/>
+</div>
+
+### ⚠️ Security Findings Detected
+| Metric | Count |
+|--------|-------|
+| **Total Findings** | **${findingsCount}** |
+| **Fix Suggestions Available** | **${fixSuggestionsCount}** |
+| **Findings on Changed Code** | **${inlineMatches.length}** |
+| **Severity Level** | **MEDIUM** |
+
+---
+
+### 🔧 Available Commands
+| Command | Description |
+|---------|-------------|
+| \`/veracode show-all\` | Show all flaws with fix suggestions |
+| \`/veracode fix-all\` | Apply all available fixes |
+| \`/veracode filter-cwe CWE-117,CWE-89\` | Filter by specific CWE numbers |
+| \`/veracode filter-commit\` | Show only flaws in changed files |
+| \`/veracode apply-fix fix1,fix2\` | Apply specific fixes |
+
+---
+
+${hasInlineComments ?
+                `### 📝 Inline Comments Created
+I've created inline comments for **${inlineMatches.length}** findings that affect code changed in this PR. You can reply to those comments to apply fixes.
+
+**For all other findings, use the commands above to explore and apply fixes.**` :
+                `### 📝 No Inline Comments
+No findings were detected on the code changed in this PR. Use the commands above to explore and apply fixes for all findings.`}
+
+---
+
+*Powered by [Veracode](https://www.veracode.com/)*`;
+            const { data: comment } = yield octokit.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: commentBody,
+            });
+            core.info(`✅ Veracode app comment posted to PR #${issueNumber}`);
+            core.info(`🔗 Comment URL: ${comment.html_url}`);
+            if (hasInlineComments) {
+                core.info(`📝 Created ${inlineMatches.length} inline comments on changed code`);
+            }
+        }
+        catch (error) {
+            core.error(`❌ Failed to post Veracode app comment: ${error}`);
+            throw error;
+        }
+    });
+}
+exports.createVeracodeAppComment = createVeracodeAppComment;
 
 
 /***/ }),

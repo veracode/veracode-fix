@@ -3,6 +3,8 @@ import * as github from '@actions/github'
 import fs from 'fs'
 import path from 'path'
 import { searchFile, normalizePathForDisplay } from './rewritePath'
+import { saveFindingsArtifact } from './artifactStorage'
+
 
 /**
  * Generate a basic fix suggestion based on CWE type
@@ -481,6 +483,9 @@ export async function createVeracodeAppComment(
             // Match findings to changed code
             inlineMatches = await matchFindingsToChanges(findings, prChanges, options || {});
             core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
+            
+            // Save findings data as artifact for debugging
+            await saveFindingsArtifact(findings, prChanges, inlineMatches);
             
             // Create inline comments for findings on changed lines
             if (inlineMatches.length > 0) {
