@@ -133,15 +133,38 @@ function extractChangedLines(patch: string): number[] {
         const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
         if (match) {
             const startLine = parseInt(match[2]);
-            // For simplicity, we'll collect a range of lines around the change
-            // In a real implementation, you'd parse the actual changed lines from the patch
-            for (let i = 0; i < 10; i++) { // Assume up to 10 lines around the change
+            const lineCount = match[4] ? parseInt(match[4]) : 1; // Number of lines in the new version
+            
+            // Add all lines in the changed section
+            for (let i = 0; i < lineCount; i++) {
                 lines.push(startLine + i);
             }
+            
+            core.info(`📝 Extracted lines ${startLine} to ${startLine + lineCount - 1} from patch`);
         }
     }
     
-    return lines;
+    // Also look for lines that start with + (added lines) or - (removed lines)
+    let currentLine = 0;
+    for (const line of patchLines) {
+        if (line.startsWith('@@')) {
+            const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+            if (match) {
+                currentLine = parseInt(match[2]);
+            }
+        } else if (line.startsWith('+') && !line.startsWith('+++')) {
+            // This is an added line
+            lines.push(currentLine);
+            currentLine++;
+        } else if (line.startsWith('-') && !line.startsWith('---')) {
+            // This is a removed line, don't increment currentLine
+        } else if (!line.startsWith('\\')) {
+            // Regular line, increment counter
+            currentLine++;
+        }
+    }
+    
+    return [...new Set(lines)]; // Remove duplicates
 }
 
 /**
@@ -150,29 +173,52 @@ function extractChangedLines(patch: string): number[] {
 function matchFindingsToChanges(findings: any[], prChanges: any[]): any[] {
     const matches: any[] = [];
     
+    core.info(`🔍 Matching ${findings.length} findings against ${prChanges.length} changed files`);
+    
     for (const finding of findings) {
         const sourceFile = finding.sourceFile || finding.source_file;
-        if (!sourceFile) continue;
+        if (!sourceFile) {
+            core.info(`⚠️  Finding ${finding.id || 'unknown'} has no sourceFile`);
+            continue;
+        }
+        
+        core.info(`🔍 Checking finding in file: ${sourceFile}`);
         
         // Find the corresponding file in PR changes
-        const changedFile = prChanges.find(file => 
-            file.filename === sourceFile || 
-            file.filename.endsWith(sourceFile) ||
-            sourceFile.endsWith(file.filename)
-        );
+        const changedFile = prChanges.find(file => {
+            const isExactMatch = file.filename === sourceFile;
+            const isEndsWithMatch = file.filename.endsWith(sourceFile);
+            const isSourceEndsWithMatch = sourceFile.endsWith(file.filename);
+            
+            if (isExactMatch || isEndsWithMatch || isSourceEndsWithMatch) {
+                core.info(`✅ Found matching file: ${file.filename} (exact: ${isExactMatch}, endsWith: ${isEndsWithMatch}, sourceEndsWith: ${isSourceEndsWithMatch})`);
+                return true;
+            }
+            return false;
+        });
         
         if (changedFile) {
             const findingLine = finding.line || finding.line_number;
+            core.info(`🔍 Finding line: ${findingLine}, Changed lines: ${changedFile.changedLines.slice(0, 10).join(', ')}${changedFile.changedLines.length > 10 ? '...' : ''}`);
+            
             if (findingLine && changedFile.changedLines.includes(findingLine)) {
+                core.info(`✅ Match found: ${sourceFile}:${findingLine}`);
                 matches.push({
                     finding,
                     changedFile,
                     line: findingLine
                 });
+            } else {
+                core.info(`❌ No line match: finding line ${findingLine} not in changed lines`);
             }
+        } else {
+            core.info(`❌ No file match for: ${sourceFile}`);
+            // Log all changed files for debugging
+            core.info(`📁 Changed files: ${prChanges.map(f => f.filename).join(', ')}`);
         }
     }
     
+    core.info(`🎯 Total matches found: ${matches.length}`);
     return matches;
 }
 
@@ -248,6 +294,11 @@ export async function createVeracodeAppComment(
             const resultsData = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
             findings = resultsData.findings || [];
             
+            core.info(`📊 Loaded ${findings.length} findings from results file`);
+            if (findings.length > 0) {
+                core.info(`📄 Sample finding: ${JSON.stringify(findings[0], null, 2)}`);
+            }
+            
             // Match findings to changed code
             inlineMatches = matchFindingsToChanges(findings, prChanges);
             core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
@@ -256,6 +307,8 @@ export async function createVeracodeAppComment(
             if (inlineMatches.length > 0) {
                 await createInlineComments(token, owner, repo, issueNumber, inlineMatches);
             }
+        } else {
+            core.info(`⚠️  No results file provided or file doesn't exist: ${resultsFile}`);
         }
         
         // Create summary comment
