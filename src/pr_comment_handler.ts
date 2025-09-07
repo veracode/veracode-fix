@@ -326,32 +326,29 @@ async function createInlineComments(
                             if (flaw.issueId === finding.issue_id && flaw.patches && flaw.patches.length > 0) {
                                 core.info(`🔍 Found fix suggestion for issue ${finding.issue_id} in batch results`);
                                 
-                                // Get all patches and combine them
+                                // Get only the first patch (as requested by user)
                                 const allPatches = flaw.patches;
                                 if (allPatches && allPatches.length > 0) {
-                                    let combinedDiff = '';
-                                    
-                                    for (let i = 0; i < allPatches.length; i++) {
-                                        const patch = allPatches[i];
-                                        if (patch && patch.indexOf('@@') > 0) {
-                                            // Parse the git diff to extract the suggested code
-                                            const cleanedResults = patch.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
-                                            const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
-                                            
-                                            for (const hunk of hunks) {
-                                                if (hunk.trim()) {
-                                                    const cleanedHunk = hunk.replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-                                                    if (cleanedHunk.trim()) {
-                                                        combinedDiff += cleanedHunk + '\n';
-                                                    }
+                                    const firstPatch = allPatches[0];
+                                    if (firstPatch && firstPatch.indexOf('@@') > 0) {
+                                        // Parse the git diff to extract the suggested code
+                                        const cleanedResults = firstPatch.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                                        const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
+                                        
+                                        let combinedDiff = '';
+                                        for (const hunk of hunks) {
+                                            if (hunk.trim()) {
+                                                const cleanedHunk = hunk.replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
+                                                if (cleanedHunk.trim()) {
+                                                    combinedDiff += cleanedHunk + '\n';
                                                 }
                                             }
                                         }
-                                    }
-                                    
-                                    if (combinedDiff.trim()) {
-                                        fixSuggestion = combinedDiff.trim();
-                                        core.info(`🔍 Extracted combined diff from ${allPatches.length} patches: ${fixSuggestion.substring(0, 200)}...`);
+                                        
+                                        if (combinedDiff.trim()) {
+                                            fixSuggestion = combinedDiff.trim();
+                                            core.info(`🔍 Extracted diff from first patch (${allPatches.length} total available): ${fixSuggestion.substring(0, 200)}...`);
+                                        }
                                     }
                                 }
                                 break;

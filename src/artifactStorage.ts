@@ -34,10 +34,10 @@ export async function saveFindingsArtifact(
             }))
         };
 
-        const artifactPath = path.join(process.cwd(), 'veracode-findings-debug.json');
+        const artifactPath = path.join(process.cwd(), 'veracode-findings.json');
         fs.writeFileSync(artifactPath, JSON.stringify(artifactData, null, 2));
         
-        core.info(`📁 Saved findings debug data to: ${artifactPath}`);
+        core.info(`📁 Saved findings data to: ${artifactPath}`);
         core.info(`📊 Artifact contains ${findings.length} findings and ${matches?.length || 0} matches`);
         
         // Also save individual findings for easier analysis
@@ -51,10 +51,10 @@ export async function saveFindingsArtifact(
         // Upload as GitHub Actions artifact
         try {
             const artifactClient = artifact;
-            const artifactName = 'veracode-findings-debug';
+            const artifactName = 'veracode-findings';
             const rootDirectory = process.cwd();
             const filesToUpload = [
-                'veracode-findings-debug.json',
+                'veracode-findings.json',
                 ...findings.map((_, index) => `finding-${findings[index].issue_id || index}.json`)
             ];
             
@@ -98,18 +98,18 @@ export async function saveFixResultsArtifact(
             fixResults: fixResults
         };
 
-        const artifactPath = path.join(process.cwd(), 'veracode-fix-results-debug.json');
+        const artifactPath = path.join(process.cwd(), 'veracode-fix-results.json');
         fs.writeFileSync(artifactPath, JSON.stringify(artifactData, null, 2));
         
-        core.info(`📁 Saved fix results debug data to: ${artifactPath}`);
+        core.info(`📁 Saved fix results data to: ${artifactPath}`);
         core.info(`📊 Artifact contains ${fixResults.length} fix results`);
         
         // Upload as GitHub Actions artifact
         try {
             const artifactClient = artifact;
-            const artifactName = 'veracode-fix-results-debug';
+            const artifactName = 'veracode-fix-results';
             const rootDirectory = process.cwd();
-            const filesToUpload = ['veracode-fix-results-debug.json'];
+            const filesToUpload = ['veracode-fix-results.json'];
             
             const uploadResult = await artifactClient.uploadArtifact(
                 artifactName,
