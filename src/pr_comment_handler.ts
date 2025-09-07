@@ -338,20 +338,9 @@ async function createInlineComments(
                                             .filter((line: string) => !line.startsWith('-'))
                                             .map((line: string) => line.replace(/^\+/, ''));
                                         
-                                        // For GitHub code suggestions, we need just the specific line that changes
-                                        // Find the line that starts with + (the new line)
-                                        const addedLines = cleanedHunk.split('\n')
-                                            .filter((line: string) => line.startsWith('+'))
-                                            .map((line: string) => line.replace(/^\+/, ''));
-                                        
-                                        if (addedLines.length > 0) {
-                                            // Use the first added line as the fix suggestion
-                                            fixSuggestion = addedLines[0];
-                                            core.info(`🔍 Extracted fix suggestion: ${fixSuggestion}`);
-                                        } else {
-                                            fixSuggestion = cleanedHunkLines.join('\n');
-                                            core.info(`🔍 Extracted fix suggestion (fallback): ${fixSuggestion.substring(0, 100)}...`);
-                                        }
+                                        // Show the full diff hunk in the comment
+                                        fixSuggestion = cleanedHunk;
+                                        core.info(`🔍 Extracted full diff hunk: ${fixSuggestion.substring(0, 200)}...`);
                                     }
                                 }
                                 break;
@@ -442,9 +431,9 @@ This security finding has been identified. Please review and apply appropriate r
 
 *Powered by [Veracode](https://www.veracode.com/)*`;
 
-            // Create the review comment with code suggestion
+            // Create the review comment with full diff
             if (hasFixSuggestion) {
-                // Use createReviewComment with suggestions for actual code suggestions
+                // Use createReviewComment with the full diff in the comment body
                 await octokit.rest.pulls.createReviewComment({
                     owner,
                     repo,
@@ -456,7 +445,10 @@ This security finding has been identified. Please review and apply appropriate r
 **Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
 
 ### 🔧 Code Fix Available
-Click "Apply suggestion" to apply the fix automatically.
+**Suggested Changes:**
+\`\`\`diff
+${finalFixSuggestion}
+\`\`\`
 
 **To apply the fix, reply with:**
 \`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
@@ -465,12 +457,7 @@ Click "Apply suggestion" to apply the fix automatically.
                     commit_id: commitSha,
                     path: match.changedFile.filename,
                     line: line,
-                    side: 'RIGHT',
-                    suggestions: [{
-                        path: match.changedFile.filename,
-                        position: line - 1, // GitHub uses 0-based indexing for position
-                        body: finalFixSuggestion
-                    }]
+                    side: 'RIGHT'
                 });
             } else {
                 // Use createReviewComment for findings without fix suggestions

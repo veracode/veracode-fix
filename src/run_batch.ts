@@ -250,45 +250,51 @@ export async function runBatch( options:any, credentials:any){
                 console.log('#######- DEBUG MODE -#######')
             }
 
+            // Check if we should use GitHub App mode (declare at broader scope)
+            let shouldUseGitHubApp = false
+            let owner: string | undefined
+            let repo: string | undefined
+            let prNumber: number | undefined
+            let token: string | undefined
+            
+            if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
+                const useGitHubApp = options.useGitHubApp || 'auto'
+                const context = github.context
+                const repository = process.env.GITHUB_REPOSITORY?.split('/') || []
+                owner = repository[0]
+                repo = repository[1]
+                prNumber = context.payload.pull_request?.number
+                token = options.token
+                
+                if (useGitHubApp === 'true') {
+                    // Force GitHub App mode
+                    console.log('GitHub App mode enabled')
+                    shouldUseGitHubApp = true
+                } else if (useGitHubApp === 'auto') {
+                    // Auto-detect GitHub App
+                    console.log('Auto-detecting Veracode GitHub App...')
+                    try {
+                        if (owner && repo && prNumber && token) {
+                            const appInstalled = await isVeracodeAppInstalled(token, owner, repo)
+                            if (appInstalled) {
+                                console.log('✅ Veracode GitHub App is installed')
+                                shouldUseGitHubApp = true
+                            } else {
+                                console.log('❌ Veracode GitHub App is not installed')
+                            }
+                        }
+                    } catch (error) {
+                        console.log('Error checking GitHub App:', error)
+                    }
+                }
+            }
+
             //working with results
             if (options.prComment == 'true'){
                 console.log('PR commenting is enabled')
 
                 if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
-                    console.log('This is a PR - checking for GitHub App mode')
-                    
-                    // Check if we should use GitHub App mode
-                    const useGitHubApp = options.useGitHubApp || 'auto'
-                    const context = github.context
-                    const repository = process.env.GITHUB_REPOSITORY?.split('/') || []
-                    const owner = repository[0]
-                    const repo = repository[1]
-                    const prNumber = context.payload.pull_request?.number
-                    const token = options.token
-                    
-                    let shouldUseGitHubApp = false
-                    
-                    if (useGitHubApp === 'true') {
-                        // Force GitHub App mode
-                        console.log('GitHub App mode enabled')
-                        shouldUseGitHubApp = true
-                    } else if (useGitHubApp === 'auto') {
-                        // Auto-detect GitHub App
-                        console.log('Auto-detecting Veracode GitHub App...')
-                        try {
-                            if (owner && repo && prNumber && token) {
-                                const appInstalled = await isVeracodeAppInstalled(token, owner, repo)
-                                if (appInstalled) {
-                                    console.log('✅ Veracode GitHub App is installed')
-                                    shouldUseGitHubApp = true
-                                } else {
-                                    console.log('❌ Veracode GitHub App is not installed')
-                                }
-                            }
-                        } catch (error) {
-                            console.log('Error checking GitHub App:', error)
-                        }
-                    }
+                    console.log('This is a PR - using GitHub App mode check from above')
                     
                     if (shouldUseGitHubApp) {
                         // Use GitHub App mode - create app comment with fix suggestions
@@ -341,9 +347,12 @@ export async function runBatch( options:any, credentials:any){
                 }
             }
 
-            if ( options.createPR == 'true' ){
+            // Skip PR creation when using GitHub App mode
+            if ( options.createPR == 'true' && !shouldUseGitHubApp ){
                 console.log('Creating PRs is enabled')
                 const createPr = await createPR(batchFixResults, options, flawArray)
+            } else if (options.createPR == 'true' && shouldUseGitHubApp) {
+                console.log('Skipping PR creation - using GitHub App mode')
             }
 
         }
