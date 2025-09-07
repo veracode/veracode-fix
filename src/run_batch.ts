@@ -10,6 +10,9 @@ import { rewritePath } from './rewritePath'
 import { createPR } from './create_pr'
 import { detectLanguageFromFile, isLanguageSupported } from './languageDetection';
 
+import { isVeracodeAppInstalled, createVeracodeAppComment } from './pr_comment_handler'
+import * as github from '@actions/github'
+
 import { sourcecodeFolderName } from './constants';
 import {tempFolder} from './constants'
 export async function runBatch( options:any, credentials:any){
@@ -252,8 +255,63 @@ export async function runBatch( options:any, credentials:any){
                 console.log('PR commenting is enabled')
 
                 if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
-                    console.log('This is a PR - create PR comments')
-                    createPRCommentBatch(batchFixResults, options, flawArray)
+                    console.log('This is a PR - checking for GitHub App mode')
+                    
+                    // Check if we should use GitHub App mode
+                    const useGitHubApp = options.useGitHubApp || 'auto'
+                    const context = github.context
+                    const repository = process.env.GITHUB_REPOSITORY?.split('/') || []
+                    const owner = repository[0]
+                    const repo = repository[1]
+                    const prNumber = context.payload.pull_request?.number
+                    const token = options.token
+                    
+                    let shouldUseGitHubApp = false
+                    
+                    if (useGitHubApp === 'true') {
+                        // Force GitHub App mode
+                        console.log('GitHub App mode enabled')
+                        shouldUseGitHubApp = true
+                    } else if (useGitHubApp === 'auto') {
+                        // Auto-detect GitHub App
+                        console.log('Auto-detecting Veracode GitHub App...')
+                        try {
+                            if (owner && repo && prNumber && token) {
+                                const appInstalled = await isVeracodeAppInstalled(token, owner, repo)
+                                if (appInstalled) {
+                                    console.log('✅ Veracode GitHub App is installed')
+                                    shouldUseGitHubApp = true
+                                } else {
+                                    console.log('❌ Veracode GitHub App is not installed')
+                                }
+                            }
+                        } catch (error) {
+                            console.log('Error checking GitHub App:', error)
+                        }
+                    }
+                    
+                    if (shouldUseGitHubApp) {
+                        // Use GitHub App mode - create app comment with fix suggestions
+                        console.log('Creating GitHub App comment with fix suggestions...')
+                        try {
+                            // Calculate actual fix suggestions count from batch results
+                            const fixSuggestionsCount = Object.keys(batchFixResults.results || {}).length
+                            if (owner && repo && prNumber && token) {
+                                await createVeracodeAppComment(token, owner, repo, prNumber, flawArray.length, fixSuggestionsCount, options.file, options)
+                            } else {
+                                console.log('Missing required parameters for GitHub App comment')
+                                createPRCommentBatch(batchFixResults, options, flawArray)
+                            }
+                            console.log('✅ Veracode app comment posted successfully')
+                        } catch (error) {
+                            console.log('Error posting GitHub App comment, falling back to traditional PR comments:', error)
+                            createPRCommentBatch(batchFixResults, options, flawArray)
+                        }
+                    } else {
+                        // Use traditional PR comments
+                        console.log('Using traditional PR comments')
+                        createPRCommentBatch(batchFixResults, options, flawArray)
+                    }
                     
                     console.log('This is a PR - create a check annotations')
                     //create a check run

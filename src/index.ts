@@ -1,8 +1,6 @@
 import * as core from '@actions/core'
 import { runSingle } from './run_single';
 import { runBatch } from './run_batch';
-import { isVeracodeAppInstalled, createVeracodeAppComment } from './pr_comment_handler';
-import { saveFindingsArtifact } from './artifactStorage';
 import * as github from '@actions/github';
 import fs from 'fs';
 import { json } from 'stream/consumers';
@@ -45,15 +43,6 @@ async function main() {
     const findingsCount = results.findings.length
     
     
-    // Calculate how many findings actually have fix suggestions available
-    // This would need to be determined based on your Veracode results structure
-    // For now, we'll estimate that not all findings have fix suggestions
-    // You can modify this logic based on your actual Veracode results data
-    const fixSuggestionsCount = Math.floor(findingsCount * 0.7) // Assume 70% have fix suggestions
-    
-    if (options.DEBUG == 'true') {
-        console.log(`Total findings: ${findingsCount}, Estimated fix suggestions: ${fixSuggestionsCount}`)
-    }
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
@@ -65,67 +54,6 @@ async function main() {
         console.log('#######- DEBUG MODE -#######')
     }
 
-    // Check if we're running on a pull request
-    const context = github.context
-    const isPR = context.payload.pull_request
-
-    if (isPR && findingsCount > 0) {
-        const useGitHubApp = options.useGitHubApp || 'auto'
-        
-        if (useGitHubApp === 'true') {
-            // Force GitHub App mode
-            console.log('GitHub App mode enabled, posting app comment...')
-            try {
-                const repository = process.env.GITHUB_REPOSITORY?.split('/') || []
-                const owner = repository[0]
-                const repo = repository[1]
-                const prNumber = context.payload.pull_request?.number
-                const token = options.token
-                
-                       if (!owner || !repo || !prNumber || !token) {
-                           console.log('Missing required parameters for GitHub App comment')
-                       } else {
-                           await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options)
-                           console.log('✅ Veracode app comment posted successfully')
-                           return // Exit early, don't run the traditional fix process
-                       }
-            } catch (error) {
-                console.log('Error posting GitHub App comment, falling back to traditional process:', error)
-            }
-        } else if (useGitHubApp === 'auto') {
-            // Auto-detect GitHub App
-            console.log('Auto-detecting Veracode GitHub App...')
-            
-            try {
-                const repository = process.env.GITHUB_REPOSITORY?.split('/') || []
-                const owner = repository[0]
-                const repo = repository[1]
-                const prNumber = context.payload.pull_request?.number
-                const token = options.token
-                
-                if (!owner || !repo || !prNumber || !token) {
-                    console.log('Missing required parameters for GitHub App check')
-                } else {
-                    // Check if Veracode GitHub App is installed
-                    const appInstalled = await isVeracodeAppInstalled(token, owner, repo)
-                    
-                           if (appInstalled) {
-                               console.log('✅ Veracode GitHub App is installed, posting app comment...')
-                               await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options)
-                               console.log('✅ Veracode app comment posted successfully')
-                               return // Exit early, don't run the traditional fix process
-                           } else {
-                        console.log('❌ Veracode GitHub App is not installed, running traditional fix process...')
-                    }
-                }
-            } catch (error) {
-                console.log('Error checking GitHub App, falling back to traditional process:', error)
-            }
-        } else {
-            // useGitHubApp === 'false' - skip GitHub App mode
-            console.log('GitHub App mode disabled, running traditional fix process...')
-        }
-    }
 
     if (!findingsCount){ 
         console.log('No findings in results.json, nothing to fix')
