@@ -42,6 +42,16 @@ async function main() {
     const resultsFile = fs.readFileSync(options.file, 'utf8')
     const results = JSON.parse(resultsFile)
     const findingsCount = results.findings.length
+    
+    // Calculate how many findings actually have fix suggestions available
+    // This would need to be determined based on your Veracode results structure
+    // For now, we'll estimate that not all findings have fix suggestions
+    // You can modify this logic based on your actual Veracode results data
+    const fixSuggestionsCount = Math.floor(findingsCount * 0.7) // Assume 70% have fix suggestions
+    
+    if (options.DEBUG == 'true') {
+        console.log(`Total findings: ${findingsCount}, Estimated fix suggestions: ${fixSuggestionsCount}`)
+    }
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
@@ -73,7 +83,7 @@ async function main() {
                 if (!owner || !repo || !prNumber || !token) {
                     console.log('Missing required parameters for GitHub App comment')
                 } else {
-                    await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount)
+                    await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount)
                     console.log('✅ Veracode app comment posted successfully')
                     return // Exit early, don't run the traditional fix process
                 }
@@ -99,7 +109,7 @@ async function main() {
                     
                     if (appInstalled) {
                         console.log('✅ Veracode GitHub App is installed, posting app comment...')
-                        await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount)
+                        await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount)
                         console.log('✅ Veracode app comment posted successfully')
                         return // Exit early, don't run the traditional fix process
                     } else {

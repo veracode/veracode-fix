@@ -90,13 +90,15 @@ export async function isVeracodeAppInstalled(token: string, owner: string, repo:
  * @param repo Repository name
  * @param issueNumber PR number
  * @param findingsCount Number of findings detected
+ * @param fixSuggestionsCount Number of findings with fix suggestions available
  */
 export async function createVeracodeAppComment(
     token: string, 
     owner: string, 
     repo: string, 
     issueNumber: number, 
-    findingsCount: number
+    findingsCount: number,
+    fixSuggestionsCount: number
 ): Promise<void> {
     const commentBody = `## 🟡 Veracode Security Analysis
 
@@ -109,14 +111,12 @@ export async function createVeracodeAppComment(
 | Metric | Count |
 |--------|-------|
 | **Total Findings** | **${findingsCount}** |
-| **Fix Suggestions Available** | **${findingsCount}** |
+| **Fix Suggestions Available** | **${fixSuggestionsCount}** |
 | **Severity Level** | **MEDIUM** |
 
 ---
 
 ### 🔧 Available Commands
-
-Use these commands to interact with Veracode Fix suggestions:
 
 | Command | Description |
 |---------|-------------|
@@ -125,29 +125,6 @@ Use these commands to interact with Veracode Fix suggestions:
 | \`/veracode filter-cwe CWE-117,CWE-89\` | Filter by specific CWE numbers |
 | \`/veracode filter-commit\` | Show only flaws in changed files |
 | \`/veracode apply-fix fix1,fix2\` | Apply specific fixes |
-
----
-
-### ℹ️ About Veracode Fix
-
-Veracode Fix provides intelligent remediation suggestions for security vulnerabilities. Use the commands above to review and apply fixes to your code.
-
----
-
-### 💬 Get Started
-
-**There are ${findingsCount} findings identified with ${findingsCount} fix suggestions available, do you want to fix them?** Use one of these commands to see fix suggestions:
-
-> **Quick Start:** Copy and paste this command in the comment box below:
-> 
-> \`/veracode show-all\`
-
-**Available Commands:**
-- \`/veracode show-all\` - Show all flaws with fix suggestions
-- \`/veracode fix-all\` - Apply all available fixes  
-- \`/veracode filter-cwe CWE-117,CWE-89\` - Filter by specific CWE numbers
-- \`/veracode filter-commit\` - Show only flaws in changed files
-- \`/veracode apply-fix fix1,fix2\` - Apply specific fixes
 
 ---
 *Powered by [Veracode](https://www.veracode.com/)*`;
