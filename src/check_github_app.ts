@@ -107,16 +107,23 @@ async function getPRChanges(token: string, owner: string, repo: string, prNumber
             pull_number: prNumber
         });
         
-        return files.map(file => ({
-            filename: file.filename,
-            status: file.status,
-            additions: file.additions,
-            deletions: file.deletions,
-            changes: file.changes,
-            patch: file.patch,
-            // Extract line numbers from patch
-            changedLines: extractChangedLines(file.patch || '')
-        }));
+        return files.map(file => {
+            core.info(`📁 Processing file: ${file.filename}`);
+            if (file.patch) {
+                core.info(`📝 Patch preview: ${file.patch.substring(0, 200)}...`);
+            }
+            const changedLines = extractChangedLines(file.patch || '');
+            return {
+                filename: file.filename,
+                status: file.status,
+                additions: file.additions,
+                deletions: file.deletions,
+                changes: file.changes,
+                patch: file.patch,
+                // Extract line numbers from patch
+                changedLines: changedLines
+            };
+        });
     } catch (error) {
         core.error(`Failed to get PR changes: ${error}`);
         return [];
@@ -130,42 +137,41 @@ function extractChangedLines(patch: string): number[] {
     const lines: number[] = [];
     const patchLines = patch.split('\n');
     
-    for (const line of patchLines) {
-        // Match lines like "@@ -1,3 +1,4 @@" or "@@ -1 +1,2 @@"
-        const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-        if (match) {
-            const startLine = parseInt(match[2]);
-            const lineCount = match[4] ? parseInt(match[4]) : 1; // Number of lines in the new version
-            
-            // Add all lines in the changed section
-            for (let i = 0; i < lineCount; i++) {
-                lines.push(startLine + i);
-            }
-            
-            core.info(`📝 Extracted lines ${startLine} to ${startLine + lineCount - 1} from patch`);
-        }
-    }
-    
-    // Also look for lines that start with + (added lines) or - (removed lines)
     let currentLine = 0;
+    let inHunk = false;
+    
     for (const line of patchLines) {
         if (line.startsWith('@@')) {
+            // Parse hunk header like "@@ -44,6 +44,12 @@"
             const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
             if (match) {
-                currentLine = parseInt(match[2]);
+                currentLine = parseInt(match[2]); // Start line in new version
+                inHunk = true;
+                core.info(`📝 Starting hunk at line ${currentLine}`);
             }
-        } else if (line.startsWith('+') && !line.startsWith('+++')) {
-            // This is an added line
-            lines.push(currentLine);
-            currentLine++;
-        } else if (line.startsWith('-') && !line.startsWith('---')) {
-            // This is a removed line, don't increment currentLine
-        } else if (!line.startsWith('\\')) {
-            // Regular line, increment counter
-            currentLine++;
+        } else if (inHunk) {
+            if (line.startsWith('+') && !line.startsWith('+++')) {
+                // This is an added line
+                lines.push(currentLine);
+                core.info(`📝 Added line ${currentLine}: ${line.substring(1, 50)}...`);
+                currentLine++;
+            } else if (line.startsWith('-') && !line.startsWith('---')) {
+                // This is a removed line, don't increment currentLine
+                core.info(`📝 Removed line ${currentLine}: ${line.substring(1, 50)}...`);
+            } else if (line.startsWith('\\')) {
+                // End of patch
+                inHunk = false;
+            } else if (line.trim() === '') {
+                // Empty line, still increment
+                currentLine++;
+            } else {
+                // Regular context line, increment counter
+                currentLine++;
+            }
         }
     }
     
+    core.info(`📝 Total changed lines extracted: ${lines.length} - ${lines.join(', ')}`);
     return [...new Set(lines)]; // Remove duplicates
 }
 
