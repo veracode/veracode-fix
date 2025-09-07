@@ -83,7 +83,7 @@ async function main() {
                        if (!owner || !repo || !prNumber || !token) {
                            console.log('Missing required parameters for GitHub App comment')
                        } else {
-                           await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file)
+                           await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options)
                            console.log('✅ Veracode app comment posted successfully')
                            return // Exit early, don't run the traditional fix process
                        }
@@ -109,7 +109,7 @@ async function main() {
                     
                            if (appInstalled) {
                                console.log('✅ Veracode GitHub App is installed, posting app comment...')
-                               await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file)
+                               await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options)
                                console.log('✅ Veracode app comment posted successfully')
                                return // Exit early, don't run the traditional fix process
                            } else {

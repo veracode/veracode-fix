@@ -52644,6 +52644,8 @@ exports.createVeracodeAppComment = exports.isVeracodeAppInstalled = void 0;
 const core = __importStar(__nccwpck_require__(2831));
 const github = __importStar(__nccwpck_require__(5371));
 const fs_1 = __importDefault(__nccwpck_require__(9896));
+const path_1 = __importDefault(__nccwpck_require__(6928));
+const rewritePath_1 = __nccwpck_require__(1417);
 /**
  * Check if the Veracode GitHub App is installed on the repository
  * @param token GitHub token
@@ -52804,50 +52806,65 @@ function extractChangedLines(patch) {
 /**
  * Match findings to changed code lines
  */
-function matchFindingsToChanges(findings, prChanges) {
-    const matches = [];
-    core.info(`🔍 Matching ${findings.length} findings against ${prChanges.length} changed files`);
-    for (const finding of findings) {
-        const sourceFile = finding.sourceFile || finding.source_file;
-        if (!sourceFile) {
-            core.info(`⚠️  Finding ${finding.id || 'unknown'} has no sourceFile`);
-            continue;
-        }
-        core.info(`🔍 Checking finding in file: ${sourceFile}`);
-        // Find the corresponding file in PR changes
-        const changedFile = prChanges.find(file => {
-            const isExactMatch = file.filename === sourceFile;
-            const isEndsWithMatch = file.filename.endsWith(sourceFile);
-            const isSourceEndsWithMatch = sourceFile.endsWith(file.filename);
-            if (isExactMatch || isEndsWithMatch || isSourceEndsWithMatch) {
-                core.info(`✅ Found matching file: ${file.filename} (exact: ${isExactMatch}, endsWith: ${isEndsWithMatch}, sourceEndsWith: ${isSourceEndsWithMatch})`);
-                return true;
+function matchFindingsToChanges(findings, prChanges, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b, _c, _d;
+        const matches = [];
+        core.info(`🔍 Matching ${findings.length} findings against ${prChanges.length} changed files`);
+        for (const finding of findings) {
+            // Get the source file from the finding (same structure as in createFlawInfo.ts)
+            const sourceFile = (_b = (_a = finding.files) === null || _a === void 0 ? void 0 : _a.source_file) === null || _b === void 0 ? void 0 : _b.file;
+            if (!sourceFile) {
+                core.info(`⚠️  Finding ${finding.issue_id || 'unknown'} has no sourceFile`);
+                continue;
             }
-            return false;
-        });
-        if (changedFile) {
-            const findingLine = finding.line || finding.line_number;
-            core.info(`🔍 Finding line: ${findingLine}, Changed lines: ${changedFile.changedLines.slice(0, 10).join(', ')}${changedFile.changedLines.length > 10 ? '...' : ''}`);
-            if (findingLine && changedFile.changedLines.includes(findingLine)) {
-                core.info(`✅ Match found: ${sourceFile}:${findingLine}`);
-                matches.push({
-                    finding,
-                    changedFile,
-                    line: findingLine
-                });
+            core.info(`🔍 Checking finding in file: ${sourceFile}`);
+            // Use the same file search logic as createFlawInfo.ts
+            const filenameOnly = path_1.default.basename(sourceFile);
+            const dir = process.cwd();
+            let actualFilePath = yield (0, rewritePath_1.searchFile)(dir, filenameOnly, options);
+            if (!actualFilePath || actualFilePath === '') {
+                actualFilePath = sourceFile;
+            }
+            // Normalize the path for comparison
+            const normalizedPath = (0, rewritePath_1.normalizePathForDisplay)(actualFilePath);
+            core.info(`🔍 Actual file path: ${actualFilePath}`);
+            core.info(`🔍 Normalized path: ${normalizedPath}`);
+            // Find the corresponding file in PR changes
+            const changedFile = prChanges.find(file => {
+                const isExactMatch = file.filename === normalizedPath;
+                const isEndsWithMatch = file.filename.endsWith(normalizedPath);
+                const isSourceEndsWithMatch = normalizedPath.endsWith(file.filename);
+                if (isExactMatch || isEndsWithMatch || isSourceEndsWithMatch) {
+                    core.info(`✅ Found matching file: ${file.filename} (exact: ${isExactMatch}, endsWith: ${isEndsWithMatch}, sourceEndsWith: ${isSourceEndsWithMatch})`);
+                    return true;
+                }
+                return false;
+            });
+            if (changedFile) {
+                const findingLine = (_d = (_c = finding.files) === null || _c === void 0 ? void 0 : _c.source_file) === null || _d === void 0 ? void 0 : _d.line;
+                core.info(`🔍 Finding line: ${findingLine}, Changed lines: ${changedFile.changedLines.slice(0, 10).join(', ')}${changedFile.changedLines.length > 10 ? '...' : ''}`);
+                if (findingLine && changedFile.changedLines.includes(findingLine)) {
+                    core.info(`✅ Match found: ${sourceFile}:${findingLine}`);
+                    matches.push({
+                        finding,
+                        changedFile,
+                        line: findingLine
+                    });
+                }
+                else {
+                    core.info(`❌ No line match: finding line ${findingLine} not in changed lines`);
+                }
             }
             else {
-                core.info(`❌ No line match: finding line ${findingLine} not in changed lines`);
+                core.info(`❌ No file match for: ${sourceFile} (normalized: ${normalizedPath})`);
+                // Log all changed files for debugging
+                core.info(`📁 Changed files: ${prChanges.map(f => f.filename).join(', ')}`);
             }
         }
-        else {
-            core.info(`❌ No file match for: ${sourceFile}`);
-            // Log all changed files for debugging
-            core.info(`📁 Changed files: ${prChanges.map(f => f.filename).join(', ')}`);
-        }
-    }
-    core.info(`🎯 Total matches found: ${matches.length}`);
-    return matches;
+        core.info(`🎯 Total matches found: ${matches.length}`);
+        return matches;
+    });
 }
 /**
  * Create inline code review comments for findings on changed lines
@@ -52889,7 +52906,7 @@ A fix suggestion is available for this finding.
         }
     });
 }
-function createVeracodeAppComment(token, owner, repo, issueNumber, findingsCount, fixSuggestionsCount, resultsFile) {
+function createVeracodeAppComment(token, owner, repo, issueNumber, findingsCount, fixSuggestionsCount, resultsFile, options) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const octokit = github.getOctokit(token);
@@ -52907,7 +52924,7 @@ function createVeracodeAppComment(token, owner, repo, issueNumber, findingsCount
                     core.info(`📄 Sample finding: ${JSON.stringify(findings[0], null, 2)}`);
                 }
                 // Match findings to changed code
-                inlineMatches = matchFindingsToChanges(findings, prChanges);
+                inlineMatches = yield matchFindingsToChanges(findings, prChanges, options || {});
                 core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
                 // Create inline comments for findings on changed lines
                 if (inlineMatches.length > 0) {
@@ -53855,7 +53872,7 @@ function main() {
                         console.log('Missing required parameters for GitHub App comment');
                     }
                     else {
-                        yield (0, check_github_app_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file);
+                        yield (0, check_github_app_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options);
                         console.log('✅ Veracode app comment posted successfully');
                         return; // Exit early, don't run the traditional fix process
                     }
@@ -53881,7 +53898,7 @@ function main() {
                         const appInstalled = yield (0, check_github_app_1.isVeracodeAppInstalled)(token, owner, repo);
                         if (appInstalled) {
                             console.log('✅ Veracode GitHub App is installed, posting app comment...');
-                            yield (0, check_github_app_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file);
+                            yield (0, check_github_app_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount, fixSuggestionsCount, options.file, options);
                             console.log('✅ Veracode app comment posted successfully');
                             return; // Exit early, don't run the traditional fix process
                         }

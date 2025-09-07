@@ -1,6 +1,8 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import fs from 'fs'
+import path from 'path'
+import { searchFile, normalizePathForDisplay } from './rewritePath'
 
 /**
  * Check if the Veracode GitHub App is installed on the repository
@@ -170,25 +172,40 @@ function extractChangedLines(patch: string): number[] {
 /**
  * Match findings to changed code lines
  */
-function matchFindingsToChanges(findings: any[], prChanges: any[]): any[] {
+async function matchFindingsToChanges(findings: any[], prChanges: any[], options: any): Promise<any[]> {
     const matches: any[] = [];
     
     core.info(`🔍 Matching ${findings.length} findings against ${prChanges.length} changed files`);
     
     for (const finding of findings) {
-        const sourceFile = finding.sourceFile || finding.source_file;
+        // Get the source file from the finding (same structure as in createFlawInfo.ts)
+        const sourceFile = finding.files?.source_file?.file;
         if (!sourceFile) {
-            core.info(`⚠️  Finding ${finding.id || 'unknown'} has no sourceFile`);
+            core.info(`⚠️  Finding ${finding.issue_id || 'unknown'} has no sourceFile`);
             continue;
         }
         
         core.info(`🔍 Checking finding in file: ${sourceFile}`);
         
+        // Use the same file search logic as createFlawInfo.ts
+        const filenameOnly = path.basename(sourceFile);
+        const dir = process.cwd();
+        let actualFilePath = await searchFile(dir, filenameOnly, options);
+        
+        if (!actualFilePath || actualFilePath === '') {
+            actualFilePath = sourceFile;
+        }
+        
+        // Normalize the path for comparison
+        const normalizedPath = normalizePathForDisplay(actualFilePath);
+        core.info(`🔍 Actual file path: ${actualFilePath}`);
+        core.info(`🔍 Normalized path: ${normalizedPath}`);
+        
         // Find the corresponding file in PR changes
         const changedFile = prChanges.find(file => {
-            const isExactMatch = file.filename === sourceFile;
-            const isEndsWithMatch = file.filename.endsWith(sourceFile);
-            const isSourceEndsWithMatch = sourceFile.endsWith(file.filename);
+            const isExactMatch = file.filename === normalizedPath;
+            const isEndsWithMatch = file.filename.endsWith(normalizedPath);
+            const isSourceEndsWithMatch = normalizedPath.endsWith(file.filename);
             
             if (isExactMatch || isEndsWithMatch || isSourceEndsWithMatch) {
                 core.info(`✅ Found matching file: ${file.filename} (exact: ${isExactMatch}, endsWith: ${isEndsWithMatch}, sourceEndsWith: ${isSourceEndsWithMatch})`);
@@ -198,7 +215,7 @@ function matchFindingsToChanges(findings: any[], prChanges: any[]): any[] {
         });
         
         if (changedFile) {
-            const findingLine = finding.line || finding.line_number;
+            const findingLine = finding.files?.source_file?.line;
             core.info(`🔍 Finding line: ${findingLine}, Changed lines: ${changedFile.changedLines.slice(0, 10).join(', ')}${changedFile.changedLines.length > 10 ? '...' : ''}`);
             
             if (findingLine && changedFile.changedLines.includes(findingLine)) {
@@ -212,7 +229,7 @@ function matchFindingsToChanges(findings: any[], prChanges: any[]): any[] {
                 core.info(`❌ No line match: finding line ${findingLine} not in changed lines`);
             }
         } else {
-            core.info(`❌ No file match for: ${sourceFile}`);
+            core.info(`❌ No file match for: ${sourceFile} (normalized: ${normalizedPath})`);
             // Log all changed files for debugging
             core.info(`📁 Changed files: ${prChanges.map(f => f.filename).join(', ')}`);
         }
@@ -277,7 +294,8 @@ export async function createVeracodeAppComment(
     issueNumber: number,
     findingsCount: number,
     fixSuggestionsCount: number,
-    resultsFile?: string
+    resultsFile?: string,
+    options?: any
 ): Promise<void> {
     try {
         const octokit = github.getOctokit(token);
@@ -300,7 +318,7 @@ export async function createVeracodeAppComment(
             }
             
             // Match findings to changed code
-            inlineMatches = matchFindingsToChanges(findings, prChanges);
+            inlineMatches = await matchFindingsToChanges(findings, prChanges, options || {});
             core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
             
             // Create inline comments for findings on changed lines
