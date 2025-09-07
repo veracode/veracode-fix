@@ -674,17 +674,11 @@ export async function createVeracodeAppComment(
             // Match findings to changed code
             inlineMatches = await matchFindingsToChanges(findings, prChanges, optionsWithBatchResults);
             core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
-            
-            
-            // Create inline comments for findings on changed lines
-            if (inlineMatches.length > 0) {
-                await createInlineComments(token, owner, repo, issueNumber, inlineMatches, optionsWithBatchResults);
-            }
         } else {
             core.info(`⚠️  No results file provided or file doesn't exist: ${resultsFile}`);
         }
         
-        // Create summary comment
+        // Create summary comment FIRST
         const hasInlineComments = inlineMatches.length > 0;
         
         // Calculate severity level based on findings
@@ -748,7 +742,14 @@ No findings were detected on the code changed in this PR. Use the commands above
         
         core.info(`✅ Veracode app comment posted to PR #${issueNumber}`);
         core.info(`🔗 Comment URL: ${comment.html_url}`);
+        
+        // Create inline comments AFTER the summary comment
         if (hasInlineComments) {
+            const optionsWithBatchResults = {
+                ...options,
+                batchFixResults: batchFixResults
+            };
+            await createInlineComments(token, owner, repo, issueNumber, inlineMatches, optionsWithBatchResults);
             core.info(`📝 Created ${inlineMatches.length} inline comments on changed code`);
         }
     } catch (error) {
