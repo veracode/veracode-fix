@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import create from '@actions/artifact'
 import fs from 'fs'
 import path from 'path'
 
@@ -47,9 +48,33 @@ export async function saveFindingsArtifact(
         
         core.info(`📁 Saved ${findings.length} individual finding files for detailed analysis`);
         
-        // Set output for GitHub Actions to upload artifacts
-        core.setOutput('artifact-path', artifactPath);
-        core.setOutput('artifact-created', 'true');
+        // Upload as GitHub Actions artifact
+        try {
+            const artifactClient = create;
+            const artifactName = 'veracode-findings-debug';
+            const rootDirectory = process.cwd();
+            const filesToUpload = [
+                'veracode-findings-debug.json',
+                ...findings.map((_, index) => `finding-${findings[index].issue_id || index}.json`)
+            ];
+            
+            const uploadResult = await artifactClient.uploadArtifact(
+                artifactName,
+                filesToUpload,
+                rootDirectory,
+                {
+                    retentionDays: 30,
+                    compressionLevel: 6
+                }
+            );
+            
+            core.info(`📦 Uploaded findings artifact: ${artifactName}`);
+            core.setOutput('findings-artifact-name', artifactName);
+            core.setOutput('findings-artifact-uploaded', 'true');
+        } catch (uploadError) {
+            core.warning(`Failed to upload findings artifact: ${uploadError}`);
+            core.setOutput('findings-artifact-uploaded', 'false');
+        }
         
     } catch (error) {
         core.error(`Failed to save findings artifact: ${error}`);
@@ -79,9 +104,30 @@ export async function saveFixResultsArtifact(
         core.info(`📁 Saved fix results debug data to: ${artifactPath}`);
         core.info(`📊 Artifact contains ${fixResults.length} fix results`);
         
-        // Set output for GitHub Actions to upload artifacts
-        core.setOutput('fix-results-artifact-path', artifactPath);
-        core.setOutput('fix-results-artifact-created', 'true');
+        // Upload as GitHub Actions artifact
+        try {
+            const artifactClient = create;
+            const artifactName = 'veracode-fix-results-debug';
+            const rootDirectory = process.cwd();
+            const filesToUpload = ['veracode-fix-results-debug.json'];
+            
+            const uploadResult = await artifactClient.uploadArtifact(
+                artifactName,
+                filesToUpload,
+                rootDirectory,
+                {
+                    retentionDays: 30,
+                    compressionLevel: 6
+                }
+            );
+            
+            core.info(`📦 Uploaded fix results artifact: ${artifactName}`);
+            core.setOutput('fix-results-artifact-name', artifactName);
+            core.setOutput('fix-results-artifact-uploaded', 'true');
+        } catch (uploadError) {
+            core.warning(`Failed to upload fix results artifact: ${uploadError}`);
+            core.setOutput('fix-results-artifact-uploaded', 'false');
+        }
         
     } catch (error) {
         core.error(`Failed to save fix results artifact: ${error}`);
