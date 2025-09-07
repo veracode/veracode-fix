@@ -52954,14 +52954,17 @@ function createInlineComments(token, owner, repo, prNumber, matches) {
 **Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
 
 ### 🔧 Code Fix Available
-A secure code fix is suggested below. Click **"Accept suggestion"** to apply the fix automatically.
+**Suggested Fix:**
+\`\`\`java
+${finalFixSuggestion}
+\`\`\`
 
-**Alternative: Reply with:**
+**To apply the fix, reply with:**
 \`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
 
 *Powered by [Veracode](https://www.veracode.com/)*`;
-                // Create the review comment with code suggestion
-                const reviewCommentParams = {
+                // Create the review comment (without suggestions - they're not supported in createReviewComment)
+                yield octokit.rest.pulls.createReviewComment({
                     owner,
                     repo,
                     pull_number: prNumber,
@@ -52970,19 +52973,7 @@ A secure code fix is suggested below. Click **"Accept suggestion"** to apply the
                     path: match.changedFile.filename,
                     line: line,
                     side: 'RIGHT' // Comment on the new version of the code
-                };
-                // If we have a fix suggestion, add it as a code suggestion
-                if (hasFixSuggestion) {
-                    reviewCommentParams.suggestions = [{
-                            path: match.changedFile.filename,
-                            start_line: line,
-                            end_line: line,
-                            start_side: 'RIGHT',
-                            end_side: 'RIGHT',
-                            body: finalFixSuggestion
-                        }];
-                }
-                yield octokit.rest.pulls.createReviewComment(reviewCommentParams);
+                });
                 core.info(`✅ Inline comment created for finding on line ${line} in ${match.changedFile.filename}`);
             }
             catch (error) {
@@ -53011,9 +53002,12 @@ A secure code fix is suggested below. Click **"Accept suggestion"** to apply the
 **Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
 
 ### 🔧 Code Fix Available
-A secure code fix is suggested below. Click **"Accept suggestion"** to apply the fix automatically.
+**Suggested Fix:**
+\`\`\`java
+${finalFixSuggestion}
+\`\`\`
 
-**Alternative: Reply with:**
+**To apply the fix, reply with:**
 \`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
 
 *Powered by [Veracode](https://www.veracode.com/)*`,
