@@ -4,6 +4,7 @@ import { checkCWE } from './check_cwe_support';
 import tarModule from 'tar';
 import { uploadBatch, checkFixBatch, pullBatchFixResults, getFilesPartOfPR } from './requests'
 import { createPRCommentBatch } from './create_pr_comment'
+import { saveFixResultsArtifact } from './artifactStorage'
 import { execSync }  from 'child_process';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdateBatch } from './checkRun';
 import { rewritePath } from './rewritePath'
@@ -230,6 +231,19 @@ export async function runBatch( options:any, credentials:any){
     if ( checkBatchFixStatus == 1 ){
         console.log('Batch Fixs are ready to be reviewed')
         const batchFixResults = await pullBatchFixResults(credentials, projectID, options)
+        
+        // Save the actual Veracode API response as artifact for debugging
+        try {
+            await saveFixResultsArtifact(batchFixResults, 'batch_fix_results', {
+                projectID: projectID,
+                credentials: { id: credentials.id, key: credentials.key },
+                options: options
+            })
+            console.log('📁 Veracode fix results artifact saved for debugging')
+        } catch (error) {
+            console.log('Warning: Failed to save fix results artifact:', error)
+        }
+        
         filterEmptyPatchesFromBatch(batchFixResults, options);
         if ( batchFixResults == 0 ){
             console.log('Something went wrong, no fixes generated')

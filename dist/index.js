@@ -54849,6 +54849,7 @@ const createFlawInfo_1 = __nccwpck_require__(7810);
 const check_cwe_support_1 = __nccwpck_require__(1668);
 const requests_1 = __nccwpck_require__(3098);
 const create_pr_comment_1 = __nccwpck_require__(239);
+const artifactStorage_1 = __nccwpck_require__(3825);
 const child_process_1 = __nccwpck_require__(5317);
 const checkRun_1 = __nccwpck_require__(6417);
 const rewritePath_1 = __nccwpck_require__(1417);
@@ -55041,6 +55042,18 @@ function runBatch(options, credentials) {
         if (checkBatchFixStatus == 1) {
             console.log('Batch Fixs are ready to be reviewed');
             const batchFixResults = yield (0, requests_1.pullBatchFixResults)(credentials, projectID, options);
+            // Save the actual Veracode API response as artifact for debugging
+            try {
+                yield (0, artifactStorage_1.saveFixResultsArtifact)(batchFixResults, 'batch_fix_results', {
+                    projectID: projectID,
+                    credentials: { id: credentials.id, key: credentials.key },
+                    options: options
+                });
+                console.log('📁 Veracode fix results artifact saved for debugging');
+            }
+            catch (error) {
+                console.log('Warning: Failed to save fix results artifact:', error);
+            }
             filterEmptyPatchesFromBatch(batchFixResults, options);
             if (batchFixResults == 0) {
                 console.log('Something went wrong, no fixes generated');
@@ -55143,6 +55156,7 @@ const requests_2 = __nccwpck_require__(3098);
 const rewritePath_1 = __nccwpck_require__(1417);
 const create_code_suggestion_1 = __nccwpck_require__(6025);
 const languageDetection_1 = __nccwpck_require__(2499);
+const artifactStorage_1 = __nccwpck_require__(3825);
 function runSingle(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -55225,6 +55239,18 @@ function runSingle(options, credentials) {
                                 const tar = yield createTar(initialFlawInfo, options);
                                 const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                                 const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                                // Save the actual Veracode API response as artifact for debugging
+                                try {
+                                    yield (0, artifactStorage_1.saveFixResultsArtifact)(checkFixResults, 'single_fix_results', {
+                                        flawInfo: initialFlawInfo,
+                                        platform: choosePlatform,
+                                        options: options
+                                    });
+                                    console.log('📁 Veracode single fix results artifact saved for debugging');
+                                }
+                                catch (error) {
+                                    console.log('Warning: Failed to save single fix results artifact:', error);
+                                }
                                 if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
                                     console.log('PR commenting is enabled');
                                     const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
@@ -55260,6 +55286,18 @@ function runSingle(options, credentials) {
                         const tar = yield createTar(initialFlawInfo, options);
                         const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                         const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                        // Save the actual Veracode API response as artifact for debugging
+                        try {
+                            yield (0, artifactStorage_1.saveFixResultsArtifact)(checkFixResults, 'single_fix_results', {
+                                flawInfo: initialFlawInfo,
+                                platform: choosePlatform,
+                                options: options
+                            });
+                            console.log('📁 Veracode single fix results artifact saved for debugging');
+                        }
+                        catch (error) {
+                            console.log('Warning: Failed to save single fix results artifact:', error);
+                        }
                         if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
                             console.log('PR commenting is enabled');
                             const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);

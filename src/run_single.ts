@@ -10,6 +10,7 @@ import { getFilesPartOfPR } from './requests';
 import { rewritePath } from './rewritePath'
 import { createCodeSuggestion } from './create_code_suggestion';
 import { detectLanguageFromFile, isLanguageSupported } from './languageDetection';
+import { saveFixResultsArtifact } from './artifactStorage';
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -109,6 +110,18 @@ export async function runSingle(options: any, credentials: any) {
                             const tar = await createTar(initialFlawInfo,options)
                             const uploadTar = await upload(choosePlatform, tar, options)
                             const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
+                            
+                            // Save the actual Veracode API response as artifact for debugging
+                            try {
+                                await saveFixResultsArtifact(checkFixResults, 'single_fix_results', {
+                                    flawInfo: initialFlawInfo,
+                                    platform: choosePlatform,
+                                    options: options
+                                })
+                                console.log('📁 Veracode single fix results artifact saved for debugging')
+                            } catch (error) {
+                                console.log('Warning: Failed to save single fix results artifact:', error)
+                            }
 
                             if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
                                 console.log('PR commenting is enabled')
@@ -146,7 +159,19 @@ export async function runSingle(options: any, credentials: any) {
                     const tar = await createTar(initialFlawInfo,options)
                     const uploadTar = await upload(choosePlatform, tar, options)
                     const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
-
+                    
+                    // Save the actual Veracode API response as artifact for debugging
+                    try {
+                        await saveFixResultsArtifact(checkFixResults, 'single_fix_results', {
+                            flawInfo: initialFlawInfo,
+                            platform: choosePlatform,
+                            options: options
+                        })
+                        console.log('📁 Veracode single fix results artifact saved for debugging')
+                    } catch (error) {
+                        console.log('Warning: Failed to save single fix results artifact:', error)
+                    }
+                    
                     if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
                         console.log('PR commenting is enabled')
                         const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
