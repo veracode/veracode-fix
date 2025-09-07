@@ -285,7 +285,8 @@ async function createInlineComments(
     owner: string,
     repo: string,
     prNumber: number,
-    matches: any[]
+    matches: any[],
+    options?: any
 ): Promise<void> {
     const octokit = github.getOctokit(token);
     
@@ -310,22 +311,61 @@ async function createInlineComments(
                 core.info(`🔍 Source file fields: ${Object.keys(finding.files.source_file).join(', ')}`);
             }
             
-            // Debug: Check for fix-related fields
-            if (finding.fix_results) {
-                core.info(`🔍 Fix results found: ${finding.fix_results.length} results`);
-                if (finding.fix_results.length > 0) {
-                    core.info(`🔍 First fix result preview: ${finding.fix_results[0].substring(0, 200)}...`);
+            // Extract fix suggestion from batch fix results
+            let fixSuggestion = null;
+            
+            // Check if we have batch fix results available
+            if (options && options.batchFixResults) {
+                core.info(`🔍 Checking batch fix results for issue ${finding.issue_id}`);
+                
+                // Look for the finding in batch fix results
+                const batchResults = options.batchFixResults.results;
+                for (const filePath in batchResults) {
+                    const fileResults = batchResults[filePath];
+                    if (fileResults.flaws) {
+                        for (const flaw of fileResults.flaws) {
+                            if (flaw.issueId === finding.issue_id && flaw.patches && flaw.patches.length > 0) {
+                                core.info(`🔍 Found fix suggestion for issue ${finding.issue_id} in batch results`);
+                                
+                                // Get the first patch (as requested by user)
+                                const firstPatch = flaw.patches[0];
+                                if (firstPatch && firstPatch.indexOf('@@') > 0) {
+                                    // Parse the git diff to extract the suggested code
+                                    const cleanedResults = firstPatch.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                                    const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
+                                    if (hunks.length > 0) {
+                                        const cleanedHunk = hunks[0].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
+                                        const cleanedHunkLines = cleanedHunk.split('\n')
+                                            .filter((line: string) => !line.startsWith('-'))
+                                            .map((line: string) => line.replace(/^\+/, ''));
+                                        fixSuggestion = cleanedHunkLines.join('\n');
+                                        core.info(`🔍 Extracted fix suggestion: ${fixSuggestion.substring(0, 100)}...`);
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
             }
-            if (finding.fix_suggestions) {
-                core.info(`🔍 Fix suggestions found: ${finding.fix_suggestions.length} suggestions`);
-            }
-            if (finding.recommendations) {
-                core.info(`🔍 Recommendations found: ${finding.recommendations.length} recommendations`);
-            }
             
-            // Get the fix suggestion from the finding - check multiple possible locations
-            let fixSuggestion = finding.fix_suggestion || 
+            // Fallback: Check for fix-related fields in the finding itself
+            if (!fixSuggestion) {
+                if (finding.fix_results) {
+                    core.info(`🔍 Fix results found: ${finding.fix_results.length} results`);
+                    if (finding.fix_results.length > 0) {
+                        core.info(`🔍 First fix result preview: ${finding.fix_results[0].substring(0, 200)}...`);
+                    }
+                }
+                if (finding.fix_suggestions) {
+                    core.info(`🔍 Fix suggestions found: ${finding.fix_suggestions.length} suggestions`);
+                }
+                if (finding.recommendations) {
+                    core.info(`🔍 Recommendations found: ${finding.recommendations.length} recommendations`);
+                }
+                
+                // Get the fix suggestion from the finding - check multiple possible locations
+                fixSuggestion = finding.fix_suggestion || 
                                finding.suggestion || 
                                finding.recommendation ||
                                finding.fix_recommendation ||
@@ -333,21 +373,22 @@ async function createInlineComments(
                                finding.fix ||
                                finding.code_fix ||
                                finding.suggested_fix;
-            
-            // Check if there are fix results in the finding (similar to create_code_suggestion.ts)
-            if (!fixSuggestion && finding.fix_results && finding.fix_results.length > 0) {
-                // Extract the fix suggestion from the first fix result
-                const firstFixResult = finding.fix_results[0];
-                if (firstFixResult && firstFixResult.indexOf('@@') > 0) {
-                    // Clean the fix result to extract just the suggested code
-                    const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
-                    const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
-                    if (hunks.length > 0) {
-                        const cleanedHunk = hunks[0].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
-                        const cleanedHunkLines = cleanedHunk.split('\n')
-                            .filter((line: string) => !line.startsWith('-'))
-                            .map((line: string) => line.replace(/^\+/, ''));
-                        fixSuggestion = cleanedHunkLines.join('\n');
+                
+                // Check if there are fix results in the finding (similar to create_code_suggestion.ts)
+                if (!fixSuggestion && finding.fix_results && finding.fix_results.length > 0) {
+                    // Extract the fix suggestion from the first fix result
+                    const firstFixResult = finding.fix_results[0];
+                    if (firstFixResult && firstFixResult.indexOf('@@') > 0) {
+                        // Clean the fix result to extract just the suggested code
+                        const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                        const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
+                        if (hunks.length > 0) {
+                            const cleanedHunk = hunks[0].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
+                            const cleanedHunkLines = cleanedHunk.split('\n')
+                                .filter((line: string) => !line.startsWith('-'))
+                                .map((line: string) => line.replace(/^\+/, ''));
+                            fixSuggestion = cleanedHunkLines.join('\n');
+                        }
                     }
                 }
             }
@@ -458,7 +499,8 @@ export async function createVeracodeAppComment(
     findingsCount: number,
     fixSuggestionsCount: number,
     resultsFile?: string,
-    options?: any
+    options?: any,
+    batchFixResults?: any
 ): Promise<void> {
     try {
         const octokit = github.getOctokit(token);
@@ -480,8 +522,14 @@ export async function createVeracodeAppComment(
                 core.info(`📄 Sample finding: ${JSON.stringify(findings[0], null, 2)}`);
             }
             
+            // Add batch fix results to options if available
+            const optionsWithBatchResults = {
+                ...options,
+                batchFixResults: batchFixResults
+            };
+            
             // Match findings to changed code
-            inlineMatches = await matchFindingsToChanges(findings, prChanges, options || {});
+            inlineMatches = await matchFindingsToChanges(findings, prChanges, optionsWithBatchResults);
             core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
             
             // Save findings data as artifact for debugging
@@ -489,7 +537,7 @@ export async function createVeracodeAppComment(
             
             // Create inline comments for findings on changed lines
             if (inlineMatches.length > 0) {
-                await createInlineComments(token, owner, repo, issueNumber, inlineMatches);
+                await createInlineComments(token, owner, repo, issueNumber, inlineMatches, optionsWithBatchResults);
             }
         } else {
             core.info(`⚠️  No results file provided or file doesn't exist: ${resultsFile}`);

@@ -297,7 +297,7 @@ export async function runBatch( options:any, credentials:any){
                             // Calculate actual fix suggestions count from batch results
                             const fixSuggestionsCount = Object.keys(batchFixResults.results || {}).length
                             if (owner && repo && prNumber && token) {
-                                await createVeracodeAppComment(token, owner, repo, prNumber, flawArray.length, fixSuggestionsCount, options.file, options)
+                                await createVeracodeAppComment(token, owner, repo, prNumber, flawArray.length, fixSuggestionsCount, options.file, options, batchFixResults)
                             } else {
                                 console.log('Missing required parameters for GitHub App comment')
                                 createPRCommentBatch(batchFixResults, options, flawArray)
