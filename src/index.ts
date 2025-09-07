@@ -44,17 +44,6 @@ async function main() {
     const results = JSON.parse(resultsFile)
     const findingsCount = results.findings.length
     
-    // Save findings as artifact for debugging (always, regardless of mode)
-    try {
-        await saveFindingsArtifact(results.findings, [], [], { 
-            fixType: options.fixType,
-            resultsFile: resultsFile,
-            findingsCount: findingsCount
-        })
-        console.log('📁 Findings artifact saved for debugging')
-    } catch (error) {
-        console.log('Warning: Failed to save findings artifact:', error)
-    }
     
     // Calculate how many findings actually have fix suggestions available
     // This would need to be determined based on your Veracode results structure
