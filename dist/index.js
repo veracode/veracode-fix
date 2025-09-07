@@ -52653,8 +52653,8 @@ function isVeracodeAppInstalled(token, owner, repo) {
             const octokit = github.getOctokit(token);
             // The app ID is the same across all installations - it's the unique identifier for the GitHub App
             const appId = process.env.VERACODE_APP_ID || '1907493'; // Default to your app ID
+            // Method 1: Try to get the app information directly by slug
             try {
-                // Method 1: Try to get the app information directly
                 const { data: appData } = yield octokit.rest.apps.getBySlug({
                     app_slug: 'veracode-fix-for-github' // This should match your app's slug
                 });
@@ -52664,11 +52664,11 @@ function isVeracodeAppInstalled(token, owner, repo) {
                 }
             }
             catch (error) {
-                core.info('Could not find app by slug, trying alternative method...');
+                core.info('Could not find app by slug: ' + (error.message || error));
             }
+            // Method 2: Check if we can access the app's installation for this repository
+            // This is more reliable as it checks the actual installation
             try {
-                // Method 2: Check if we can access the app's installation for this repository
-                // This is more reliable as it checks the actual installation
                 const { data: installation } = yield octokit.rest.apps.getRepoInstallation({
                     owner,
                     repo
@@ -52679,10 +52679,10 @@ function isVeracodeAppInstalled(token, owner, repo) {
                 }
             }
             catch (error) {
-                core.info('Could not find app installation for repository: ' + error);
+                core.info('Could not find app installation for repository: ' + (error.message || error));
             }
+            // Method 3: List all installations and check if our app is there
             try {
-                // Method 3: List all installations and check if our app is there
                 const { data: installations } = yield octokit.rest.apps.listInstallations({
                     per_page: 100
                 });
@@ -52693,13 +52693,24 @@ function isVeracodeAppInstalled(token, owner, repo) {
                 }
             }
             catch (error) {
-                core.info('Could not list app installations: ' + error);
+                core.info('Could not list app installations: ' + (error.message || error));
+            }
+            // Method 4: Check if the token has sufficient permissions by trying a simple API call
+            try {
+                const { data: repoData } = yield octokit.rest.repos.get({
+                    owner,
+                    repo
+                });
+                core.info('✅ Token has repository access, but app detection failed');
+            }
+            catch (error) {
+                core.info('❌ Token lacks sufficient permissions: ' + (error.message || error));
             }
             core.info('❌ Veracode app not found using any method');
             return false;
         }
         catch (error) {
-            core.info('Error checking if Veracode app is installed: ' + error);
+            core.info('Error checking if Veracode app is installed: ' + (error.message || error));
             return false;
         }
     });
@@ -52718,14 +52729,14 @@ function createVeracodeAppComment(token, owner, repo, issueNumber, findingsCount
         const commentBody = `## 🟡 Veracode Security Analysis
 
 <div align="center">
-  <img src="https://www.veracode.com/sites/default/files/2021-08/veracode-logo.png" alt="Veracode" width="200"/>
+  <img src="https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg" alt="Veracode" width="200"/>
 </div>
 
 ### ⚠️ Security Findings Detected
 
 | Metric | Count |
 |--------|-------|
-| **Total Flaws** | **${findingsCount}** |
+| **Total Findings** | **${findingsCount}** |
 | **Fix Suggestions Available** | **${findingsCount}** |
 | **Severity Level** | **MEDIUM** |
 
@@ -52748,6 +52759,23 @@ Use these commands to interact with Veracode Fix suggestions:
 ### ℹ️ About Veracode Fix
 
 Veracode Fix provides intelligent remediation suggestions for security vulnerabilities. Use the commands above to review and apply fixes to your code.
+
+---
+
+### 💬 Get Started
+
+**There are ${findingsCount} findings identified with ${findingsCount} fix suggestions available, do you want to fix them?** Use one of these commands to see fix suggestions:
+
+> **Quick Start:** Copy and paste this command in the comment box below:
+> 
+> \`/veracode show-all\`
+
+**Available Commands:**
+- \`/veracode show-all\` - Show all flaws with fix suggestions
+- \`/veracode fix-all\` - Apply all available fixes  
+- \`/veracode filter-cwe CWE-117,CWE-89\` - Filter by specific CWE numbers
+- \`/veracode filter-commit\` - Show only flaws in changed files
+- \`/veracode apply-fix fix1,fix2\` - Apply specific fixes
 
 ---
 *Powered by [Veracode](https://www.veracode.com/)*`;

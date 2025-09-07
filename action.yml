@@ -48,7 +48,7 @@ inputs:
     required: true
     default: 'octocat@github.com'
   useGitHubApp:
-    description: 'Use GitHub App mode (post single comment with /veracode commands instead of individual fix comments)'
+    description: 'Use GitHub App mode (post single comment with /veracode commands instead of individual fix comments). Options: auto (detect), true (force), false (disable)'
     required: false
     default: 'auto'
     
