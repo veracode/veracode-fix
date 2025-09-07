@@ -308,15 +308,47 @@ async function createInlineComments(
                 core.info(`🔍 Source file fields: ${Object.keys(finding.files.source_file).join(', ')}`);
             }
             
-            // Get the fix suggestion from the finding - try multiple possible field names
-            const fixSuggestion = finding.fix_suggestion || 
-                                 finding.suggestion || 
-                                 finding.recommendation ||
-                                 finding.fix_recommendation ||
-                                 finding.remediation ||
-                                 finding.fix ||
-                                 finding.code_fix ||
-                                 finding.suggested_fix;
+            // Debug: Check for fix-related fields
+            if (finding.fix_results) {
+                core.info(`🔍 Fix results found: ${finding.fix_results.length} results`);
+                if (finding.fix_results.length > 0) {
+                    core.info(`🔍 First fix result preview: ${finding.fix_results[0].substring(0, 200)}...`);
+                }
+            }
+            if (finding.fix_suggestions) {
+                core.info(`🔍 Fix suggestions found: ${finding.fix_suggestions.length} suggestions`);
+            }
+            if (finding.recommendations) {
+                core.info(`🔍 Recommendations found: ${finding.recommendations.length} recommendations`);
+            }
+            
+            // Get the fix suggestion from the finding - check multiple possible locations
+            let fixSuggestion = finding.fix_suggestion || 
+                               finding.suggestion || 
+                               finding.recommendation ||
+                               finding.fix_recommendation ||
+                               finding.remediation ||
+                               finding.fix ||
+                               finding.code_fix ||
+                               finding.suggested_fix;
+            
+            // Check if there are fix results in the finding (similar to create_code_suggestion.ts)
+            if (!fixSuggestion && finding.fix_results && finding.fix_results.length > 0) {
+                // Extract the fix suggestion from the first fix result
+                const firstFixResult = finding.fix_results[0];
+                if (firstFixResult && firstFixResult.indexOf('@@') > 0) {
+                    // Clean the fix result to extract just the suggested code
+                    const cleanedResults = firstFixResult.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '');
+                    const hunks = cleanedResults.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/);
+                    if (hunks.length > 0) {
+                        const cleanedHunk = hunks[0].replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '');
+                        const cleanedHunkLines = cleanedHunk.split('\n')
+                            .filter((line: string) => !line.startsWith('-'))
+                            .map((line: string) => line.replace(/^\+/, ''));
+                        fixSuggestion = cleanedHunkLines.join('\n');
+                    }
+                }
+            }
             
             core.info(`🔍 Fix suggestion found: ${fixSuggestion ? 'YES' : 'NO'}`);
             if (fixSuggestion) {
@@ -326,13 +358,9 @@ async function createInlineComments(
             let finalFixSuggestion = fixSuggestion;
             let hasFixSuggestion = fixSuggestion && fixSuggestion.trim() !== '';
             
-            // If no fix suggestion found, generate a basic one based on CWE
-            if (!hasFixSuggestion) {
-                const cwe = finding.cwe_id || finding.cwe || '';
-                finalFixSuggestion = generateBasicFixSuggestion(cwe, finding.issue_type || finding.description || '');
-                hasFixSuggestion = true;
-                core.info(`🔧 Generated basic fix suggestion for CWE ${cwe}`);
-            }
+            // Debug: Log the final fix suggestion
+            core.info(`🔧 Final fix suggestion: ${finalFixSuggestion}`);
+            core.info(`🔧 Has fix suggestion: ${hasFixSuggestion}`);
             
             // Create a review comment with code suggestion
             const commentBody = `## 🟡 Veracode Code Fix Suggestions
@@ -341,14 +369,21 @@ async function createInlineComments(
 **Severity:** ${finding.severity || 'Medium'}
 **Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
 
-### 🔧 Code Fix Available
+${hasFixSuggestion ? 
+    `### 🔧 Code Fix Available
 **Suggested Fix:**
 \`\`\`java
 ${finalFixSuggestion}
 \`\`\`
 
 **To apply the fix, reply with:**
-\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
+\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`` :
+    `### ⚠️ Security Finding Detected
+This security finding has been identified. Please review and apply appropriate remediation.
+
+**For more information, reply with:**
+\`/veracode show-details ${finding.issue_id || finding.id || finding.flaw_id}\``
+}
 
 *Powered by [Veracode](https://www.veracode.com/)*`;
 
@@ -376,13 +411,6 @@ ${finalFixSuggestion}
                 let finalFixSuggestion = fixSuggestion;
                 let hasFixSuggestion = fixSuggestion && fixSuggestion.trim() !== '';
                 
-                // If no fix suggestion found, generate a basic one based on CWE
-                if (!hasFixSuggestion) {
-                    const cwe = finding.cwe_id || finding.cwe || '';
-                    finalFixSuggestion = generateBasicFixSuggestion(cwe, finding.issue_type || finding.description || '');
-                    hasFixSuggestion = true;
-                }
-                
                 await octokit.rest.pulls.createReview({
                     owner,
                     repo,
@@ -393,14 +421,21 @@ ${finalFixSuggestion}
 **Severity:** ${finding.severity || 'Medium'}
 **Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
 
-### 🔧 Code Fix Available
+${hasFixSuggestion ? 
+    `### 🔧 Code Fix Available
 **Suggested Fix:**
 \`\`\`java
 ${finalFixSuggestion}
 \`\`\`
 
 **To apply the fix, reply with:**
-\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
+\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`` :
+    `### ⚠️ Security Finding Detected
+This security finding has been identified. Please review and apply appropriate remediation.
+
+**For more information, reply with:**
+\`/veracode show-details ${finding.issue_id || finding.id || finding.flaw_id}\``
+}
 
 *Powered by [Veracode](https://www.veracode.com/)*`,
                     event: 'COMMENT'
