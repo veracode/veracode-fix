@@ -10,6 +10,7 @@ inputs:
   token:
     description: 'GitHub Token'
     required: true
+    secret: true
     default: ${{ github.token }}
   inputFile:
     description: 'Results file from Veracode'
@@ -46,6 +47,10 @@ inputs:
     description: 'Specify an email that should be used for commits. The default value is octocat@github.com'
     required: true
     default: 'octocat@github.com'
+  useGitHubApp:
+    description: 'Use GitHub App mode (post single comment with /veracode commands instead of individual fix comments)'
+    required: false
+    default: 'auto'
     
 
 runs:

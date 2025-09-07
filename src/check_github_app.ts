@@ -12,34 +12,60 @@ export async function isVeracodeAppInstalled(token: string, owner: string, repo:
     try {
         const octokit = github.getOctokit(token);
         
-        // Get the repository information
-        const { data: repoData } = await octokit.rest.repos.get({
-            owner,
-            repo
-        });
-        
-        // Check if the Veracode app is installed by looking for it in the repository
-        // We'll check for the app by looking for a specific app installation
-        // The app ID should be configured in the environment or as a parameter
+        // The app ID is the same across all installations - it's the unique identifier for the GitHub App
         const appId = process.env.VERACODE_APP_ID || '1907493'; // Default to your app ID
         
         try {
-            // Try to get app installations for the repository
+            // Method 1: Try to get the app information directly
+            const { data: appData } = await octokit.rest.apps.getBySlug({
+                app_slug: 'veracode-fix-for-github' // This should match your app's slug
+            });
+            
+            if (appData.id.toString() === appId) {
+                core.info('✅ Veracode app found by slug');
+                return true;
+            }
+        } catch (error) {
+            core.info('Could not find app by slug, trying alternative method...');
+        }
+        
+        try {
+            // Method 2: Check if we can access the app's installation for this repository
+            // This is more reliable as it checks the actual installation
+            const { data: installation } = await octokit.rest.apps.getRepoInstallation({
+                owner,
+                repo
+            });
+            
+            if (installation.app_id.toString() === appId) {
+                core.info('✅ Veracode app installation found for repository');
+                return true;
+            }
+        } catch (error) {
+            core.info('Could not find app installation for repository: ' + error);
+        }
+        
+        try {
+            // Method 3: List all installations and check if our app is there
             const { data: installations } = await octokit.rest.apps.listInstallations({
                 per_page: 100
             });
             
-            // Check if our Veracode app is in the list
             const veracodeApp = installations.find((installation: any) => 
                 installation.app_id.toString() === appId
             );
             
-            return !!veracodeApp;
+            if (veracodeApp) {
+                core.info('✅ Veracode app found in installations list');
+                return true;
+            }
         } catch (error) {
-            // If we can't check installations, assume app is not installed
-            core.info('Could not check app installations, assuming app is not installed');
-            return false;
+            core.info('Could not list app installations: ' + error);
         }
+        
+        core.info('❌ Veracode app not found using any method');
+        return false;
+        
     } catch (error) {
         core.info('Error checking if Veracode app is installed: ' + error);
         return false;

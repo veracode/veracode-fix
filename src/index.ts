@@ -36,6 +36,7 @@ options['files'] = getInputOrEnv('files',false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion',false);
 options['token'] = getInputOrEnv('token',false);
 options['emailForCommits'] = getInputOrEnv('emailForCommits',false);
+options['useGitHubApp'] = getInputOrEnv('useGitHubApp',false);
 
 async function main() {
     const resultsFile = fs.readFileSync(options.file, 'utf8')
@@ -57,32 +58,60 @@ async function main() {
     const isPR = context.payload.pull_request
 
     if (isPR && findingsCount > 0) {
-        console.log('Running on a PR with findings, checking for Veracode GitHub App...')
+        const useGitHubApp = options.useGitHubApp || 'auto'
         
-        try {
-            const repository = process.env.GITHUB_REPOSITORY?.split('/') || []
-            const owner = repository[0]
-            const repo = repository[1]
-            const prNumber = context.payload.pull_request?.number
-            const token = options.token
-            
-            if (!owner || !repo || !prNumber || !token) {
-                console.log('Missing required parameters for GitHub App check')
-            } else {
-                // Check if Veracode GitHub App is installed
-                const appInstalled = await isVeracodeAppInstalled(token, owner, repo)
+        if (useGitHubApp === 'true') {
+            // Force GitHub App mode
+            console.log('GitHub App mode enabled, posting app comment...')
+            try {
+                const repository = process.env.GITHUB_REPOSITORY?.split('/') || []
+                const owner = repository[0]
+                const repo = repository[1]
+                const prNumber = context.payload.pull_request?.number
+                const token = options.token
                 
-                if (appInstalled) {
-                    console.log('✅ Veracode GitHub App is installed, posting app comment...')
+                if (!owner || !repo || !prNumber || !token) {
+                    console.log('Missing required parameters for GitHub App comment')
+                } else {
                     await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount)
                     console.log('✅ Veracode app comment posted successfully')
                     return // Exit early, don't run the traditional fix process
-                } else {
-                    console.log('❌ Veracode GitHub App is not installed, running traditional fix process...')
                 }
+            } catch (error) {
+                console.log('Error posting GitHub App comment, falling back to traditional process:', error)
             }
-        } catch (error) {
-            console.log('Error checking GitHub App, falling back to traditional process:', error)
+        } else if (useGitHubApp === 'auto') {
+            // Auto-detect GitHub App
+            console.log('Auto-detecting Veracode GitHub App...')
+            
+            try {
+                const repository = process.env.GITHUB_REPOSITORY?.split('/') || []
+                const owner = repository[0]
+                const repo = repository[1]
+                const prNumber = context.payload.pull_request?.number
+                const token = options.token
+                
+                if (!owner || !repo || !prNumber || !token) {
+                    console.log('Missing required parameters for GitHub App check')
+                } else {
+                    // Check if Veracode GitHub App is installed
+                    const appInstalled = await isVeracodeAppInstalled(token, owner, repo)
+                    
+                    if (appInstalled) {
+                        console.log('✅ Veracode GitHub App is installed, posting app comment...')
+                        await createVeracodeAppComment(token, owner, repo, prNumber, findingsCount)
+                        console.log('✅ Veracode app comment posted successfully')
+                        return // Exit early, don't run the traditional fix process
+                    } else {
+                        console.log('❌ Veracode GitHub App is not installed, running traditional fix process...')
+                    }
+                }
+            } catch (error) {
+                console.log('Error checking GitHub App, falling back to traditional process:', error)
+            }
+        } else {
+            // useGitHubApp === 'false' - skip GitHub App mode
+            console.log('GitHub App mode disabled, running traditional fix process...')
         }
     }
 

@@ -52651,29 +52651,52 @@ function isVeracodeAppInstalled(token, owner, repo) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const octokit = github.getOctokit(token);
-            // Get the repository information
-            const { data: repoData } = yield octokit.rest.repos.get({
-                owner,
-                repo
-            });
-            // Check if the Veracode app is installed by looking for it in the repository
-            // We'll check for the app by looking for a specific app installation
-            // The app ID should be configured in the environment or as a parameter
+            // The app ID is the same across all installations - it's the unique identifier for the GitHub App
             const appId = process.env.VERACODE_APP_ID || '1907493'; // Default to your app ID
             try {
-                // Try to get app installations for the repository
+                // Method 1: Try to get the app information directly
+                const { data: appData } = yield octokit.rest.apps.getBySlug({
+                    app_slug: 'veracode-fix-for-github' // This should match your app's slug
+                });
+                if (appData.id.toString() === appId) {
+                    core.info('✅ Veracode app found by slug');
+                    return true;
+                }
+            }
+            catch (error) {
+                core.info('Could not find app by slug, trying alternative method...');
+            }
+            try {
+                // Method 2: Check if we can access the app's installation for this repository
+                // This is more reliable as it checks the actual installation
+                const { data: installation } = yield octokit.rest.apps.getRepoInstallation({
+                    owner,
+                    repo
+                });
+                if (installation.app_id.toString() === appId) {
+                    core.info('✅ Veracode app installation found for repository');
+                    return true;
+                }
+            }
+            catch (error) {
+                core.info('Could not find app installation for repository: ' + error);
+            }
+            try {
+                // Method 3: List all installations and check if our app is there
                 const { data: installations } = yield octokit.rest.apps.listInstallations({
                     per_page: 100
                 });
-                // Check if our Veracode app is in the list
                 const veracodeApp = installations.find((installation) => installation.app_id.toString() === appId);
-                return !!veracodeApp;
+                if (veracodeApp) {
+                    core.info('✅ Veracode app found in installations list');
+                    return true;
+                }
             }
             catch (error) {
-                // If we can't check installations, assume app is not installed
-                core.info('Could not check app installations, assuming app is not installed');
-                return false;
+                core.info('Could not list app installations: ' + error);
             }
+            core.info('❌ Veracode app not found using any method');
+            return false;
         }
         catch (error) {
             core.info('Error checking if Veracode app is installed: ' + error);
@@ -53583,9 +53606,10 @@ options['files'] = getInputOrEnv('files', false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
 options['emailForCommits'] = getInputOrEnv('emailForCommits', false);
+options['useGitHubApp'] = getInputOrEnv('useGitHubApp', false);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b;
+        var _a, _b, _c, _d;
         const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
         const results = JSON.parse(resultsFile);
         const findingsCount = results.findings.length;
@@ -53602,32 +53626,62 @@ function main() {
         const context = github.context;
         const isPR = context.payload.pull_request;
         if (isPR && findingsCount > 0) {
-            console.log('Running on a PR with findings, checking for Veracode GitHub App...');
-            try {
-                const repository = ((_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')) || [];
-                const owner = repository[0];
-                const repo = repository[1];
-                const prNumber = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.number;
-                const token = options.token;
-                if (!owner || !repo || !prNumber || !token) {
-                    console.log('Missing required parameters for GitHub App check');
-                }
-                else {
-                    // Check if Veracode GitHub App is installed
-                    const appInstalled = yield (0, check_github_app_1.isVeracodeAppInstalled)(token, owner, repo);
-                    if (appInstalled) {
-                        console.log('✅ Veracode GitHub App is installed, posting app comment...');
+            const useGitHubApp = options.useGitHubApp || 'auto';
+            if (useGitHubApp === 'true') {
+                // Force GitHub App mode
+                console.log('GitHub App mode enabled, posting app comment...');
+                try {
+                    const repository = ((_a = process.env.GITHUB_REPOSITORY) === null || _a === void 0 ? void 0 : _a.split('/')) || [];
+                    const owner = repository[0];
+                    const repo = repository[1];
+                    const prNumber = (_b = context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.number;
+                    const token = options.token;
+                    if (!owner || !repo || !prNumber || !token) {
+                        console.log('Missing required parameters for GitHub App comment');
+                    }
+                    else {
                         yield (0, check_github_app_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount);
                         console.log('✅ Veracode app comment posted successfully');
                         return; // Exit early, don't run the traditional fix process
                     }
-                    else {
-                        console.log('❌ Veracode GitHub App is not installed, running traditional fix process...');
-                    }
+                }
+                catch (error) {
+                    console.log('Error posting GitHub App comment, falling back to traditional process:', error);
                 }
             }
-            catch (error) {
-                console.log('Error checking GitHub App, falling back to traditional process:', error);
+            else if (useGitHubApp === 'auto') {
+                // Auto-detect GitHub App
+                console.log('Auto-detecting Veracode GitHub App...');
+                try {
+                    const repository = ((_c = process.env.GITHUB_REPOSITORY) === null || _c === void 0 ? void 0 : _c.split('/')) || [];
+                    const owner = repository[0];
+                    const repo = repository[1];
+                    const prNumber = (_d = context.payload.pull_request) === null || _d === void 0 ? void 0 : _d.number;
+                    const token = options.token;
+                    if (!owner || !repo || !prNumber || !token) {
+                        console.log('Missing required parameters for GitHub App check');
+                    }
+                    else {
+                        // Check if Veracode GitHub App is installed
+                        const appInstalled = yield (0, check_github_app_1.isVeracodeAppInstalled)(token, owner, repo);
+                        if (appInstalled) {
+                            console.log('✅ Veracode GitHub App is installed, posting app comment...');
+                            yield (0, check_github_app_1.createVeracodeAppComment)(token, owner, repo, prNumber, findingsCount);
+                            console.log('✅ Veracode app comment posted successfully');
+                            return; // Exit early, don't run the traditional fix process
+                        }
+                        else {
+                            console.log('❌ Veracode GitHub App is not installed, running traditional fix process...');
+                        }
+                    }
+                }
+                catch (error) {
+                    console.log('Error checking GitHub App, falling back to traditional process:', error);
+                }
+            }
+            else {
+                // useGitHubApp === 'false' - skip GitHub App mode
+                console.log('GitHub App mode disabled, running traditional fix process...');
             }
         }
         if (!findingsCount) {
