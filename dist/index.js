@@ -52757,14 +52757,47 @@ function createVeracodeAppComment(token, owner, repo, issueNumber, findingsCount
 *Powered by [Veracode](https://www.veracode.com/)*`;
         try {
             const octokit = github.getOctokit(token);
-            const { data: comment } = yield octokit.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: issueNumber,
-                body: commentBody,
-            });
-            core.info(`✅ Veracode app comment posted to PR #${issueNumber}`);
-            core.info(`🔗 Comment URL: ${comment.html_url}`);
+            // Try to create a review comment instead of a regular comment
+            // This should trigger the reply input field
+            try {
+                const { data: review } = yield octokit.rest.pulls.createReview({
+                    owner,
+                    repo,
+                    pull_number: issueNumber,
+                    body: commentBody,
+                    event: 'COMMENT' // This creates a review comment without approving/requesting changes
+                });
+                core.info(`✅ Veracode app review comment posted to PR #${issueNumber}`);
+                core.info(`🔗 Review URL: ${review.html_url}`);
+            }
+            catch (reviewError) {
+                core.info(`Review comment failed: ${reviewError}, trying alternative approach...`);
+                // Alternative: Try to create a review comment with a general comment
+                try {
+                    const { data: review } = yield octokit.rest.pulls.createReview({
+                        owner,
+                        repo,
+                        pull_number: issueNumber,
+                        body: commentBody,
+                        event: 'COMMENT',
+                        comments: [] // Empty comments array for general review comment
+                    });
+                    core.info(`✅ Veracode app general review comment posted to PR #${issueNumber}`);
+                    core.info(`🔗 Review URL: ${review.html_url}`);
+                }
+                catch (generalReviewError) {
+                    // Fallback to regular comment if review fails
+                    core.info('All review comment attempts failed, falling back to regular comment...');
+                    const { data: comment } = yield octokit.rest.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: issueNumber,
+                        body: commentBody,
+                    });
+                    core.info(`✅ Veracode app comment posted to PR #${issueNumber}`);
+                    core.info(`🔗 Comment URL: ${comment.html_url}`);
+                }
+            }
         }
         catch (error) {
             core.error(`❌ Failed to post Veracode app comment: ${error}`);
