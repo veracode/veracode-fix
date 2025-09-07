@@ -8,3 +8,4 @@ app/*
 app.tar.gz
 Archive.zip
 batch_fix_results.json
+filtered_results.json

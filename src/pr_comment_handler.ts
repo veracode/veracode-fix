@@ -162,6 +162,60 @@ async function getPRChanges(token: string, owner: string, repo: string, prNumber
 }
 
 /**
+ * Extract and format stack trace data from findings
+ */
+function extractStackTraceData(finding: any): string {
+    if (!finding.stack_dumps || !finding.stack_dumps.stack_dump) {
+        return '';
+    }
+
+    const stackDumps = finding.stack_dumps.stack_dump;
+    let stackTraceText = '';
+
+    stackDumps.forEach((stackDump: any, index: number) => {
+        if (stackDump.Frame && Array.isArray(stackDump.Frame)) {
+            stackTraceText += `\n**Stack Trace ${index + 1}:**\n`;
+            
+            stackDump.Frame.forEach((frame: any, frameIndex: number) => {
+                const frameId = frame.FrameId || frameIndex;
+                const functionName = frame.FunctionName || 'Unknown';
+                const sourceFile = frame.SourceFile || 'Unknown';
+                const sourceLine = frame.SourceLine || 'Unknown';
+                const qualifiedFunctionName = frame.QualifiedFunctionName || functionName;
+                const varNames = frame.VarNames || '';
+                const comment = frame.Comment || '';
+
+                stackTraceText += `\`${frameId}\` **${functionName}**`;
+                if (qualifiedFunctionName !== functionName) {
+                    stackTraceText += ` (${qualifiedFunctionName})`;
+                }
+                stackTraceText += `\n`;
+                stackTraceText += `   📁 ${sourceFile}:${sourceLine}\n`;
+                
+                if (varNames) {
+                    // Clean up the variable names for better readability
+                    const cleanVarNames = varNames
+                        .replace(/\*\*X-VC[^*]*\*\//g, '') // Remove Veracode scope references
+                        .replace(/\s+/g, ' ') // Normalize whitespace
+                        .trim();
+                    if (cleanVarNames && cleanVarNames !== '{}') {
+                        stackTraceText += `   🔍 Variables: \`${cleanVarNames}\`\n`;
+                    }
+                }
+                
+                if (comment && comment !== '{}' && typeof comment === 'string') {
+                    stackTraceText += `   💬 ${comment}\n`;
+                }
+                
+                stackTraceText += '\n';
+            });
+        }
+    });
+
+    return stackTraceText.trim();
+}
+
+/**
  * Extract changed line numbers from git patch
  */
 function extractChangedLines(patch: string): number[] {
@@ -452,6 +506,7 @@ This security finding has been identified. Please review and apply appropriate r
                 };
                 
                 const severityText = severityMap[finding.severity] || 'Unknown';
+                const stackTraceData = extractStackTraceData(finding);
                 
                 // Use createReviewComment with the full diff in the comment body
                 await octokit.rest.pulls.createReviewComment({
@@ -464,7 +519,13 @@ This security finding has been identified. Please review and apply appropriate r
 **Severity: ${severityText} (${finding.severity})**
 **${finding.display_text || finding.description || 'Security vulnerability detected'}**
 
-## 🔧 Code Fix Available
+${stackTraceData ? `<details>
+<summary>📊 Data Flow Analysis</summary>
+
+${stackTraceData}
+</details>
+
+` : ''}## 🔧 Code Fix Available
 **Suggested Changes:**
 \`\`\`diff
 ${finalFixSuggestion}
@@ -491,6 +552,7 @@ ${finalFixSuggestion}
                 };
                 
                 const severityText = severityMap[finding.severity] || 'Unknown';
+                const stackTraceData = extractStackTraceData(finding);
                 
                 // Use createReviewComment for findings without fix suggestions
                 await octokit.rest.pulls.createReviewComment({
@@ -503,7 +565,13 @@ ${finalFixSuggestion}
 **Severity: ${severityText} (${finding.severity})**
 **${finding.display_text || finding.description || 'Security vulnerability detected'}**
 
-## ⚠️ No Code Fix Available
+${stackTraceData ? `<details>
+<summary>📊 Data Flow Analysis</summary>
+
+${stackTraceData}
+</details>
+
+` : ''}## ⚠️ No Code Fix Available
 **This finding requires manual review and remediation.**
 
 **To view details, reply with:**
