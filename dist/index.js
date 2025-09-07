@@ -52882,28 +52882,38 @@ function matchFindingsToChanges(findings, prChanges, options) {
 function createInlineComments(token, owner, repo, prNumber, matches) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github.getOctokit(token);
+        // First, get the PR details to get the commit SHA
+        const { data: pr } = yield octokit.rest.pulls.get({
+            owner,
+            repo,
+            pull_number: prNumber
+        });
+        const commitSha = pr.head.sha;
+        core.info(`📝 Using commit SHA: ${commitSha}`);
         for (const match of matches) {
             const { finding, line } = match;
             try {
                 // Create a review comment on the specific line
                 const commentBody = `## 🟡 Veracode Security Finding
 
-**CWE:** ${finding.cwe || 'Unknown'}
+**CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
 **Severity:** ${finding.severity || 'Medium'}
-**Description:** ${finding.description || 'Security vulnerability detected'}
+**Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
 
 ### 🔧 Fix Suggestion Available
 A fix suggestion is available for this finding.
 
 **To apply the fix, reply with:**
-\`/veracode apply-fix ${finding.id || finding.flaw_id}\`
+\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
 
 *Powered by [Veracode](https://www.veracode.com/)*`;
+                // Use the correct API parameters for creating review comments
                 yield octokit.rest.pulls.createReviewComment({
                     owner,
                     repo,
                     pull_number: prNumber,
                     body: commentBody,
+                    commit_id: commitSha,
                     path: match.changedFile.filename,
                     line: line,
                     side: 'RIGHT' // Comment on the new version of the code
@@ -52912,6 +52922,33 @@ A fix suggestion is available for this finding.
             }
             catch (error) {
                 core.error(`Failed to create inline comment for line ${line}: ${error}`);
+                // Try alternative approach - create a general review comment
+                try {
+                    core.info(`🔄 Trying alternative approach for line ${line}...`);
+                    yield octokit.rest.pulls.createReview({
+                        owner,
+                        repo,
+                        pull_number: prNumber,
+                        body: `## 🟡 Veracode Security Finding on ${match.changedFile.filename}:${line}
+
+**CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
+**Severity:** ${finding.severity || 'Medium'}
+**Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
+
+### 🔧 Fix Suggestion Available
+A fix suggestion is available for this finding.
+
+**To apply the fix, reply with:**
+\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
+
+*Powered by [Veracode](https://www.veracode.com/)*`,
+                        event: 'COMMENT'
+                    });
+                    core.info(`✅ Alternative review comment created for line ${line}`);
+                }
+                catch (altError) {
+                    core.error(`Alternative approach also failed for line ${line}: ${altError}`);
+                }
             }
         }
     });
