@@ -433,18 +433,30 @@ This security finding has been identified. Please review and apply appropriate r
 
             // Create the review comment with full diff
             if (hasFixSuggestion) {
+                // Map severity numbers to text
+                const severityMap: { [key: number]: string } = {
+                    5: 'Very High',
+                    4: 'High', 
+                    3: 'Medium',
+                    2: 'Low',
+                    1: 'Very Low',
+                    0: 'Informational'
+                };
+                
+                const severityText = severityMap[finding.severity] || 'Unknown';
+                
                 // Use createReviewComment with the full diff in the comment body
                 await octokit.rest.pulls.createReviewComment({
                     owner,
                     repo,
                     pull_number: prNumber,
-                    body: `## 🟡 Veracode Code Fix Suggestions
+                    body: `## 🚨 Blocking Security Defect Identified
 
-**CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
-**Severity:** ${finding.severity || 'Medium'}
-**Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
+**${finding.issue_type || 'Security Vulnerability'} - CWE-${finding.cwe_id || finding.cwe || 'Unknown'}**
+**Severity: ${severityText} (${finding.severity})**
+**${finding.display_text || finding.description || 'Security vulnerability detected'}**
 
-### 🔧 Code Fix Available
+## 🔧 Code Fix Available
 **Suggested Changes:**
 \`\`\`diff
 ${finalFixSuggestion}
@@ -460,12 +472,36 @@ ${finalFixSuggestion}
                     side: 'RIGHT'
                 });
             } else {
+                // Map severity numbers to text for fallback comment
+                const severityMap: { [key: number]: string } = {
+                    5: 'Very High',
+                    4: 'High', 
+                    3: 'Medium',
+                    2: 'Low',
+                    1: 'Very Low',
+                    0: 'Informational'
+                };
+                
+                const severityText = severityMap[finding.severity] || 'Unknown';
+                
                 // Use createReviewComment for findings without fix suggestions
                 await octokit.rest.pulls.createReviewComment({
                     owner,
                     repo,
                     pull_number: prNumber,
-                    body: commentBody,
+                    body: `## 🚨 Blocking Security Defect Identified
+
+**${finding.issue_type || 'Security Vulnerability'} - CWE-${finding.cwe_id || finding.cwe || 'Unknown'}**
+**Severity: ${severityText} (${finding.severity})**
+**${finding.display_text || finding.description || 'Security vulnerability detected'}**
+
+## ⚠️ No Code Fix Available
+**This finding requires manual review and remediation.**
+
+**To view details, reply with:**
+\`/veracode show-details ${finding.issue_id || finding.id || finding.flaw_id}\`
+
+*Powered by [Veracode](https://www.veracode.com/)*`,
                     commit_id: commitSha,
                     path: match.changedFile.filename,
                     line: line,
