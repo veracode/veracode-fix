@@ -271,23 +271,33 @@ async function createInlineComments(
         const { finding, line } = match;
         
         try {
-            // Create a review comment on the specific line
-            const commentBody = `## 🟡 Veracode Security Finding
+            // Get the fix suggestion from the finding
+            const fixSuggestion = finding.fix_suggestion || finding.suggestion || finding.recommendation;
+            const hasFixSuggestion = fixSuggestion && fixSuggestion.trim() !== '';
+            
+            // Create a review comment with code suggestion
+            const commentBody = `## 🟡 Veracode Code Fix Suggestions
 
 **CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
 **Severity:** ${finding.severity || 'Medium'}
 **Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
 
 ### 🔧 Fix Suggestion Available
-A fix suggestion is available for this finding.
+${hasFixSuggestion ? 
+    `**Suggested Fix:**
+\`\`\`
+${fixSuggestion}
+\`\`\`` : 
+    'A fix suggestion is available for this finding.'
+}
 
 **To apply the fix, reply with:**
 \`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
 
 *Powered by [Veracode](https://www.veracode.com/)*`;
 
-            // Use the correct API parameters for creating review comments
-            await octokit.rest.pulls.createReviewComment({
+            // Create the review comment with code suggestion
+            const reviewCommentParams: any = {
                 owner,
                 repo,
                 pull_number: prNumber,
@@ -296,7 +306,21 @@ A fix suggestion is available for this finding.
                 path: match.changedFile.filename,
                 line: line,
                 side: 'RIGHT' // Comment on the new version of the code
-            });
+            };
+
+            // If we have a fix suggestion, add it as a code suggestion
+            if (hasFixSuggestion) {
+                reviewCommentParams.suggestions = [{
+                    path: match.changedFile.filename,
+                    start_line: line,
+                    end_line: line,
+                    start_side: 'RIGHT',
+                    end_side: 'RIGHT',
+                    body: fixSuggestion
+                }];
+            }
+
+            await octokit.rest.pulls.createReviewComment(reviewCommentParams);
             
             core.info(`✅ Inline comment created for finding on line ${line} in ${match.changedFile.filename}`);
         } catch (error) {
@@ -305,18 +329,28 @@ A fix suggestion is available for this finding.
             // Try alternative approach - create a general review comment
             try {
                 core.info(`🔄 Trying alternative approach for line ${line}...`);
+                // Get the fix suggestion for fallback too
+                const fixSuggestion = finding.fix_suggestion || finding.suggestion || finding.recommendation;
+                const hasFixSuggestion = fixSuggestion && fixSuggestion.trim() !== '';
+                
                 await octokit.rest.pulls.createReview({
                     owner,
                     repo,
                     pull_number: prNumber,
-                    body: `## 🟡 Veracode Security Finding on ${match.changedFile.filename}:${line}
+                    body: `## 🟡 Veracode Code Fix Suggestions on ${match.changedFile.filename}:${line}
 
 **CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
 **Severity:** ${finding.severity || 'Medium'}
 **Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
 
 ### 🔧 Fix Suggestion Available
-A fix suggestion is available for this finding.
+${hasFixSuggestion ? 
+    `**Suggested Fix:**
+\`\`\`
+${fixSuggestion}
+\`\`\`` : 
+    'A fix suggestion is available for this finding.'
+}
 
 **To apply the fix, reply with:**
 \`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
