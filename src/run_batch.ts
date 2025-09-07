@@ -301,9 +301,21 @@ export async function runBatch( options:any, credentials:any){
                         console.log('Creating GitHub App comment with fix suggestions...')
                         try {
                             // Calculate actual fix suggestions count from batch results
-                            const fixSuggestionsCount = Object.keys(batchFixResults.results || {}).length
+                            let totalFixSuggestions = 0;
+                            if (batchFixResults.results) {
+                                Object.values(batchFixResults.results).forEach((fileResult: any) => {
+                                    if (fileResult.flaws) {
+                                        fileResult.flaws.forEach((flaw: any) => {
+                                            if (flaw.patches && flaw.patches.length > 0) {
+                                                totalFixSuggestions++;
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                            
                             if (owner && repo && prNumber && token) {
-                                await createVeracodeAppComment(token, owner, repo, prNumber, flawArray.length, fixSuggestionsCount, options.file, options, batchFixResults)
+                                await createVeracodeAppComment(token, owner, repo, prNumber, jsonFindings.length, totalFixSuggestions, options.file, options, batchFixResults)
                             } else {
                                 console.log('Missing required parameters for GitHub App comment')
                                 createPRCommentBatch(batchFixResults, options, flawArray)

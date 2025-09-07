@@ -686,6 +686,19 @@ export async function createVeracodeAppComment(
         
         // Create summary comment
         const hasInlineComments = inlineMatches.length > 0;
+        
+        // Calculate severity level based on findings
+        let severityLevel = 'LOW';
+        if (findings.length > 0) {
+            const severities = findings.map(f => f.severity || 0);
+            const maxSeverity = Math.max(...severities);
+            if (maxSeverity >= 5) severityLevel = 'CRITICAL';
+            else if (maxSeverity >= 4) severityLevel = 'HIGH';
+            else if (maxSeverity >= 3) severityLevel = 'MEDIUM';
+            else if (maxSeverity >= 2) severityLevel = 'LOW';
+            else severityLevel = 'INFORMATIONAL';
+        }
+        
         const commentBody = `## 🟡 Veracode Security Analysis
 
 <div align="center">
@@ -698,7 +711,7 @@ export async function createVeracodeAppComment(
 | **Total Findings** | **${findingsCount}** |
 | **Fix Suggestions Available** | **${fixSuggestionsCount}** |
 | **Findings on Changed Code** | **${inlineMatches.length}** |
-| **Severity Level** | **MEDIUM** |
+| **Severity Level** | **${severityLevel}** |
 
 ---
 
