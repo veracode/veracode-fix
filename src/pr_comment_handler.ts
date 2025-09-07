@@ -3,7 +3,6 @@ import * as github from '@actions/github'
 import fs from 'fs'
 import path from 'path'
 import { searchFile, normalizePathForDisplay } from './rewritePath'
-import { saveFindingsArtifact } from './artifactStorage'
 
 
 /**
@@ -338,8 +337,21 @@ async function createInlineComments(
                                         const cleanedHunkLines = cleanedHunk.split('\n')
                                             .filter((line: string) => !line.startsWith('-'))
                                             .map((line: string) => line.replace(/^\+/, ''));
-                                        fixSuggestion = cleanedHunkLines.join('\n');
-                                        core.info(`🔍 Extracted fix suggestion: ${fixSuggestion.substring(0, 100)}...`);
+                                        
+                                        // For GitHub code suggestions, we need just the specific line that changes
+                                        // Find the line that starts with + (the new line)
+                                        const addedLines = cleanedHunk.split('\n')
+                                            .filter((line: string) => line.startsWith('+'))
+                                            .map((line: string) => line.replace(/^\+/, ''));
+                                        
+                                        if (addedLines.length > 0) {
+                                            // Use the first added line as the fix suggestion
+                                            fixSuggestion = addedLines[0];
+                                            core.info(`🔍 Extracted fix suggestion: ${fixSuggestion}`);
+                                        } else {
+                                            fixSuggestion = cleanedHunkLines.join('\n');
+                                            core.info(`🔍 Extracted fix suggestion (fallback): ${fixSuggestion.substring(0, 100)}...`);
+                                        }
                                     }
                                 }
                                 break;
@@ -430,17 +442,49 @@ This security finding has been identified. Please review and apply appropriate r
 
 *Powered by [Veracode](https://www.veracode.com/)*`;
 
-            // Create the review comment (without suggestions - they're not supported in createReviewComment)
-            await octokit.rest.pulls.createReviewComment({
-                owner,
-                repo,
-                pull_number: prNumber,
-                body: commentBody,
-                commit_id: commitSha,
-                path: match.changedFile.filename,
-                line: line,
-                side: 'RIGHT' // Comment on the new version of the code
-            });
+            // Create the review comment with code suggestion
+            if (hasFixSuggestion) {
+                // Use createReviewComment with suggestions for actual code suggestions
+                await octokit.rest.pulls.createReviewComment({
+                    owner,
+                    repo,
+                    pull_number: prNumber,
+                    body: `## 🟡 Veracode Code Fix Suggestions
+
+**CWE:** ${finding.cwe_id || finding.cwe || 'Unknown'}
+**Severity:** ${finding.severity || 'Medium'}
+**Description:** ${finding.issue_type || finding.description || 'Security vulnerability detected'}
+
+### 🔧 Code Fix Available
+Click "Apply suggestion" to apply the fix automatically.
+
+**To apply the fix, reply with:**
+\`/veracode apply-fix ${finding.issue_id || finding.id || finding.flaw_id}\`
+
+*Powered by [Veracode](https://www.veracode.com/)*`,
+                    commit_id: commitSha,
+                    path: match.changedFile.filename,
+                    line: line,
+                    side: 'RIGHT',
+                    suggestions: [{
+                        path: match.changedFile.filename,
+                        position: line - 1, // GitHub uses 0-based indexing for position
+                        body: finalFixSuggestion
+                    }]
+                });
+            } else {
+                // Use createReviewComment for findings without fix suggestions
+                await octokit.rest.pulls.createReviewComment({
+                    owner,
+                    repo,
+                    pull_number: prNumber,
+                    body: commentBody,
+                    commit_id: commitSha,
+                    path: match.changedFile.filename,
+                    line: line,
+                    side: 'RIGHT'
+                });
+            }
             
             core.info(`✅ Inline comment created for finding on line ${line} in ${match.changedFile.filename}`);
         } catch (error) {
@@ -532,8 +576,6 @@ export async function createVeracodeAppComment(
             inlineMatches = await matchFindingsToChanges(findings, prChanges, optionsWithBatchResults);
             core.info(`🔍 Found ${inlineMatches.length} findings on changed code lines`);
             
-            // Save findings data as artifact for debugging
-            await saveFindingsArtifact(findings, prChanges, inlineMatches);
             
             // Create inline comments for findings on changed lines
             if (inlineMatches.length > 0) {
