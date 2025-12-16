@@ -39,7 +39,7 @@ export async function createFlawInfo(flawInfo:any,options:any){
         //console.log('StackDumbs length: '+resultArray.stack_dumps.stack_dump.length)
 
         if ( resultArray.stack_dumps.stack_dump.length > 0 ){
-            const flowArray = resultArray.stack_dumps.stack_dump[0].Frame
+            const flowArray = resultArray.stack_dumps.stack_dump[0].Frame ?? [];
             flowArray.forEach(async (element: any) => {
                 if (element.SourceFile == sourceFile && element.VarNames != undefined){
 
