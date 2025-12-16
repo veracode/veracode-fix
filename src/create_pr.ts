@@ -145,7 +145,7 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
 
         //PR body content for each file
         prCommentBody = prCommentBody+'Fixes for '+keys[i]+':\n'
-        prCommentBody = prCommentBody +'Falws found for this file:\n'
+        prCommentBody = prCommentBody +'Flaws found for this file:\n'
         const flawsCount = fixResults.results[keys[i]].flaws.length
         for (let j = 0; j < flawsCount; j++) {
             const issueId = fixResults.results[keys[i]].flaws[j].issueId;
