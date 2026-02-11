@@ -1,12 +1,8 @@
-import axios from 'axios';
 import {calculateAuthorizationHeader} from './auth'
 import fs from 'fs';
 import FormData from 'form-data';
 import { selectPlatfrom } from './select_platform';
 import * as github from '@actions/github'
-
-// set client identifier
-axios.defaults.headers.common['X-CLIENT-TYPE'] = 'fix-github-action';
 
 export async function upload(platform:any, tar:any, options:any) {
 
@@ -36,28 +32,35 @@ export async function upload(platform:any, tar:any, options:any) {
 
     console.log('Uploading data.tar.gz to Veracode')
 
-    const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/upload_code', formData, {
+    const url = 'https://'+platform.apiUrl+'/fix/v1/project/upload_code';
+    const response = await fetch(url, {
+        method: 'POST',
+        body: formData as any,
         headers: {
             'Authorization': authHeader,
+            'X-CLIENT-TYPE': 'fix-github-action',
             ...formData.getHeaders()
         }
     });
 
-    if (response.status != 200){
+    if (!response.ok){
+        const errorText = await response.text();
         console.log('Error uploading data')
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - upload')
-            console.log(response.data)
+            console.log('Status:', response.status)
+            console.log('Error:', errorText)
             console.log('#######- DEBUG MODE -#######')
         }
+        throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
     }
-    else {
-        console.log('Data uploaded successfully')
-        console.log('Project ID is:')
-        console.log(response.data);
-        return response.data
-    }
+    
+    const data = await response.json();
+    console.log('Data uploaded successfully')
+    console.log('Project ID is:')
+    console.log(data);
+    return data
 
 }
 
@@ -91,28 +94,35 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
 
     console.log('Uploading app.tar.gz to Veracode')
 
-    const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/batch_upload', formData, {
+    const url = 'https://'+platform.apiUrl+'/fix/v1/project/batch_upload';
+    const response = await fetch(url, {
+        method: 'POST',
+        body: formData as any,
         headers: {
             'Authorization': authHeader,
+            'X-CLIENT-TYPE': 'fix-github-action',
             ...formData.getHeaders()
         }
     });
 
-    if (response.status != 200){
+    if (!response.ok){
+        const errorText = await response.text();
         console.log('Error uploading data')
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - upload')
-            console.log(response.data)
+            console.log('Status:', response.status)
+            console.log('Error:', errorText)
             console.log('#######- DEBUG MODE -#######')
         }
+        throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
     }
-    else {
-        console.log('Data uploaded successfully')
-        console.log('Project ID is:')
-        console.log(response.data);
-        return response.data
-    }
+    
+    const data = await response.json();
+    console.log('Data uploaded successfully')
+    console.log('Project ID is:')
+    console.log(data);
+    return data
 
 }
 
@@ -134,20 +144,29 @@ async function makeRequest(platform:any, projectId:any, options:any) {
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
         console.log('requests.ts - cehckFix')
-        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: POST')
+        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: GET')
         console.log('Auth header created')
         console.log(authHeader)
         console.log('#######- DEBUG MODE -#######')
     }
 
-    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results', {
+    const url = 'https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results';
+    const response = await fetch(url, {
+        method: 'GET',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CLIENT-TYPE': 'fix-github-action'
         }
     })
 
-     if (!response.data) {
+    if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}: ${await response.text()}`);
+    }
+
+    const data = await response.json();
+
+     if (!data) {
         console.log('Response is empty. Retrying in 10 seconds.');
         await new Promise(resolve => setTimeout(resolve, 10000));
         return await makeRequest(platform, projectId, options);
@@ -157,10 +176,10 @@ async function makeRequest(platform:any, projectId:any, options:any) {
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - cehckFix')
             console.log('Response:')
-            console.log(response.data);
+            console.log(data);
             console.log('#######- DEBUG MODE -#######')
         }
-        return response.data;
+        return data;
     }
 }
 
@@ -185,21 +204,29 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
         console.log('requests.ts - makeRequestBatch')
-        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: POST')
+        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/batch_status'+' Method: GET')
         console.log('Auth header created')
         console.log(authHeader)
         console.log('#######- DEBUG MODE -#######')
     }
 
-    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_status', {
+    const url = 'https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_status';
+    const response = await fetch(url, {
+        method: 'GET',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CLIENT-TYPE': 'fix-github-action'
         }
     })
 
+    if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}: ${await response.text()}`);
+    }
 
-     if (!response.data) {
+    const data = await response.json();
+
+     if (!data) {
         console.log('Response is empty. Something went wrong. No fixes generarted. ');
         return 0
     } else {
@@ -209,18 +236,18 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - makeRequestBatch')
             console.log('Response:')
-            console.log(response.data);
+            console.log(data);
             console.log('#######- DEBUG MODE -#######')
         }
 
-        if ( response.data.hasMore == true){
+        if ( data.hasMore == true){
             console.log('More fixes are being generated. Retrying in 10 seconds.');
 
             if (options.DEBUG == 'true'){
                 console.log('#######- DEBUG MODE -#######')
                 console.log('requests.ts - makeRequestBatch')
                 console.log('Response:')
-                console.log(response.data);
+                console.log(data);
                 console.log('#######- DEBUG MODE -#######')
             }
 
@@ -250,22 +277,29 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
         console.log('requests.ts - pullBatchFixResults')
-        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: POST')
+        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/batch_results'+' Method: GET')
         console.log('Auth header created')
         console.log(authHeader)
         console.log('#######- DEBUG MODE -#######')
     }
 
-    
-
-    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_results', {
+    const url = 'https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_results';
+    const response = await fetch(url, {
+        method: 'GET',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CLIENT-TYPE': 'fix-github-action'
         }
     })
 
-     if (!response.data) {
+    if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}: ${await response.text()}`);
+    }
+
+    const data = await response.json();
+
+     if (!data) {
         console.log('Response is empty. Something went wrong. No fixes generarted. ');
         return 0
     } else {
@@ -274,10 +308,10 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - pullBatchFixResults')
             console.log('Response:')
-            console.log(response.data);
+            console.log(data);
             console.log('#######- DEBUG MODE -#######')
         }
-        return response.data;
+        return data;
     }
 }
 

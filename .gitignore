@@ -7,3 +7,6 @@ flawinfo
 app/*
 app.tar.gz
 Archive.zip
+6_Create fixes from static findings.txt
+batch_fix_results.json
+filtered_results.json
