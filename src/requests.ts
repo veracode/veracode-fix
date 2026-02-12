@@ -44,6 +44,7 @@ export async function upload(platform:any, tar:any, options:any) {
     });
 
     if (!response.ok){
+        console.log('Response.ok is false')
         const errorText = await response.text();
         console.log('Error uploading data')
         if (options.DEBUG == 'true'){
@@ -56,6 +57,7 @@ export async function upload(platform:any, tar:any, options:any) {
         throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
     }
     
+    console.log('Response is ok')
     const data = await response.json();
     console.log('Data uploaded successfully')
     console.log('Project ID is:')
