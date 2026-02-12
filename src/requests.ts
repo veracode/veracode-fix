@@ -1,8 +1,87 @@
+import https from 'https';
 import {calculateAuthorizationHeader} from './auth'
 import fs from 'fs';
 import FormData from 'form-data';
 import { selectPlatfrom } from './select_platform';
 import * as github from '@actions/github'
+
+// Helper function to make HTTPS GET requests with proper proxy support
+function makeHttpsRequest(options: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                try {
+                    // Check Content-Type to determine how to parse response
+                    const contentType = res.headers['content-type'] || '';
+                    let responseData = data;
+                    
+                    if (contentType.includes('application/json')) {
+                        responseData = data ? JSON.parse(data) : null;
+                    }
+                    // else: keep raw response as-is
+                    
+                    resolve({
+                        status: res.statusCode,
+                        statusText: res.statusMessage,
+                        data: responseData,
+                        headers: res.headers
+                    });
+                } catch (e) {
+                    // If JSON parsing still fails, return raw data
+                    resolve({
+                        status: res.statusCode,
+                        statusText: res.statusMessage,
+                        data: data,
+                        headers: res.headers
+                    });
+                }
+            });
+        });
+
+        req.on('error', reject);
+        req.end();
+        return req;
+    });
+}
+
+// Helper function to make HTTPS POST requests with FormData
+function makeHttpsPostRequest(options: any, formData: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                try {
+                    let responseData = data;
+                    
+                    if (res.statusCode != 200) {
+                        reject(new Error(`Request failed with status ${res.statusCode}: ${responseData}`));
+                        return;
+                    }
+                    
+                    try {
+                        responseData = JSON.parse(data);
+                    } catch (e) {
+                        // Keep as string if not JSON
+                    }
+                    
+                    resolve(responseData);
+                } catch (parseError) {
+                    reject(parseError);
+                }
+            });
+        });
+
+        req.on('error', reject);
+        formData.pipe(req);
+    });
+}
 
 export async function upload(platform:any, tar:any, options:any) {
 
@@ -11,7 +90,7 @@ export async function upload(platform:any, tar:any, options:any) {
     formData.append('data', fileBuffer, 'data.tar.gz');
     formData.append('name', 'data');
     
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
           id: platform.cleanedID,
           key: platform.cleanedKEY,
           host: platform.apiUrl,
@@ -32,54 +111,34 @@ export async function upload(platform:any, tar:any, options:any) {
 
     console.log('Uploading data.tar.gz to Veracode')
 
-    const url = 'https://'+platform.apiUrl+'/fix/v1/project/upload_code';
-    
-    // Convert form-data to Buffer for fetch compatibility
-    const formHeaders = formData.getHeaders();
-    const chunks: Buffer[] = [];
-    
-    return new Promise((resolve, reject) => {
-        formData.on('data', (chunk: Buffer) => chunks.push(chunk));
-        formData.on('end', async () => {
-            const buffer = Buffer.concat(chunks as any);
-            
-            const response = await fetch(url, {
-                method: 'POST',
-                body: new Uint8Array(buffer),
-                headers: {
-                    'Authorization': authHeader,
-                    'X-CLIENT-TYPE': 'fix-github-action',
-                    'Content-Type': formHeaders['content-type'],
-                    'Content-Length': buffer.length.toString()
-                }
-            });
-            
-            if (!response.ok){
-                console.log('Response.ok is false')
-                const errorText = await response.text();
-                console.log('Error uploading data')
-                if (options.DEBUG == 'true'){
-                    console.log('#######- DEBUG MODE -#######')
-                    console.log('requests.ts - upload')
-                    console.log('Status:', response.status)
-                    console.log('Error:', errorText)
-                    console.log('#######- DEBUG MODE -#######')
-                }
-                reject(new Error(`Upload failed with status ${response.status}: ${errorText}`));
-                return;
-            }
-            
-            console.log('Response is ok')
-            const data = await response.json();
-            console.log('Data uploaded successfully')
-            console.log('Project ID is:')
-            console.log(data);
-            resolve(data);
-        });
-        formData.on('error', reject);
-        // Start the stream
-        formData.resume();
-    });
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/upload_code',
+        method: 'POST',
+        headers: {
+            'Authorization': authHeader,
+            'X-CLIENT-TYPE': 'fix-github-action',
+            ...formData.getHeaders()
+        }
+    };
+
+    try {
+        const responseData = await makeHttpsPostRequest(reqOptions, formData);
+        console.log('Data uploaded successfully')
+        console.log('Project ID is:')
+        console.log(responseData);
+        return responseData;
+    } catch (error: any) {
+        console.log('Error uploading data')
+        if (options.DEBUG == 'true'){
+            console.log('#######- DEBUG MODE -#######')
+            console.log('requests.ts - upload')
+            console.log(error.message || error)
+            console.log('#######- DEBUG MODE -#######')
+        }
+        throw error;
+    }
 
 }
 
@@ -92,7 +151,7 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
     formData.append('data', fileBuffer, 'app.tar.gz');
     formData.append('name', 'data');
     
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
           id: platform.cleanedID,
           key: platform.cleanedKEY,
           host: platform.apiUrl,
@@ -113,59 +172,34 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
 
     console.log('Uploading app.tar.gz to Veracode')
 
-    const url = 'https://'+platform.apiUrl+'/fix/v1/project/batch_upload';
-    
-    // Convert form-data stream to Buffer for fetch compatibility
-    const formHeaders = formData.getHeaders();
-    const chunks: Buffer[] = [];
-    
-    return new Promise((resolve, reject) => {
-        formData.on('data', (chunk: Buffer) => chunks.push(chunk));
-        formData.on('end', async () => {
-            try {
-                const buffer = Buffer.concat(chunks as any);
-                
-                const response = await fetch(url, {
-                    method: 'POST',
-                    body: new Uint8Array(buffer),
-                    headers: {
-                        'Authorization': authHeader,
-                        'X-CLIENT-TYPE': 'fix-github-action',
-                        'Content-Type': formHeaders['content-type'],
-                        'Content-Length': buffer.length.toString()
-                    }
-                });
-                
-                console.log('Response is:')
-                console.log(response)
-                
-                if (!response.ok){
-                    const errorText = await response.text();
-                    console.log('Error uploading data')
-                    if (options.DEBUG == 'true'){
-                        console.log('#######- DEBUG MODE -#######')
-                        console.log('requests.ts - upload')
-                        console.log('Status:', response.status)
-                        console.log('Error:', errorText)
-                        console.log('#######- DEBUG MODE -#######')
-                    }
-                    reject(new Error(`Upload failed with status ${response.status}: ${errorText}`));
-                    return;
-                }
-                
-                const data = await response.json();
-                console.log('Data uploaded successfully')
-                console.log('Project ID is:')
-                console.log(data);
-                resolve(data);
-            } catch (error) {
-                reject(error);
-            }
-        });
-        formData.on('error', reject);
-        // Start the stream
-        formData.resume();
-    });
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/batch_upload',
+        method: 'POST',
+        headers: {
+            'Authorization': authHeader,
+            'X-CLIENT-TYPE': 'fix-github-action',
+            ...formData.getHeaders()
+        }
+    };
+
+    try {
+        const responseData = await makeHttpsPostRequest(reqOptions, formData);
+        console.log('Data uploaded successfully')
+        console.log('Project ID is:')
+        console.log(responseData);
+        return responseData;
+    } catch (error: any) {
+        console.log('Error uploading data')
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######')
+            console.log('requests.ts - uploadBatch')
+            console.log(error.message || error)
+            console.log('#######- DEBUG MODE -#######')
+        }
+        throw error;
+    }
 
 }
 
@@ -176,11 +210,11 @@ export async function checkFix(platform:any, projectId:any, options:any) {
 }
 
 async function makeRequest(platform:any, projectId:any, options:any) {
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
         id: platform.cleanedID,
         key: platform.cleanedKEY,
         host: platform.apiUrl,
-        url: '/fix/v1/project/'+projectId+'/results',
+        url: '/fix/v1/project/' + projectId + '/results',
         method: 'GET',
     })
 
@@ -193,23 +227,21 @@ async function makeRequest(platform:any, projectId:any, options:any) {
         console.log('#######- DEBUG MODE -#######')
     }
 
-    const url = 'https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results';
-    const response = await fetch(url, {
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/'+projectId+'/results',
         method: 'GET',
         headers: {
             'Authorization': authHeader,
             'Content-Type': 'application/json',
             'X-CLIENT-TYPE': 'fix-github-action'
         }
-    })
+    };
 
-    if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}: ${await response.text()}`);
-    }
+    const response = await makeHttpsRequest(reqOptions);
 
-    const data = await response.json();
-
-     if (!data) {
+    if (!response.data) {
         console.log('Response is empty. Retrying in 10 seconds.');
         await new Promise(resolve => setTimeout(resolve, 10000));
         return await makeRequest(platform, projectId, options);
@@ -217,12 +249,12 @@ async function makeRequest(platform:any, projectId:any, options:any) {
         console.log('Fixes fetched successfully');
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
-            console.log('requests.ts - cehckFix')
+            console.log('requests.ts - checkFix')
             console.log('Response:')
-            console.log(data);
+            console.log(response.data);
             console.log('#######- DEBUG MODE -#######')
         }
-        return data;
+        return response.data;
     }
 }
 
@@ -236,11 +268,11 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
 
     const platform:any = await selectPlatfrom(credentials)
 
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
         id: platform.cleanedID,
         key: platform.cleanedKEY,
         host: platform.apiUrl,
-        url: '/fix/v1/project/'+projectId+'/batch_status',
+        url: '/fix/v1/project/' + projectId + '/batch_status',
         method: 'GET',
     })
 
@@ -253,23 +285,21 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
         console.log('#######- DEBUG MODE -#######')
     }
 
-    const url = 'https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_status';
-    const response = await fetch(url, {
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/'+projectId+'/batch_status',
         method: 'GET',
         headers: {
             'Authorization': authHeader,
             'Content-Type': 'application/json',
             'X-CLIENT-TYPE': 'fix-github-action'
         }
-    })
+    };
 
-    if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}: ${await response.text()}`);
-    }
+    const response = await makeHttpsRequest(reqOptions);
 
-    const data = await response.json();
-
-     if (!data) {
+    if (!response.data) {
         console.log('Response is empty. Something went wrong. No fixes generarted. ');
         return 0
     } else {
@@ -279,18 +309,18 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - makeRequestBatch')
             console.log('Response:')
-            console.log(data);
+            console.log(response.data);
             console.log('#######- DEBUG MODE -#######')
         }
 
-        if ( data.hasMore == true){
+        if ( response.data.hasMore == true){
             console.log('More fixes are being generated. Retrying in 10 seconds.');
 
             if (options.DEBUG == 'true'){
                 console.log('#######- DEBUG MODE -#######')
                 console.log('requests.ts - makeRequestBatch')
                 console.log('Response:')
-                console.log(data);
+                console.log(response.data);
                 console.log('#######- DEBUG MODE -#######')
             }
 
@@ -309,11 +339,11 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
 
     const platform:any = await selectPlatfrom(credentials)
 
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
         id: platform.cleanedID,
         key: platform.cleanedKEY,
         host: platform.apiUrl,
-        url: '/fix/v1/project/'+projectId+'/batch_results',
+        url: '/fix/v1/project/' + projectId + '/batch_results',
         method: 'GET',
     })
 
@@ -326,23 +356,21 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
         console.log('#######- DEBUG MODE -#######')
     }
 
-    const url = 'https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_results';
-    const response = await fetch(url, {
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/'+projectId+'/batch_results',
         method: 'GET',
         headers: {
             'Authorization': authHeader,
             'Content-Type': 'application/json',
             'X-CLIENT-TYPE': 'fix-github-action'
         }
-    })
+    };
 
-    if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}: ${await response.text()}`);
-    }
+    const response = await makeHttpsRequest(reqOptions);
 
-    const data = await response.json();
-
-     if (!data) {
+    if (!response.data) {
         console.log('Response is empty. Something went wrong. No fixes generarted. ');
         return 0
     } else {
@@ -351,10 +379,10 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - pullBatchFixResults')
             console.log('Response:')
-            console.log(data);
+            console.log(response.data);
             console.log('#######- DEBUG MODE -#######')
         }
-        return data;
+        return response.data;
     }
 }
 

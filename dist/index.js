@@ -52719,18 +52719,91 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getFilesPartOfPR = exports.pullBatchFixResults = exports.checkFixBatch = exports.checkFix = exports.uploadBatch = exports.upload = void 0;
+const https_1 = __importDefault(__nccwpck_require__(5692));
 const auth_1 = __nccwpck_require__(8486);
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const form_data_1 = __importDefault(__nccwpck_require__(2283));
 const select_platform_1 = __nccwpck_require__(7855);
 const github = __importStar(__nccwpck_require__(5371));
+// Helper function to make HTTPS GET requests with proper proxy support
+function makeHttpsRequest(options) {
+    return new Promise((resolve, reject) => {
+        const req = https_1.default.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                try {
+                    // Check Content-Type to determine how to parse response
+                    const contentType = res.headers['content-type'] || '';
+                    let responseData = data;
+                    if (contentType.includes('application/json')) {
+                        responseData = data ? JSON.parse(data) : null;
+                    }
+                    // else: keep raw response as-is
+                    resolve({
+                        status: res.statusCode,
+                        statusText: res.statusMessage,
+                        data: responseData,
+                        headers: res.headers
+                    });
+                }
+                catch (e) {
+                    // If JSON parsing still fails, return raw data
+                    resolve({
+                        status: res.statusCode,
+                        statusText: res.statusMessage,
+                        data: data,
+                        headers: res.headers
+                    });
+                }
+            });
+        });
+        req.on('error', reject);
+        req.end();
+        return req;
+    });
+}
+// Helper function to make HTTPS POST requests with FormData
+function makeHttpsPostRequest(options, formData) {
+    return new Promise((resolve, reject) => {
+        const req = https_1.default.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                try {
+                    let responseData = data;
+                    if (res.statusCode != 200) {
+                        reject(new Error(`Request failed with status ${res.statusCode}: ${responseData}`));
+                        return;
+                    }
+                    try {
+                        responseData = JSON.parse(data);
+                    }
+                    catch (e) {
+                        // Keep as string if not JSON
+                    }
+                    resolve(responseData);
+                }
+                catch (parseError) {
+                    reject(parseError);
+                }
+            });
+        });
+        req.on('error', reject);
+        formData.pipe(req);
+    });
+}
 function upload(platform, tar, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const fileBuffer = fs_1.default.readFileSync('data.tar.gz');
         const formData = new form_data_1.default();
         formData.append('data', fileBuffer, 'data.tar.gz');
         formData.append('name', 'data');
-        const authHeader = yield (0, auth_1.calculateAuthorizationHeader)({
+        const authHeader = (0, auth_1.calculateAuthorizationHeader)({
             id: platform.cleanedID,
             key: platform.cleanedKEY,
             host: platform.apiUrl,
@@ -52748,49 +52821,30 @@ function upload(platform, tar, options) {
             console.log('#######- DEBUG MODE -#######');
         }
         console.log('Uploading data.tar.gz to Veracode');
-        const url = 'https://' + platform.apiUrl + '/fix/v1/project/upload_code';
-        // Convert form-data to Buffer for fetch compatibility
-        const formHeaders = formData.getHeaders();
-        const chunks = [];
-        return new Promise((resolve, reject) => {
-            formData.on('data', (chunk) => chunks.push(chunk));
-            formData.on('end', () => __awaiter(this, void 0, void 0, function* () {
-                const buffer = Buffer.concat(chunks);
-                const response = yield fetch(url, {
-                    method: 'POST',
-                    body: new Uint8Array(buffer),
-                    headers: {
-                        'Authorization': authHeader,
-                        'X-CLIENT-TYPE': 'fix-github-action',
-                        'Content-Type': formHeaders['content-type'],
-                        'Content-Length': buffer.length.toString()
-                    }
-                });
-                if (!response.ok) {
-                    console.log('Response.ok is false');
-                    const errorText = yield response.text();
-                    console.log('Error uploading data');
-                    if (options.DEBUG == 'true') {
-                        console.log('#######- DEBUG MODE -#######');
-                        console.log('requests.ts - upload');
-                        console.log('Status:', response.status);
-                        console.log('Error:', errorText);
-                        console.log('#######- DEBUG MODE -#######');
-                    }
-                    reject(new Error(`Upload failed with status ${response.status}: ${errorText}`));
-                    return;
-                }
-                console.log('Response is ok');
-                const data = yield response.json();
-                console.log('Data uploaded successfully');
-                console.log('Project ID is:');
-                console.log(data);
-                resolve(data);
-            }));
-            formData.on('error', reject);
-            // Start the stream
-            formData.resume();
-        });
+        const reqOptions = {
+            hostname: platform.apiUrl,
+            port: 443,
+            path: '/fix/v1/project/upload_code',
+            method: 'POST',
+            headers: Object.assign({ 'Authorization': authHeader, 'X-CLIENT-TYPE': 'fix-github-action' }, formData.getHeaders())
+        };
+        try {
+            const responseData = yield makeHttpsPostRequest(reqOptions, formData);
+            console.log('Data uploaded successfully');
+            console.log('Project ID is:');
+            console.log(responseData);
+            return responseData;
+        }
+        catch (error) {
+            console.log('Error uploading data');
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('requests.ts - upload');
+                console.log(error.message || error);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            throw error;
+        }
     });
 }
 exports.upload = upload;
@@ -52801,7 +52855,7 @@ function uploadBatch(credentials, tarPath, options) {
         const formData = new form_data_1.default();
         formData.append('data', fileBuffer, 'app.tar.gz');
         formData.append('name', 'data');
-        const authHeader = yield (0, auth_1.calculateAuthorizationHeader)({
+        const authHeader = (0, auth_1.calculateAuthorizationHeader)({
             id: platform.cleanedID,
             key: platform.cleanedKEY,
             host: platform.apiUrl,
@@ -52819,54 +52873,30 @@ function uploadBatch(credentials, tarPath, options) {
             console.log('#######- DEBUG MODE -#######');
         }
         console.log('Uploading app.tar.gz to Veracode');
-        const url = 'https://' + platform.apiUrl + '/fix/v1/project/batch_upload';
-        // Convert form-data stream to Buffer for fetch compatibility
-        const formHeaders = formData.getHeaders();
-        const chunks = [];
-        return new Promise((resolve, reject) => {
-            formData.on('data', (chunk) => chunks.push(chunk));
-            formData.on('end', () => __awaiter(this, void 0, void 0, function* () {
-                try {
-                    const buffer = Buffer.concat(chunks);
-                    const response = yield fetch(url, {
-                        method: 'POST',
-                        body: new Uint8Array(buffer),
-                        headers: {
-                            'Authorization': authHeader,
-                            'X-CLIENT-TYPE': 'fix-github-action',
-                            'Content-Type': formHeaders['content-type'],
-                            'Content-Length': buffer.length.toString()
-                        }
-                    });
-                    console.log('Response is:');
-                    console.log(response);
-                    if (!response.ok) {
-                        const errorText = yield response.text();
-                        console.log('Error uploading data');
-                        if (options.DEBUG == 'true') {
-                            console.log('#######- DEBUG MODE -#######');
-                            console.log('requests.ts - upload');
-                            console.log('Status:', response.status);
-                            console.log('Error:', errorText);
-                            console.log('#######- DEBUG MODE -#######');
-                        }
-                        reject(new Error(`Upload failed with status ${response.status}: ${errorText}`));
-                        return;
-                    }
-                    const data = yield response.json();
-                    console.log('Data uploaded successfully');
-                    console.log('Project ID is:');
-                    console.log(data);
-                    resolve(data);
-                }
-                catch (error) {
-                    reject(error);
-                }
-            }));
-            formData.on('error', reject);
-            // Start the stream
-            formData.resume();
-        });
+        const reqOptions = {
+            hostname: platform.apiUrl,
+            port: 443,
+            path: '/fix/v1/project/batch_upload',
+            method: 'POST',
+            headers: Object.assign({ 'Authorization': authHeader, 'X-CLIENT-TYPE': 'fix-github-action' }, formData.getHeaders())
+        };
+        try {
+            const responseData = yield makeHttpsPostRequest(reqOptions, formData);
+            console.log('Data uploaded successfully');
+            console.log('Project ID is:');
+            console.log(responseData);
+            return responseData;
+        }
+        catch (error) {
+            console.log('Error uploading data');
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('requests.ts - uploadBatch');
+                console.log(error.message || error);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            throw error;
+        }
     });
 }
 exports.uploadBatch = uploadBatch;
@@ -52879,7 +52909,7 @@ function checkFix(platform, projectId, options) {
 exports.checkFix = checkFix;
 function makeRequest(platform, projectId, options) {
     return __awaiter(this, void 0, void 0, function* () {
-        const authHeader = yield (0, auth_1.calculateAuthorizationHeader)({
+        const authHeader = (0, auth_1.calculateAuthorizationHeader)({
             id: platform.cleanedID,
             key: platform.cleanedKEY,
             host: platform.apiUrl,
@@ -52894,20 +52924,19 @@ function makeRequest(platform, projectId, options) {
             console.log(authHeader);
             console.log('#######- DEBUG MODE -#######');
         }
-        const url = 'https://' + platform.apiUrl + '/fix/v1/project/' + projectId + '/results';
-        const response = yield fetch(url, {
+        const reqOptions = {
+            hostname: platform.apiUrl,
+            port: 443,
+            path: '/fix/v1/project/' + projectId + '/results',
             method: 'GET',
             headers: {
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
                 'X-CLIENT-TYPE': 'fix-github-action'
             }
-        });
-        if (!response.ok) {
-            throw new Error(`Request failed with status ${response.status}: ${yield response.text()}`);
-        }
-        const data = yield response.json();
-        if (!data) {
+        };
+        const response = yield makeHttpsRequest(reqOptions);
+        if (!response.data) {
             console.log('Response is empty. Retrying in 10 seconds.');
             yield new Promise(resolve => setTimeout(resolve, 10000));
             return yield makeRequest(platform, projectId, options);
@@ -52916,12 +52945,12 @@ function makeRequest(platform, projectId, options) {
             console.log('Fixes fetched successfully');
             if (options.DEBUG == 'true') {
                 console.log('#######- DEBUG MODE -#######');
-                console.log('requests.ts - cehckFix');
+                console.log('requests.ts - checkFix');
                 console.log('Response:');
-                console.log(data);
+                console.log(response.data);
                 console.log('#######- DEBUG MODE -#######');
             }
-            return data;
+            return response.data;
         }
     });
 }
@@ -52936,7 +52965,7 @@ exports.checkFixBatch = checkFixBatch;
 function makeRequestBatch(credentials, projectId, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
-        const authHeader = yield (0, auth_1.calculateAuthorizationHeader)({
+        const authHeader = (0, auth_1.calculateAuthorizationHeader)({
             id: platform.cleanedID,
             key: platform.cleanedKEY,
             host: platform.apiUrl,
@@ -52951,20 +52980,19 @@ function makeRequestBatch(credentials, projectId, options) {
             console.log(authHeader);
             console.log('#######- DEBUG MODE -#######');
         }
-        const url = 'https://' + platform.apiUrl + '/fix/v1/project/' + projectId + '/batch_status';
-        const response = yield fetch(url, {
+        const reqOptions = {
+            hostname: platform.apiUrl,
+            port: 443,
+            path: '/fix/v1/project/' + projectId + '/batch_status',
             method: 'GET',
             headers: {
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
                 'X-CLIENT-TYPE': 'fix-github-action'
             }
-        });
-        if (!response.ok) {
-            throw new Error(`Request failed with status ${response.status}: ${yield response.text()}`);
-        }
-        const data = yield response.json();
-        if (!data) {
+        };
+        const response = yield makeHttpsRequest(reqOptions);
+        if (!response.data) {
             console.log('Response is empty. Something went wrong. No fixes generarted. ');
             return 0;
         }
@@ -52974,16 +53002,16 @@ function makeRequestBatch(credentials, projectId, options) {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('requests.ts - makeRequestBatch');
                 console.log('Response:');
-                console.log(data);
+                console.log(response.data);
                 console.log('#######- DEBUG MODE -#######');
             }
-            if (data.hasMore == true) {
+            if (response.data.hasMore == true) {
                 console.log('More fixes are being generated. Retrying in 10 seconds.');
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
                     console.log('requests.ts - makeRequestBatch');
                     console.log('Response:');
-                    console.log(data);
+                    console.log(response.data);
                     console.log('#######- DEBUG MODE -#######');
                 }
                 yield new Promise(resolve => setTimeout(resolve, 10000));
@@ -52999,7 +53027,7 @@ function pullBatchFixResults(credentials, projectId, options) {
     return __awaiter(this, void 0, void 0, function* () {
         yield new Promise(resolve => setTimeout(resolve, 5000));
         const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
-        const authHeader = yield (0, auth_1.calculateAuthorizationHeader)({
+        const authHeader = (0, auth_1.calculateAuthorizationHeader)({
             id: platform.cleanedID,
             key: platform.cleanedKEY,
             host: platform.apiUrl,
@@ -53014,20 +53042,19 @@ function pullBatchFixResults(credentials, projectId, options) {
             console.log(authHeader);
             console.log('#######- DEBUG MODE -#######');
         }
-        const url = 'https://' + platform.apiUrl + '/fix/v1/project/' + projectId + '/batch_results';
-        const response = yield fetch(url, {
+        const reqOptions = {
+            hostname: platform.apiUrl,
+            port: 443,
+            path: '/fix/v1/project/' + projectId + '/batch_results',
             method: 'GET',
             headers: {
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
                 'X-CLIENT-TYPE': 'fix-github-action'
             }
-        });
-        if (!response.ok) {
-            throw new Error(`Request failed with status ${response.status}: ${yield response.text()}`);
-        }
-        const data = yield response.json();
-        if (!data) {
+        };
+        const response = yield makeHttpsRequest(reqOptions);
+        if (!response.data) {
             console.log('Response is empty. Something went wrong. No fixes generarted. ');
             return 0;
         }
@@ -53037,10 +53064,10 @@ function pullBatchFixResults(credentials, projectId, options) {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('requests.ts - pullBatchFixResults');
                 console.log('Response:');
-                console.log(data);
+                console.log(response.data);
                 console.log('#######- DEBUG MODE -#######');
             }
-            return data;
+            return response.data;
         }
     });
 }
