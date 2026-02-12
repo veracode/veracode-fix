@@ -5,8 +5,57 @@ import FormData from 'form-data';
 import { selectPlatfrom } from './select_platform';
 import * as github from '@actions/github'
 
+// Helper function to get proxy agent if proxy environment variables are set
+function getProxyAgent(targetUrl: string): any {
+    const url = new URL(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`);
+    const isHttps = url.protocol === 'https:';
+    
+    // Check for proxy environment variables (case-insensitive)
+    // Priority: HTTPS_PROXY > HTTP_PROXY > ALL_PROXY
+    const proxyUrl = (isHttps ? (process.env.HTTPS_PROXY || process.env.https_proxy) : null) ||
+                     (process.env.HTTP_PROXY || process.env.http_proxy) ||
+                     (process.env.ALL_PROXY || process.env.all_proxy);
+    
+    if (!proxyUrl) {
+        return undefined; // No proxy configured
+    }
+    
+    try {
+        // Try to use https-proxy-agent or http-proxy-agent packages if available
+        // These packages handle CONNECT tunneling for HTTPS through HTTP proxies
+        if (isHttps) {
+            try {
+                const { HttpsProxyAgent } = require('https-proxy-agent');
+                return new HttpsProxyAgent(proxyUrl);
+            } catch (e) {
+                // Package not available, proxy won't be used
+                // This is fine - Node.js https.request will work without proxy
+                return undefined;
+            }
+        } else {
+            try {
+                const { HttpProxyAgent } = require('http-proxy-agent');
+                return new HttpProxyAgent(proxyUrl);
+            } catch (e) {
+                // Package not available, proxy won't be used
+                return undefined;
+            }
+        }
+    } catch (e: any) {
+        // Invalid proxy URL or other error, ignore and proceed without proxy
+        console.warn(`Proxy configuration error: ${e?.message || e}, proceeding without proxy`);
+        return undefined;
+    }
+}
+
 // Helper function to make HTTPS GET requests with proper proxy support
 function makeHttpsRequest(options: any): Promise<any> {
+    // Add proxy agent if proxy environment variables are set
+    const targetUrl = `https://${options.hostname}${options.path || ''}`;
+    const agent = getProxyAgent(targetUrl);
+    if (agent) {
+        options.agent = agent;
+    }
     return new Promise((resolve, reject) => {
         const req = https.request(options, (res) => {
             let data = '';
@@ -50,6 +99,13 @@ function makeHttpsRequest(options: any): Promise<any> {
 
 // Helper function to make HTTPS POST requests with FormData
 function makeHttpsPostRequest(options: any, formData: any): Promise<any> {
+    // Add proxy agent if proxy environment variables are set
+    const targetUrl = `https://${options.hostname}${options.path || ''}`;
+    const agent = getProxyAgent(targetUrl);
+    if (agent) {
+        options.agent = agent;
+    }
+    
     return new Promise((resolve, reject) => {
         const req = https.request(options, (res) => {
             let data = '';

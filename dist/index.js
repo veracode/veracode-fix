@@ -52725,8 +52725,57 @@ const fs_1 = __importDefault(__nccwpck_require__(9896));
 const form_data_1 = __importDefault(__nccwpck_require__(2283));
 const select_platform_1 = __nccwpck_require__(7855);
 const github = __importStar(__nccwpck_require__(5371));
+// Helper function to get proxy agent if proxy environment variables are set
+function getProxyAgent(targetUrl) {
+    const url = new URL(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`);
+    const isHttps = url.protocol === 'https:';
+    // Check for proxy environment variables (case-insensitive)
+    // Priority: HTTPS_PROXY > HTTP_PROXY > ALL_PROXY
+    const proxyUrl = (isHttps ? (process.env.HTTPS_PROXY || process.env.https_proxy) : null) ||
+        (process.env.HTTP_PROXY || process.env.http_proxy) ||
+        (process.env.ALL_PROXY || process.env.all_proxy);
+    if (!proxyUrl) {
+        return undefined; // No proxy configured
+    }
+    try {
+        // Try to use https-proxy-agent or http-proxy-agent packages if available
+        // These packages handle CONNECT tunneling for HTTPS through HTTP proxies
+        if (isHttps) {
+            try {
+                const { HttpsProxyAgent } = __nccwpck_require__(4686);
+                return new HttpsProxyAgent(proxyUrl);
+            }
+            catch (e) {
+                // Package not available, proxy won't be used
+                // This is fine - Node.js https.request will work without proxy
+                return undefined;
+            }
+        }
+        else {
+            try {
+                const { HttpProxyAgent } = __nccwpck_require__(5421);
+                return new HttpProxyAgent(proxyUrl);
+            }
+            catch (e) {
+                // Package not available, proxy won't be used
+                return undefined;
+            }
+        }
+    }
+    catch (e) {
+        // Invalid proxy URL or other error, ignore and proceed without proxy
+        console.warn(`Proxy configuration error: ${(e === null || e === void 0 ? void 0 : e.message) || e}, proceeding without proxy`);
+        return undefined;
+    }
+}
 // Helper function to make HTTPS GET requests with proper proxy support
 function makeHttpsRequest(options) {
+    // Add proxy agent if proxy environment variables are set
+    const targetUrl = `https://${options.hostname}${options.path || ''}`;
+    const agent = getProxyAgent(targetUrl);
+    if (agent) {
+        options.agent = agent;
+    }
     return new Promise((resolve, reject) => {
         const req = https_1.default.request(options, (res) => {
             let data = '';
@@ -52767,6 +52816,12 @@ function makeHttpsRequest(options) {
 }
 // Helper function to make HTTPS POST requests with FormData
 function makeHttpsPostRequest(options, formData) {
+    // Add proxy agent if proxy environment variables are set
+    const targetUrl = `https://${options.hostname}${options.path || ''}`;
+    const agent = getProxyAgent(targetUrl);
+    if (agent) {
+        options.agent = agent;
+    }
     return new Promise((resolve, reject) => {
         const req = https_1.default.request(options, (res) => {
             let data = '';
@@ -53743,6 +53798,22 @@ exports.selectPlatfrom = selectPlatfrom;
 /***/ ((module) => {
 
 module.exports = eval("require")("encoding");
+
+
+/***/ }),
+
+/***/ 5421:
+/***/ ((module) => {
+
+module.exports = eval("require")("http-proxy-agent");
+
+
+/***/ }),
+
+/***/ 4686:
+/***/ ((module) => {
+
+module.exports = eval("require")("https-proxy-agent");
 
 
 /***/ }),
