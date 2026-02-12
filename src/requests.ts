@@ -438,6 +438,17 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
             console.log(response.data);
             console.log('#######- DEBUG MODE -#######')
         }
+        //store the response in a file
+        fs.writeFileSync('batch_fix_results.json', JSON.stringify(response.data, null, 2));
+        console.log('Batch fix results stored in batch_fix_results.json');
+        //upload the file as an artifact
+        const artifactName = 'veracode-fix-results';
+        const artifact = require('@actions/artifact');
+        const artifactClient = artifact.default;
+        const rootDirectory = process.cwd();
+        const filesToUpload = ['batch_fix_results.json'];
+        await artifactClient.uploadArtifact(artifactName, filesToUpload, rootDirectory);
+        console.log('Batch fix results artifact uploaded');
         return response.data;
     }
 }
