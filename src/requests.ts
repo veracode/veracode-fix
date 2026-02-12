@@ -1,13 +1,143 @@
-import axios from 'axios';
+import https from 'https';
 import {calculateAuthorizationHeader} from './auth'
 import fs from 'fs';
 import FormData from 'form-data';
 import { selectPlatfrom } from './select_platform';
 import * as github from '@actions/github'
-import { create } from 'domain';
 
-// set client identifier
-axios.defaults.headers.common['X-CLIENT-TYPE'] = 'fix-github-action';
+// Helper function to get proxy agent if proxy environment variables are set
+function getProxyAgent(targetUrl: string): any {
+    const url = new URL(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`);
+    const isHttps = url.protocol === 'https:';
+    
+    // Check for proxy environment variables (case-insensitive)
+    // Priority: HTTPS_PROXY > HTTP_PROXY > ALL_PROXY
+    const proxyUrl = (isHttps ? (process.env.HTTPS_PROXY || process.env.https_proxy) : null) ||
+                     (process.env.HTTP_PROXY || process.env.http_proxy) ||
+                     (process.env.ALL_PROXY || process.env.all_proxy);
+    
+    if (!proxyUrl) {
+        return undefined; // No proxy configured
+    }
+    
+    try {
+        // Try to use https-proxy-agent or http-proxy-agent packages if available
+        // These packages handle CONNECT tunneling for HTTPS through HTTP proxies
+        if (isHttps) {
+            try {
+                const { HttpsProxyAgent } = require('https-proxy-agent');
+                return new HttpsProxyAgent(proxyUrl);
+            } catch (e) {
+                // Package not available, proxy won't be used
+                // This is fine - Node.js https.request will work without proxy
+                return undefined;
+            }
+        } else {
+            try {
+                const { HttpProxyAgent } = require('http-proxy-agent');
+                return new HttpProxyAgent(proxyUrl);
+            } catch (e) {
+                // Package not available, proxy won't be used
+                return undefined;
+            }
+        }
+    } catch (e: any) {
+        // Invalid proxy URL or other error, ignore and proceed without proxy
+        console.warn(`Proxy configuration error: ${e?.message || e}, proceeding without proxy`);
+        return undefined;
+    }
+}
+
+// Helper function to make HTTPS GET requests with proper proxy support
+function makeHttpsRequest(options: any): Promise<any> {
+    // Add proxy agent if proxy environment variables are set
+    const targetUrl = `https://${options.hostname}${options.path || ''}`;
+    const agent = getProxyAgent(targetUrl);
+    if (agent) {
+        options.agent = agent;
+    }
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                try {
+                    // Check Content-Type to determine how to parse response
+                    const contentType = res.headers['content-type'] || '';
+                    let responseData = data;
+                    
+                    if (contentType.includes('application/json')) {
+                        responseData = data ? JSON.parse(data) : null;
+                    }
+                    // else: keep raw response as-is
+                    
+                    resolve({
+                        status: res.statusCode,
+                        statusText: res.statusMessage,
+                        data: responseData,
+                        headers: res.headers
+                    });
+                } catch (e) {
+                    // If JSON parsing still fails, return raw data
+                    resolve({
+                        status: res.statusCode,
+                        statusText: res.statusMessage,
+                        data: data,
+                        headers: res.headers
+                    });
+                }
+            });
+        });
+
+        req.on('error', reject);
+        req.end();
+        return req;
+    });
+}
+
+// Helper function to make HTTPS POST requests with FormData
+function makeHttpsPostRequest(options: any, formData: any): Promise<any> {
+    // Add proxy agent if proxy environment variables are set
+    const targetUrl = `https://${options.hostname}${options.path || ''}`;
+    const agent = getProxyAgent(targetUrl);
+    if (agent) {
+        options.agent = agent;
+    }
+    
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                try {
+                    let responseData = data;
+                    
+                    if (res.statusCode != 200) {
+                        reject(new Error(`Request failed with status ${res.statusCode}: ${responseData}`));
+                        return;
+                    }
+                    
+                    try {
+                        responseData = JSON.parse(data);
+                    } catch (e) {
+                        // Keep as string if not JSON
+                    }
+                    
+                    resolve(responseData);
+                } catch (parseError) {
+                    reject(parseError);
+                }
+            });
+        });
+
+        req.on('error', reject);
+        formData.pipe(req);
+    });
+}
 
 export async function upload(platform:any, tar:any, options:any) {
 
@@ -16,7 +146,7 @@ export async function upload(platform:any, tar:any, options:any) {
     formData.append('data', fileBuffer, 'data.tar.gz');
     formData.append('name', 'data');
     
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
           id: platform.cleanedID,
           key: platform.cleanedKEY,
           host: platform.apiUrl,
@@ -37,27 +167,33 @@ export async function upload(platform:any, tar:any, options:any) {
 
     console.log('Uploading data.tar.gz to Veracode')
 
-    const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/upload_code', formData, {
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/upload_code',
+        method: 'POST',
         headers: {
             'Authorization': authHeader,
+            'X-CLIENT-TYPE': 'fix-github-action',
             ...formData.getHeaders()
         }
-    });
+    };
 
-    if (response.status != 200){
+    try {
+        const responseData = await makeHttpsPostRequest(reqOptions, formData);
+        console.log('Data uploaded successfully')
+        console.log('Project ID is:')
+        console.log(responseData);
+        return responseData;
+    } catch (error: any) {
         console.log('Error uploading data')
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
             console.log('requests.ts - upload')
-            console.log(response.data)
+            console.log(error.message || error)
             console.log('#######- DEBUG MODE -#######')
         }
-    }
-    else {
-        console.log('Data uploaded successfully')
-        console.log('Project ID is:')
-        console.log(response.data);
-        return response.data
+        throw error;
     }
 
 }
@@ -71,7 +207,7 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
     formData.append('data', fileBuffer, 'app.tar.gz');
     formData.append('name', 'data');
     
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
           id: platform.cleanedID,
           key: platform.cleanedKEY,
           host: platform.apiUrl,
@@ -92,27 +228,33 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
 
     console.log('Uploading app.tar.gz to Veracode')
 
-    const response = await axios.post('https://'+platform.apiUrl+'/fix/v1/project/batch_upload', formData, {
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/batch_upload',
+        method: 'POST',
         headers: {
             'Authorization': authHeader,
+            'X-CLIENT-TYPE': 'fix-github-action',
             ...formData.getHeaders()
         }
-    });
+    };
 
-    if (response.status != 200){
-        console.log('Error uploading data')
-        if (options.DEBUG == 'true'){
-            console.log('#######- DEBUG MODE -#######')
-            console.log('requests.ts - upload')
-            console.log(response.data)
-            console.log('#######- DEBUG MODE -#######')
-        }
-    }
-    else {
+    try {
+        const responseData = await makeHttpsPostRequest(reqOptions, formData);
         console.log('Data uploaded successfully')
         console.log('Project ID is:')
-        console.log(response.data);
-        return response.data
+        console.log(responseData);
+        return responseData;
+    } catch (error: any) {
+        console.log('Error uploading data')
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######')
+            console.log('requests.ts - uploadBatch')
+            console.log(error.message || error)
+            console.log('#######- DEBUG MODE -#######')
+        }
+        throw error;
     }
 
 }
@@ -124,31 +266,38 @@ export async function checkFix(platform:any, projectId:any, options:any) {
 }
 
 async function makeRequest(platform:any, projectId:any, options:any) {
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
         id: platform.cleanedID,
         key: platform.cleanedKEY,
         host: platform.apiUrl,
-        url: '/fix/v1/project/'+projectId+'/results',
+        url: '/fix/v1/project/' + projectId + '/results',
         method: 'GET',
     })
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
         console.log('requests.ts - cehckFix')
-        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: POST')
+        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: GET')
         console.log('Auth header created')
         console.log(authHeader)
         console.log('#######- DEBUG MODE -#######')
     }
 
-    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/results', {
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/'+projectId+'/results',
+        method: 'GET',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CLIENT-TYPE': 'fix-github-action'
         }
-    })
+    };
 
-     if (!response.data) {
+    const response = await makeHttpsRequest(reqOptions);
+
+    if (!response.data) {
         console.log('Response is empty. Retrying in 10 seconds.');
         await new Promise(resolve => setTimeout(resolve, 10000));
         return await makeRequest(platform, projectId, options);
@@ -156,7 +305,7 @@ async function makeRequest(platform:any, projectId:any, options:any) {
         console.log('Fixes fetched successfully');
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
-            console.log('requests.ts - cehckFix')
+            console.log('requests.ts - checkFix')
             console.log('Response:')
             console.log(response.data);
             console.log('#######- DEBUG MODE -#######')
@@ -175,32 +324,38 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any) {
 
     const platform:any = await selectPlatfrom(credentials)
 
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
         id: platform.cleanedID,
         key: platform.cleanedKEY,
         host: platform.apiUrl,
-        url: '/fix/v1/project/'+projectId+'/batch_status',
+        url: '/fix/v1/project/' + projectId + '/batch_status',
         method: 'GET',
     })
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
         console.log('requests.ts - makeRequestBatch')
-        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: POST')
+        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/batch_status'+' Method: GET')
         console.log('Auth header created')
         console.log(authHeader)
         console.log('#######- DEBUG MODE -#######')
     }
 
-    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_status', {
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/'+projectId+'/batch_status',
+        method: 'GET',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CLIENT-TYPE': 'fix-github-action'
         }
-    })
+    };
 
+    const response = await makeHttpsRequest(reqOptions);
 
-     if (!response.data) {
+    if (!response.data) {
         console.log('Response is empty. Something went wrong. No fixes generarted. ');
         return 0
     } else {
@@ -240,33 +395,38 @@ export async function pullBatchFixResults(credentials:any, projectId:any, option
 
     const platform:any = await selectPlatfrom(credentials)
 
-    const authHeader = await calculateAuthorizationHeader({
+    const authHeader = calculateAuthorizationHeader({
         id: platform.cleanedID,
         key: platform.cleanedKEY,
         host: platform.apiUrl,
-        url: '/fix/v1/project/'+projectId+'/batch_results',
+        url: '/fix/v1/project/' + projectId + '/batch_results',
         method: 'GET',
     })
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
         console.log('requests.ts - pullBatchFixResults')
-        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/results'+' Method: POST')
+        console.log('ViD: '+platform.cleanedID+' Key: '+platform.cleanedKEY+' Host: '+platform.apiUrl+' URL: /fix/v1/project/'+projectId+'/batch_results'+' Method: GET')
         console.log('Auth header created')
         console.log(authHeader)
         console.log('#######- DEBUG MODE -#######')
     }
 
-    
-
-    const response = await axios.get('https://'+platform.apiUrl+'/fix/v1/project/'+projectId+'/batch_results', {
+    const reqOptions = {
+        hostname: platform.apiUrl,
+        port: 443,
+        path: '/fix/v1/project/'+projectId+'/batch_results',
+        method: 'GET',
         headers: {
             'Authorization': authHeader,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CLIENT-TYPE': 'fix-github-action'
         }
-    })
+    };
 
-     if (!response.data) {
+    const response = await makeHttpsRequest(reqOptions);
+
+    if (!response.data) {
         console.log('Response is empty. Something went wrong. No fixes generarted. ');
         return 0
     } else {

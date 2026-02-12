@@ -1,7 +1,6 @@
 import fs from 'fs';
 import { createFlawInfo } from './createFlawInfo';
 import { checkCWE } from './check_cwe_support';
-import tarModule from 'tar';
 import { uploadBatch, checkFixBatch, pullBatchFixResults, getFilesPartOfPR } from './requests'
 import { createPRCommentBatch } from './create_pr_comment'
 import { execSync }  from 'child_process';

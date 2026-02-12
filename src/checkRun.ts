@@ -303,3 +303,173 @@ export async function updateCheckRunClose(options:any, checkRunID:any) {
         core.info(error);
     }
 }
+
+/**
+ * Create check run annotations for a newly created PR with fixes
+ * This aligns scan findings with the patches that were applied
+ */
+export async function createCheckRunAnnotationsForPR(
+    options: any,
+    prResponse: any,
+    fixResults: any,
+    flawArray: any
+) {
+    const repository: any = process.env.GITHUB_REPOSITORY
+    const repo = repository.split("/");
+    const owner = repo[0]
+    const repoName = repo[1]
+    const prNumber = prResponse.data.number
+    const headSha = prResponse.data.head.sha
+
+    if (options.DEBUG == 'true') {
+        console.log('#######- DEBUG MODE -#######')
+        console.log('checkRun.ts - createCheckRunAnnotationsForPR')
+        console.log('PR Number: ' + prNumber)
+        console.log('Head SHA: ' + headSha)
+        console.log('#######- DEBUG MODE -#######')
+    }
+
+    const octokit = new Octokit({
+        auth: options.token
+    })
+
+    try {
+        // Create a check run for the new PR branch
+        const checkRunResponse = await octokit.request('POST /repos/' + owner + '/' + repoName + '/check-runs', {
+            owner: owner,
+            repo: repoName,
+            name: 'Veracode Fix - Scan Findings',
+            head_sha: headSha,
+            status: 'in_progress',
+            output: {
+                title: 'Veracode Fix - Scan Findings',
+                summary: 'Scan findings aligned with applied fixes',
+                text: 'Scan findings aligned with applied fixes'
+            },
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
+        })
+
+        const checkRunID = checkRunResponse.data.id
+        console.log('Check run created for PR #' + prNumber + ' with ID: ' + checkRunID)
+
+        // Collect all annotations aligned with the patches
+        let allAnnotations: any[] = []
+
+        // Iterate through each file that was fixed
+        for (let key in fixResults.results) {
+            const fileResult = fixResults.results[key]
+            const patches = fileResult.patch || []
+            const flaws = fileResult.flaws || []
+
+            // Parse patches to get line number mappings
+            for (let i = 0; i < patches.length; i++) {
+                const patch = patches[i]
+
+                if (patch.indexOf('@@') > 0) {
+                    const cleanedPatch = patch.replace(/^---.*$\n?|^\+\+\+.*$\n?/gm, '')
+                    const sourceFileMatch = patch.match(/---\s(.*)\n/)
+                    const cleanedSourceFile = sourceFileMatch ? sourceFileMatch[1].replace(/^a\//, '').replace(/^b\//, '') : key
+                    const hunks = cleanedPatch.split(/(?=@@ -\d+,\d+ \+\d+,\d+ @@\n)/)
+
+                    for (let j = 0; j < hunks.length; j++) {
+                        const hunkLines = hunks[j].split('\n')
+                        const hunkHeader = hunkLines[0]
+                        const hunkHeaderMatch = hunkHeader.match(/@@ -(\d+),\d+ \+(\d+),(\d+) @@/)
+
+                        if (!hunkHeaderMatch) {
+                            continue
+                        }
+
+                        const startLineOriginal = parseInt(hunkHeaderMatch[1])
+                        const startLineNew = parseInt(hunkHeaderMatch[2])
+                        const lineCountNew = parseInt(hunkHeaderMatch[3])
+                        const endLineNew = startLineNew + lineCountNew - 1
+
+                        // Find flaws that match this hunk's line range
+                        for (let k = 0; k < flaws.length; k++) {
+                            const flaw = flaws[k]
+                            const flawLine = flaw.line
+
+                            // Check if flaw line is within the original range (before patch)
+                            // The annotation should point to the new line number after patch
+                            if (flawLine >= startLineOriginal && flawLine <= startLineOriginal + 20) {
+                                // Calculate the new line number after patch application
+                                const lineOffset = startLineNew - startLineOriginal
+                                const newFlawLine = flawLine + lineOffset
+
+                                // Find the flaw details from flawArray
+                                let flawDetails: any = null
+                                for (let flawKey in flawArray) {
+                                    flawDetails = flawArray[flawKey].find((f: any) => f.issue_id === flaw.issueId)
+                                    if (flawDetails) break
+                                }
+
+                                const cweId = flaw.CWEId || flawDetails?.cwe_id || 'Unknown'
+                                const issueType = flawDetails?.issue_type || 'Security Finding'
+                                const severity = flawDetails?.severity || 'Unknown'
+
+                                // Create annotation aligned with the patch
+                                allAnnotations.push({
+                                    path: cleanedSourceFile,
+                                    start_line: newFlawLine,
+                                    end_line: newFlawLine,
+                                    annotation_level: 'warning',
+                                    title: `CWE-${cweId}: ${issueType} (Severity: ${severity})`,
+                                    message: `Security finding fixed on line ${newFlawLine}. Issue ID: ${flaw.issueId}. This finding was addressed in the applied patch.`
+                                })
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Update check run with all annotations
+        if (allAnnotations.length > 0) {
+            await octokit.request('PATCH /repos/' + owner + '/' + repoName + '/check-runs/' + checkRunID, {
+                owner: owner,
+                repo: repoName,
+                status: 'completed',
+                conclusion: 'success',
+                output: {
+                    title: 'Veracode Fix - Scan Findings',
+                    summary: `Found ${allAnnotations.length} scan findings aligned with applied fixes`,
+                    text: `Found ${allAnnotations.length} scan findings aligned with applied fixes`,
+                    annotations: allAnnotations
+                },
+                headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            })
+            console.log('Check run updated with ' + allAnnotations.length + ' annotations for PR #' + prNumber)
+        } else {
+            // Close check run even if no annotations
+            await octokit.request('PATCH /repos/' + owner + '/' + repoName + '/check-runs/' + checkRunID, {
+                owner: owner,
+                repo: repoName,
+                status: 'completed',
+                conclusion: 'success',
+                output: {
+                    title: 'Veracode Fix - Scan Findings',
+                    summary: 'No annotations to add',
+                    text: 'No annotations to add'
+                },
+                headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            })
+        }
+
+        return checkRunID
+    } catch (error: any) {
+        console.log('Error creating check run annotations for PR:', error.message || error)
+        if (options.DEBUG == 'true') {
+            console.log('#######- DEBUG MODE -#######')
+            console.log('Error details:', error.request || error.response || error)
+            console.log('#######- DEBUG MODE -#######')
+        }
+        throw error
+    }
+}

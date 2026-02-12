@@ -2,6 +2,7 @@ import { Octokit } from "@octokit/rest";
 import * as github from '@actions/github'
 import * as Diff from 'diff';
 import * as fs from 'fs-extra';
+import { createCheckRunAnnotationsForPR } from './checkRun';
 
 export async function createPR(fixResults:any, options:any, flawArray:any){
 
@@ -201,5 +202,15 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
         console.log('Create PR response: ')
         console.log(createPR)
         console.log('#######- DEBUG MODE -#######')
+    }
+
+    // Create check run annotations for the newly created PR
+    try {
+        console.log('Creating check run annotations for PR #' + createPR.data.number)
+        await createCheckRunAnnotationsForPR(options, createPR, fixResults, flawArray)
+        console.log('✅ Check run annotations created successfully for PR #' + createPR.data.number)
+    } catch (error: any) {
+        console.log('⚠️ Failed to create check run annotations for PR:', error.message || error)
+        // Don't fail the entire process if annotations fail
     }
 }
