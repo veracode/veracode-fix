@@ -139189,6 +139189,15 @@ function createCheckRunAnnotationsForPR(options, prResponse, fixResults, flawArr
                                     const cweId = flaw.CWEId || (flawDetails === null || flawDetails === void 0 ? void 0 : flawDetails.cwe_id) || 'Unknown';
                                     const issueType = (flawDetails === null || flawDetails === void 0 ? void 0 : flawDetails.issue_type) || 'Security Finding';
                                     const severity = (flawDetails === null || flawDetails === void 0 ? void 0 : flawDetails.severity) || 'Unknown';
+                                    const displayText = (flawDetails === null || flawDetails === void 0 ? void 0 : flawDetails.display_text) || (flawDetails === null || flawDetails === void 0 ? void 0 : flawDetails.description) || 'No description available';
+                                    // Build the full annotation message with flaw description
+                                    let annotationMessage = `**Security finding fixed on line ${newFlawLine}**\n\n`;
+                                    annotationMessage += `**Issue ID:** ${flaw.issueId}\n`;
+                                    annotationMessage += `**CWE:** ${cweId}\n`;
+                                    annotationMessage += `**Issue Type:** ${issueType}\n`;
+                                    annotationMessage += `**Severity:** ${severity}\n\n`;
+                                    annotationMessage += `**Description:**\n${displayText}\n\n`;
+                                    annotationMessage += `This finding was addressed in the applied patch.`;
                                     // Create annotation aligned with the patch
                                     allAnnotations.push({
                                         path: cleanedSourceFile,
@@ -139196,7 +139205,7 @@ function createCheckRunAnnotationsForPR(options, prResponse, fixResults, flawArr
                                         end_line: newFlawLine,
                                         annotation_level: 'warning',
                                         title: `CWE-${cweId}: ${issueType} (Severity: ${severity})`,
-                                        message: `Security finding fixed on line ${newFlawLine}. Issue ID: ${flaw.issueId}. This finding was addressed in the applied patch.`
+                                        message: annotationMessage
                                     });
                                 }
                             }

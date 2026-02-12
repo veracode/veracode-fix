@@ -409,6 +409,16 @@ export async function createCheckRunAnnotationsForPR(
                                 const cweId = flaw.CWEId || flawDetails?.cwe_id || 'Unknown'
                                 const issueType = flawDetails?.issue_type || 'Security Finding'
                                 const severity = flawDetails?.severity || 'Unknown'
+                                const displayText = flawDetails?.display_text || flawDetails?.description || 'No description available'
+
+                                // Build the full annotation message with flaw description
+                                let annotationMessage = `**Security finding fixed on line ${newFlawLine}**\n\n`
+                                annotationMessage += `**Issue ID:** ${flaw.issueId}\n`
+                                annotationMessage += `**CWE:** ${cweId}\n`
+                                annotationMessage += `**Issue Type:** ${issueType}\n`
+                                annotationMessage += `**Severity:** ${severity}\n\n`
+                                annotationMessage += `**Description:**\n${displayText}\n\n`
+                                annotationMessage += `This finding was addressed in the applied patch.`
 
                                 // Create annotation aligned with the patch
                                 allAnnotations.push({
@@ -417,7 +427,7 @@ export async function createCheckRunAnnotationsForPR(
                                     end_line: newFlawLine,
                                     annotation_level: 'warning',
                                     title: `CWE-${cweId}: ${issueType} (Severity: ${severity})`,
-                                    message: `Security finding fixed on line ${newFlawLine}. Issue ID: ${flaw.issueId}. This finding was addressed in the applied patch.`
+                                    message: annotationMessage
                                 })
                             }
                         }
