@@ -33,39 +33,53 @@ export async function upload(platform:any, tar:any, options:any) {
     console.log('Uploading data.tar.gz to Veracode')
 
     const url = 'https://'+platform.apiUrl+'/fix/v1/project/upload_code';
-    const response = await fetch(url, {
-        method: 'POST',
-        body: formData as any,
-        headers: {
-            'Authorization': authHeader,
-            'X-CLIENT-TYPE': 'fix-github-action',
-            ...formData.getHeaders()
-        }
-    });
-
-
-
-    if (!response.ok){
-        console.log('Response.ok is false')
-        const errorText = await response.text();
-        console.log('Error uploading data')
-        if (options.DEBUG == 'true'){
-            console.log('#######- DEBUG MODE -#######')
-            console.log('requests.ts - upload')
-            console.log('Status:', response.status)
-            console.log('Error:', errorText)
-            console.log('#######- DEBUG MODE -#######')
-        }
-        throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
-    }
     
-    console.log('Response is ok')
-    console.log(response)
-    const data = await response.json();
-    console.log('Data uploaded successfully')
-    console.log('Project ID is:')
-    console.log(data);
-    return data
+    // Convert form-data to Buffer for fetch compatibility
+    const formHeaders = formData.getHeaders();
+    const chunks: Buffer[] = [];
+    
+    return new Promise((resolve, reject) => {
+        formData.on('data', (chunk: Buffer) => chunks.push(chunk));
+        formData.on('end', async () => {
+            const buffer = Buffer.concat(chunks as any);
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                body: new Uint8Array(buffer),
+                headers: {
+                    'Authorization': authHeader,
+                    'X-CLIENT-TYPE': 'fix-github-action',
+                    'Content-Type': formHeaders['content-type'],
+                    'Content-Length': buffer.length.toString()
+                }
+            });
+            
+            if (!response.ok){
+                console.log('Response.ok is false')
+                const errorText = await response.text();
+                console.log('Error uploading data')
+                if (options.DEBUG == 'true'){
+                    console.log('#######- DEBUG MODE -#######')
+                    console.log('requests.ts - upload')
+                    console.log('Status:', response.status)
+                    console.log('Error:', errorText)
+                    console.log('#######- DEBUG MODE -#######')
+                }
+                reject(new Error(`Upload failed with status ${response.status}: ${errorText}`));
+                return;
+            }
+            
+            console.log('Response is ok')
+            const data = await response.json();
+            console.log('Data uploaded successfully')
+            console.log('Project ID is:')
+            console.log(data);
+            resolve(data);
+        });
+        formData.on('error', reject);
+        // Start the stream
+        formData.resume();
+    });
 
 }
 
@@ -100,35 +114,58 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
     console.log('Uploading app.tar.gz to Veracode')
 
     const url = 'https://'+platform.apiUrl+'/fix/v1/project/batch_upload';
-    const response = await fetch(url, {
-        method: 'POST',
-        body: formData as any,
-        headers: {
-            'Authorization': authHeader,
-            'X-CLIENT-TYPE': 'fix-github-action',
-            ...formData.getHeaders()
-        }
-    });
-    console.log('Response is:')
-    console.log(response)
-    if (!response.ok){
-        const errorText = await response.text();
-        console.log('Error uploading data')
-        if (options.DEBUG == 'true'){
-            console.log('#######- DEBUG MODE -#######')
-            console.log('requests.ts - upload')
-            console.log('Status:', response.status)
-            console.log('Error:', errorText)
-            console.log('#######- DEBUG MODE -#######')
-        }
-        throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
-    }
     
-    const data = await response.json();
-    console.log('Data uploaded successfully')
-    console.log('Project ID is:')
-    console.log(data);
-    return data
+    // Convert form-data stream to Buffer for fetch compatibility
+    const formHeaders = formData.getHeaders();
+    const chunks: Buffer[] = [];
+    
+    return new Promise((resolve, reject) => {
+        formData.on('data', (chunk: Buffer) => chunks.push(chunk));
+        formData.on('end', async () => {
+            try {
+                const buffer = Buffer.concat(chunks as any);
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: new Uint8Array(buffer),
+                    headers: {
+                        'Authorization': authHeader,
+                        'X-CLIENT-TYPE': 'fix-github-action',
+                        'Content-Type': formHeaders['content-type'],
+                        'Content-Length': buffer.length.toString()
+                    }
+                });
+                
+                console.log('Response is:')
+                console.log(response)
+                
+                if (!response.ok){
+                    const errorText = await response.text();
+                    console.log('Error uploading data')
+                    if (options.DEBUG == 'true'){
+                        console.log('#######- DEBUG MODE -#######')
+                        console.log('requests.ts - upload')
+                        console.log('Status:', response.status)
+                        console.log('Error:', errorText)
+                        console.log('#######- DEBUG MODE -#######')
+                    }
+                    reject(new Error(`Upload failed with status ${response.status}: ${errorText}`));
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('Data uploaded successfully')
+                console.log('Project ID is:')
+                console.log(data);
+                resolve(data);
+            } catch (error) {
+                reject(error);
+            }
+        });
+        formData.on('error', reject);
+        // Start the stream
+        formData.resume();
+    });
 
 }
 
