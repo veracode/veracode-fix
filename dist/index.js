@@ -52768,6 +52768,7 @@ function upload(platform, tar, options) {
             throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
         }
         console.log('Response is ok');
+        console.log(response);
         const data = yield response.json();
         console.log('Data uploaded successfully');
         console.log('Project ID is:');
@@ -52807,6 +52808,8 @@ function uploadBatch(credentials, tarPath, options) {
             body: formData,
             headers: Object.assign({ 'Authorization': authHeader, 'X-CLIENT-TYPE': 'fix-github-action' }, formData.getHeaders())
         });
+        console.log('Response is:');
+        console.log(response);
         if (!response.ok) {
             const errorText = yield response.text();
             console.log('Error uploading data');

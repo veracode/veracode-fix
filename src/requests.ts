@@ -43,6 +43,8 @@ export async function upload(platform:any, tar:any, options:any) {
         }
     });
 
+
+
     if (!response.ok){
         console.log('Response.ok is false')
         const errorText = await response.text();
@@ -58,6 +60,7 @@ export async function upload(platform:any, tar:any, options:any) {
     }
     
     console.log('Response is ok')
+    console.log(response)
     const data = await response.json();
     console.log('Data uploaded successfully')
     console.log('Project ID is:')
@@ -106,7 +109,8 @@ export async function uploadBatch(credentials:any, tarPath:any, options:any) {
             ...formData.getHeaders()
         }
     });
-
+    console.log('Response is:')
+    console.log(response)
     if (!response.ok){
         const errorText = await response.text();
         console.log('Error uploading data')
