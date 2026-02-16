@@ -141846,6 +141846,10 @@ function searchFile(dir, filename, options) {
                 result = fullPath;
                 break;
             }
+            else {
+                console.log(`File not found: ${fullPath}`);
+                result = 'File not found on this repository';
+            }
         }
         if (options.DEBUG === 'true') {
             console.log('#######- DEBUG MODE -#######');
@@ -142061,20 +142065,61 @@ function runBatch(options, credentials) {
                         }
                         if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
                             console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is in the list of CWEs to fix, creating flaw info');
+                            const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                             if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options, true)) == true) {
-                                const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                                 if (options.DEBUG == 'true') {
                                     console.log('#######- DEBUG MODE -#######');
                                     console.log('run_batch.ts - runBatch()');
                                     console.log('Flaw Info:', flawInfo);
                                     console.log('#######- DEBUG MODE -#######');
                                 }
+                                if (typeof flawInfo !== 'string') {
+                                    //write flaw info and source file
+                                    const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
+                                    const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
+                                    console.log(`Writing flaw to: ${constants_2.tempFolder + constants_1.sourcecodeFolderName}` + flawFoldername + '/' + flawFilenane);
+                                    fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername, { recursive: true });
+                                    fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + '/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
+                                    if (fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile)) {
+                                        console.log('File exists nothing to do');
+                                    }
+                                    else {
+                                        console.log('File does not exist, copying file');
+                                        let str = flawInfo.sourceFile;
+                                        let lastSlashIndex = str.lastIndexOf('/');
+                                        let strBeforeLastSlash = str.substring(0, lastSlashIndex);
+                                        if (!fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash)) {
+                                            console.log('Destination directory does not exist lest create it');
+                                            fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
+                                        }
+                                        // Use sourceFileFull for file operations
+                                        const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
+                                        fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
+                                    }
+                                }
+                            }
+                            else if (typeof flawInfo === 'string') {
+                                console.log('File not found on this repository, skipping CWE ' + flawArray[sourceFile][j].cwe_id);
+                            }
+                            else {
+                                console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + detectedLanguage);
+                            }
+                        }
+                        else {
+                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not in the list of CWEs to fix');
+                        }
+                    }
+                    else {
+                        console.log('Fix for all CWEs');
+                        const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                        if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options, true)) == true) {
+                            if (typeof flawInfo !== 'string') {
                                 //write flaw info and source file
                                 const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
                                 const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
                                 console.log(`Writing flaw to: ${constants_2.tempFolder + constants_1.sourcecodeFolderName}` + flawFoldername + '/' + flawFilenane);
                                 fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername, { recursive: true });
-                                fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + '/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
+                                fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
                                 if (fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile)) {
                                     console.log('File exists nothing to do');
                                 }
@@ -142093,39 +142138,11 @@ function runBatch(options, credentials) {
                                 }
                             }
                             else {
-                                console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + detectedLanguage);
+                                console.log('File not found on this repository, skipping CWE ' + flawArray[sourceFile][j].cwe_id);
                             }
                         }
-                        else {
-                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not in the list of CWEs to fix');
-                        }
-                    }
-                    else {
-                        console.log('Fix for all CWEs');
-                        if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options, true)) == true) {
-                            const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                            //write flaw info and source file
-                            const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
-                            const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
-                            console.log(`Writing flaw to: ${constants_2.tempFolder + constants_1.sourcecodeFolderName}` + flawFoldername + '/' + flawFilenane);
-                            fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername, { recursive: true });
-                            fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
-                            if (fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile)) {
-                                console.log('File exists nothing to do');
-                            }
-                            else {
-                                console.log('File does not exist, copying file');
-                                let str = flawInfo.sourceFile;
-                                let lastSlashIndex = str.lastIndexOf('/');
-                                let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                if (!fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash)) {
-                                    console.log('Destination directory does not exist lest create it');
-                                    fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
-                                }
-                                // Use sourceFileFull for file operations
-                                const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-                                fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
-                            }
+                        else if (typeof flawInfo === 'string') {
+                            console.log('File not found on this repository, skipping CWE ' + flawArray[sourceFile][j].cwe_id);
                         }
                         else {
                             console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + detectedLanguage);
@@ -142430,7 +142447,9 @@ function runSingle(options, credentials) {
                                     const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                                     console.log('Check Run ID is: ' + options.checkRunID);
                                     console.log('Update Check Run with PR Comment');
-                                    const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                    if (typeof newFlawInfo !== 'string') {
+                                        const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                    }
                                 }
                                 else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
                                     console.log('PR commenting is enabled');
@@ -142438,7 +142457,9 @@ function runSingle(options, credentials) {
                                     console.log('Code Suggestions are enabled');
                                     //need flawinfo again
                                     const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                                    const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
+                                    if (typeof newFlawInfo !== 'string') {
+                                        const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
+                                    }
                                 }
                             }
                             else {
@@ -142477,7 +142498,9 @@ function runSingle(options, credentials) {
                             const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                             console.log('Check Run ID is: ' + options.checkRunID);
                             console.log('Update Check Run with PR Comment');
-                            const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                            if (typeof newFlawInfo !== 'string') {
+                                const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                            }
                         }
                         else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
                             console.log('PR commenting is enabled');
@@ -142485,7 +142508,9 @@ function runSingle(options, credentials) {
                             console.log('Code Suggestions are enabled');
                             //need flawinfo again
                             const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                            const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
+                            if (typeof newFlawInfo !== 'string') {
+                                const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
+                            }
                         }
                     }
                     else {
@@ -142517,6 +142542,10 @@ function createTar(initialFlawInfo, options) {
             console.log('flawInfo on run_single.ts:');
             console.log(JSON.stringify(flawInfo));
             console.log('#######- DEBUG MODE -#######');
+        }
+        if (typeof flawInfo === 'string') {
+            console.log('File not found on this repository, skipping CWE ' + initialFlawInfo.cweID);
+            return;
         }
         // Use sourceFileFull for file operations, fallback to sourceFile for backward compatibility
         const filepath = flawInfo.sourceFileFull || flawInfo.sourceFile;

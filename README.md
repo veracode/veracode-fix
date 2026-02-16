@@ -57,6 +57,9 @@ Veracode Fix supports the a few languagess and CWE's right now, please review th
 ![](/images/createPR.png)
 ![](/images/createPRFilesChanged.png)
 
+- When `createPR` is set to `true`, the action will automatically create check run annotations for the newly created PR. These annotations show the scan findings aligned with the applied fixes, displaying the full flaw description including CWE, issue type, severity, and detailed description. This helps PR reviewers understand which security findings were addressed by each fix in the code changes.
+![](/images/files_changed_annotations.png)
+
 
 ## Examples  
 All examples follow the same strucutre, the will all `need` the `build` to be finished before the they will start running. Veraocde's static analysis is mainly binary static analysis, therefore a compile/build action is required before a pipeline scan can be started. Please read about the packaging and compilation requirements here: https://docs.veracode.com/r/compilation_packaging.  

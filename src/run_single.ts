@@ -130,7 +130,9 @@ export async function runSingle(options: any, credentials: any) {
                                 const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
                                 console.log('Check Run ID is: '+options.checkRunID)
                                 console.log('Update Check Run with PR Comment')
-                                const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                                if (typeof newFlawInfo !== 'string') {
+                                    const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                                }
                             }
                             else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
                                 console.log('PR commenting is enabled')
@@ -138,7 +140,9 @@ export async function runSingle(options: any, credentials: any) {
                                 console.log('Code Suggestions are enabled')
                                 //need flawinfo again
                                 const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
-                                const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
+                                if (typeof newFlawInfo !== 'string') {
+                                    const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
+                                }
                             }   
                         }
                         else {
@@ -179,7 +183,9 @@ export async function runSingle(options: any, credentials: any) {
                         const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
                         console.log('Check Run ID is: '+options.checkRunID)
                         console.log('Update Check Run with PR Comment')
-                        const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                        if (typeof newFlawInfo !== 'string') {
+                            const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                        }
                     }
                     else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
                         console.log('PR commenting is enabled')
@@ -187,7 +193,9 @@ export async function runSingle(options: any, credentials: any) {
                         console.log('Code Suggestions are enabled')
                         //need flawinfo again
                         const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
-                        const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
+                        if (typeof newFlawInfo !== 'string') {
+                            const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
+                        }
                     }
                 }
                 else {
@@ -221,6 +229,11 @@ async function createTar(initialFlawInfo:any, options:any){
         console.log('flawInfo on run_single.ts:')
         console.log(JSON.stringify(flawInfo))
         console.log('#######- DEBUG MODE -#######')
+    }
+    
+    if (typeof flawInfo === 'string') {
+        console.log('File not found on this repository, skipping CWE '+initialFlawInfo.cweID)
+        return;
     }
     
     // Use sourceFileFull for file operations, fallback to sourceFile for backward compatibility

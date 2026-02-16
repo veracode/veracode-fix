@@ -35,6 +35,10 @@ export async function searchFile(dir: string, filename: string, options: Options
             result = fullPath;
             break;
         }
+        else {
+            console.log(`File not found: ${fullPath}`);
+            result = 'File not found on this repository';
+        }
     }
     
     if (options.DEBUG === 'true') {

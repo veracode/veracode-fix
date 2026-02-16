@@ -133,9 +133,9 @@ export async function runBatch( options:any, credentials:any){
                     if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
                         console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is in the list of CWEs to fix, creating flaw info')
                         
-                        if (await checkCWE(initialFlawInfo, options, true) == true){
-                            const flawInfo = await createFlawInfo(initialFlawInfo,options)
+                        const flawInfo = await createFlawInfo(initialFlawInfo,options)
 
+                        if (await checkCWE(initialFlawInfo, options, true) == true){
                             if (options.DEBUG == 'true'){
                                 console.log('#######- DEBUG MODE -#######')
                                 console.log('run_batch.ts - runBatch()')
@@ -143,29 +143,34 @@ export async function runBatch( options:any, credentials:any){
                                 console.log('#######- DEBUG MODE -#######')
                             }
 
-                            //write flaw info and source file
-                            const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
-                            const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
-                            console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}`+flawFoldername+'/'+flawFilenane)
-                            fs.mkdirSync(tempFolder + sourcecodeFolderName + 'flaws/'+flawFoldername, { recursive: true });
-                            fs.writeFileSync(tempFolder + sourcecodeFolderName + '/flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
+                            if (typeof flawInfo !== 'string') {
+                                //write flaw info and source file
+                                const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
+                                const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
+                                console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}`+flawFoldername+'/'+flawFilenane)
+                                fs.mkdirSync(tempFolder + sourcecodeFolderName + 'flaws/'+flawFoldername, { recursive: true });
+                                fs.writeFileSync(tempFolder + sourcecodeFolderName + '/flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
 
-                            if (fs.existsSync(tempFolder + sourcecodeFolderName + flawInfo.sourceFile)) {
-                                console.log('File exists nothing to do');
-                            } else {
-                                console.log('File does not exist, copying file');
-                                let str = flawInfo.sourceFile;
-                                let lastSlashIndex = str.lastIndexOf('/');
-                                let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                if (!fs.existsSync(tempFolder + sourcecodeFolderName + strBeforeLastSlash)) {
-                                    console.log('Destination directory does not exist lest create it');
-                                    fs.mkdirSync(tempFolder + sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
+                                if (fs.existsSync(tempFolder + sourcecodeFolderName + flawInfo.sourceFile)) {
+                                    console.log('File exists nothing to do');
+                                } else {
+                                    console.log('File does not exist, copying file');
+                                    let str = flawInfo.sourceFile;
+                                    let lastSlashIndex = str.lastIndexOf('/');
+                                    let strBeforeLastSlash = str.substring(0, lastSlashIndex);
+                                    if (!fs.existsSync(tempFolder + sourcecodeFolderName + strBeforeLastSlash)) {
+                                        console.log('Destination directory does not exist lest create it');
+                                        fs.mkdirSync(tempFolder + sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
+                                    }
+
+                                    // Use sourceFileFull for file operations
+                                    const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
+                                    fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
                                 }
-
-                                // Use sourceFileFull for file operations
-                                const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-                                fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
                             }
+                        }
+                        else if (typeof flawInfo === 'string') {
+                            console.log('File not found on this repository, skipping CWE '+flawArray[sourceFile][j].cwe_id)
                         }
                         else {
                             console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is not supported for '+detectedLanguage)
@@ -177,34 +182,41 @@ export async function runBatch( options:any, credentials:any){
                 }
                 else {
                     console.log('Fix for all CWEs')
+                    const flawInfo = await createFlawInfo(initialFlawInfo,options)
 
                     if (await checkCWE(initialFlawInfo, options, true) == true){
-                        const flawInfo = await createFlawInfo(initialFlawInfo,options)
+                        if (typeof flawInfo !== 'string') {
                         
-                        //write flaw info and source file
-                        const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
-                        const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
-                        console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}`+flawFoldername+'/'+flawFilenane)
-                        fs.mkdirSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername, { recursive: true });
-                        fs.writeFileSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
+                            //write flaw info and source file
+                            const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
+                            const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
+                            console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}`+flawFoldername+'/'+flawFilenane)
+                            fs.mkdirSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername, { recursive: true });
+                            fs.writeFileSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
 
-                        if (fs.existsSync(tempFolder + sourcecodeFolderName+flawInfo.sourceFile)) {
-                            console.log('File exists nothing to do');
-                        } else {
-                            console.log('File does not exist, copying file');
-                            let str = flawInfo.sourceFile;
-                            let lastSlashIndex = str.lastIndexOf('/');
-                            let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                            if (!fs.existsSync(tempFolder + sourcecodeFolderName+strBeforeLastSlash)) {
-                                console.log('Destination directory does not exist lest create it');
-                                fs.mkdirSync(tempFolder + sourcecodeFolderName+strBeforeLastSlash, { recursive: true });
+                            if (fs.existsSync(tempFolder + sourcecodeFolderName+flawInfo.sourceFile)) {
+                                console.log('File exists nothing to do');
+                            } else {
+                                console.log('File does not exist, copying file');
+                                let str = flawInfo.sourceFile;
+                                let lastSlashIndex = str.lastIndexOf('/');
+                                let strBeforeLastSlash = str.substring(0, lastSlashIndex);
+                                if (!fs.existsSync(tempFolder + sourcecodeFolderName+strBeforeLastSlash)) {
+                                    console.log('Destination directory does not exist lest create it');
+                                    fs.mkdirSync(tempFolder + sourcecodeFolderName+strBeforeLastSlash, { recursive: true });
+                                }
+
+                                // Use sourceFileFull for file operations
+                                const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
+                                fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName+flawInfo.sourceFile)
                             }
-
-                            // Use sourceFileFull for file operations
-                            const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-                            fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName+flawInfo.sourceFile)
                         }
-
+                        else {
+                            console.log('File not found on this repository, skipping CWE '+flawArray[sourceFile][j].cwe_id)
+                        }
+                    }
+                    else if (typeof flawInfo === 'string') {
+                        console.log('File not found on this repository, skipping CWE '+flawArray[sourceFile][j].cwe_id)
                     }
                     else {
                         console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is not supported for '+detectedLanguage)
