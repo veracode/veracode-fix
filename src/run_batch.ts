@@ -246,6 +246,19 @@ export async function runBatch( options:any, credentials:any){
     const tarball = execSync(`tar -czf ${tempFolder}app.tar.gz -C ${tempFolder + sourcecodeFolderName} .`);
     console.log('Tar is created');
 
+    // Upload the generated tarball as an artifact for later inspection
+    try {
+        const artifactName = 'veracode-fix-source';
+        const artifact = require('@actions/artifact');
+        const artifactClient = artifact.default;
+        const rootDirectory = tempFolder || process.cwd();
+        const filesToUpload = ['app.tar.gz'];
+        await artifactClient.uploadArtifact(artifactName, filesToUpload, rootDirectory);
+        console.log('Source tarball artifact uploaded');
+    } catch (e) {
+        console.log('Failed to upload source tarball artifact:', e);
+    }
+
     const projectID = await uploadBatch(credentials, (tempFolder+'app.tar.gz'), options)
     console.log('Project ID is: '+projectID)
 

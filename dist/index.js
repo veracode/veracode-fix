@@ -142198,6 +142198,19 @@ function runBatch(options, credentials) {
         // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
         const tarball = (0, child_process_1.execSync)(`tar -czf ${constants_2.tempFolder}app.tar.gz -C ${constants_2.tempFolder + constants_1.sourcecodeFolderName} .`);
         console.log('Tar is created');
+        // Upload the generated tarball as an artifact for later inspection
+        try {
+            const artifactName = 'veracode-fix-source';
+            const artifact = __nccwpck_require__(6893);
+            const artifactClient = artifact.default;
+            const rootDirectory = constants_2.tempFolder || process.cwd();
+            const filesToUpload = ['app.tar.gz'];
+            yield artifactClient.uploadArtifact(artifactName, filesToUpload, rootDirectory);
+            console.log('Source tarball artifact uploaded');
+        }
+        catch (e) {
+            console.log('Failed to upload source tarball artifact:', e);
+        }
         const projectID = yield (0, requests_1.uploadBatch)(credentials, (constants_2.tempFolder + 'app.tar.gz'), options);
         console.log('Project ID is: ' + projectID);
         const checkBatchFixStatus = yield (0, requests_1.checkFixBatch)(credentials, projectID, options);
