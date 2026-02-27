@@ -141626,8 +141626,8 @@ function checkFixBatch(platform, projectId, options) {
         return results;
     });
 }
-function makeRequestBatch(credentials, projectId, options) {
-    return __awaiter(this, void 0, void 0, function* () {
+function makeRequestBatch(credentials_1, projectId_1, options_1) {
+    return __awaiter(this, arguments, void 0, function* (credentials, projectId, options, previousProcessedResults = 0, stagnantIterations = 0) {
         const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
         const authHeader = (0, auth_1.calculateAuthorizationHeader)({
             id: platform.cleanedID,
@@ -141669,17 +141669,45 @@ function makeRequestBatch(credentials, projectId, options) {
                 console.log(response.data);
                 console.log('#######- DEBUG MODE -#######');
             }
-            if (response.data.hasMore == true) {
+            // Track processedResults over iterations to detect stalled generation
+            const currentProcessedResults = typeof response.data.processedResults === 'number'
+                ? response.data.processedResults
+                : 0;
+            let nextStagnantIterations = stagnantIterations;
+            if (currentProcessedResults > previousProcessedResults) {
+                // Progress made, reset stagnant counter
+                nextStagnantIterations = 0;
+            }
+            else {
+                // No progress since last check
+                nextStagnantIterations += 1;
+            }
+            if (response.data.hasMore === true) {
+                if (nextStagnantIterations >= 10) {
+                    console.log('Batch status check stalled. Something went wrong. No fixes generarted.');
+                    if (options.DEBUG == 'true') {
+                        console.log('#######- DEBUG MODE -#######');
+                        console.log('Batch status check stalled: processedResults has not increased after 10 iterations. Failing gracefully.');
+                        console.log('requests.ts - makeRequestBatch');
+                        console.log('Stagnation details:');
+                        console.log('previousProcessedResults:', previousProcessedResults);
+                        console.log('currentProcessedResults:', currentProcessedResults);
+                        console.log('stagnantIterations:', nextStagnantIterations);
+                        console.log('#######- DEBUG MODE -#######');
+                    }
+                    return 0;
+                }
                 console.log('More fixes are being generated. Retrying in 10 seconds.');
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
                     console.log('requests.ts - makeRequestBatch');
                     console.log('Response:');
                     console.log(response.data);
+                    console.log('Stagnant iterations so far:', nextStagnantIterations);
                     console.log('#######- DEBUG MODE -#######');
                 }
                 yield new Promise(resolve => setTimeout(resolve, 10000));
-                return yield makeRequestBatch(credentials, projectId, options);
+                return yield makeRequestBatch(credentials, projectId, options, currentProcessedResults, nextStagnantIterations);
             }
             else {
                 return 1;
