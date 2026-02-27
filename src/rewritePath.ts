@@ -29,15 +29,17 @@ export async function searchFile(dir: string, filename: string, options: Options
 
         if (stat.isDirectory()) {
             result = await searchFile(fullPath, filename, options);
-            if (result) break;
+            // Only stop searching if we actually found the file
+            if (result) {
+                break;
+            }
         } else if (file === filename) {
             console.log(`File found: ${fullPath}`);
             result = fullPath;
             break;
-        }
-        else {
-            console.log(`File not found: ${fullPath}`);
-            result = 'File not found on this repository';
+        } else if (options.DEBUG === 'true') {
+            // Only log non-matching files in debug mode to avoid noisy logs
+            console.log(`File checked and not matched: ${fullPath}`);
         }
     }
     
@@ -48,7 +50,16 @@ export async function searchFile(dir: string, filename: string, options: Options
         console.log('#######- DEBUG MODE -#######');
     }
     
-    return result || ''; // Return empty string if result is null
+    // If no file was found in the entire directory tree, return empty string
+    if (!result) {
+        if (options.DEBUG === 'true') {
+            console.log('rewritePath.ts');
+            console.log(`File ${filename} not found in directory tree starting at: ${dir}`);
+        }
+        return '';
+    }
+
+    return result;
 }
 
 /**

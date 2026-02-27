@@ -114,8 +114,9 @@ export async function createFlawInfo(flawInfo:any,options:any){
     const filenameOnly = path.basename(flawInfo.sourceFile);
     let filepath = await searchFile(dir, filenameOnly, options)
     
-    if ( filepath == undefined || filepath === '' ){
-        filepath = filename
+    // If repository search didn't find the file, fall back to the original path
+    if (!filepath || filepath === '') {
+        filepath = filename;
     }
 
     // Normalize the path for display purposes (remove GitHub Actions runner prefix)

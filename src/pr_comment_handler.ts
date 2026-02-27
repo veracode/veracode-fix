@@ -283,6 +283,7 @@ async function matchFindingsToChanges(findings: any[], prChanges: any[], options
         const dir = process.cwd();
         let actualFilePath = await searchFile(dir, filenameOnly, options);
         
+        // If repository search didn't find the file, fall back to the original sourceFile path
         if (!actualFilePath || actualFilePath === '') {
             actualFilePath = sourceFile;
         }
