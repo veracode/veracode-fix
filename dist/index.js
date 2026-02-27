@@ -142200,11 +142200,17 @@ function runBatch(options, credentials) {
         console.log('Tar is created');
         // Upload the generated tarball as an artifact for later inspection
         try {
+            const path = __nccwpck_require__(16928);
+            const tarPath = `${constants_2.tempFolder}app.tar.gz`;
+            const rootDirectory = path.dirname(tarPath) || process.cwd();
+            const tarFileName = path.basename(tarPath);
+            console.log(`Artifact tar path: ${tarPath}`);
+            console.log(`Artifact root directory: ${rootDirectory}`);
+            console.log(`Artifact file name: ${tarFileName}`);
             const artifactName = 'veracode-fix-source';
             const artifact = __nccwpck_require__(6893);
             const artifactClient = artifact.default;
-            const rootDirectory = constants_2.tempFolder || process.cwd();
-            const filesToUpload = ['app.tar.gz'];
+            const filesToUpload = [tarFileName];
             yield artifactClient.uploadArtifact(artifactName, filesToUpload, rootDirectory);
             console.log('Source tarball artifact uploaded');
         }
