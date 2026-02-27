@@ -369,36 +369,72 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any, pre
             console.log('#######- DEBUG MODE -#######')
         }
 
-        // Track processedResults over iterations to detect stalled generation
+        // Track processedResults over iterations to detect stalled or regressing generation
         const currentProcessedResults = typeof response.data.processedResults === 'number'
             ? response.data.processedResults
             : 0;
 
+        // 1) Detect regression: processedResults decreased after having previously increased
+        if (previousProcessedResults > 0 && currentProcessedResults < previousProcessedResults) {
+            console.log(`Batch status check detected regression in processedResults (from ${previousProcessedResults} to ${currentProcessedResults}). Proceeding to fetch available results.`);
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('requests.ts - makeRequestBatch');
+                console.log('Regression detected, stopping further status checks and proceeding to results fetch.');
+                console.log('previousProcessedResults:', previousProcessedResults);
+                console.log('currentProcessedResults:', currentProcessedResults);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            // Treat as "ready enough" and let caller fetch results
+            return 1;
+        }
+
+        // 2) Track stagnation when processedResults stops increasing
         let nextStagnantIterations = stagnantIterations;
         if (currentProcessedResults > previousProcessedResults) {
             // Progress made, reset stagnant counter
             nextStagnantIterations = 0;
-        } else {
+        } else if (currentProcessedResults === previousProcessedResults) {
             // No progress since last check
+            nextStagnantIterations += 1;
+        } else {
+            // currentProcessedResults < previousProcessedResults but previousProcessedResults == 0
+            // (covered by regression check above when > 0). For safety, treat as another stagnant iteration.
             nextStagnantIterations += 1;
         }
 
-        if (response.data.hasMore === true) {
-            if (nextStagnantIterations >= 10) {
-                console.log('Batch status check stalled. Something went wrong. No fixes generarted.');
+        // 3) Handle long-term stagnation after some results have been processed
+        if (nextStagnantIterations >= 10) {
+            if (currentProcessedResults === 0) {
+                // No results ever processed and we've waited long enough: fail
+                console.log('Batch status check stalled at 0 processedResults after 10 iterations. Something went wrong. No fixes generated.');
                 if (options.DEBUG == 'true') {
-                    console.log('#######- DEBUG MODE -#######')
-                    console.log('Batch status check stalled: processedResults has not increased after 10 iterations. Failing gracefully.');
-                    console.log('requests.ts - makeRequestBatch')
-                    console.log('Stagnation details:')
-                    console.log('previousProcessedResults:', previousProcessedResults)
-                    console.log('currentProcessedResults:', currentProcessedResults)
-                    console.log('stagnantIterations:', nextStagnantIterations)
-                    console.log('#######- DEBUG MODE -#######')
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('requests.ts - makeRequestBatch');
+                    console.log('Stagnation at 0 processedResults, failing without fetching results.');
+                    console.log('previousProcessedResults:', previousProcessedResults);
+                    console.log('currentProcessedResults:', currentProcessedResults);
+                    console.log('stagnantIterations:', nextStagnantIterations);
+                    console.log('#######- DEBUG MODE -#######');
                 }
                 return 0;
+            } else {
+                // We have some processed results but count stopped increasing: fetch what we have
+                console.log(`Batch status check stalled at processedResults=${currentProcessedResults} after 10 iterations. Proceeding to fetch available results.`);
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('requests.ts - makeRequestBatch');
+                    console.log('Stagnation with non-zero processedResults, treating as ready for results fetch.');
+                    console.log('previousProcessedResults:', previousProcessedResults);
+                    console.log('currentProcessedResults:', currentProcessedResults);
+                    console.log('stagnantIterations:', nextStagnantIterations);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                return 1;
             }
+        }
 
+        if (response.data.hasMore === true) {
             console.log('More fixes are being generated. Retrying in 10 seconds.');
 
             if (options.DEBUG == 'true'){
@@ -412,8 +448,8 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any, pre
 
             await new Promise(resolve => setTimeout(resolve, 10000));
             return await makeRequestBatch(credentials, projectId, options, currentProcessedResults, nextStagnantIterations);
-        }
-        else {
+        } else {
+            // hasMore is false: normal completion
             return 1;
         }
     }
