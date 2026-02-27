@@ -141976,12 +141976,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.runBatch = runBatch;
-const fs_1 = __importDefault(__nccwpck_require__(79896));
+const fs_1 = __importStar(__nccwpck_require__(79896));
 const createFlawInfo_1 = __nccwpck_require__(47810);
 const check_cwe_support_1 = __nccwpck_require__(81668);
 const requests_1 = __nccwpck_require__(73098);
@@ -142204,6 +142201,12 @@ function runBatch(options, credentials) {
             const tarPath = `${constants_2.tempFolder}app.tar.gz`;
             const rootDirectory = path.dirname(tarPath) || process.cwd();
             const tarFileName = path.basename(tarPath);
+            if ((0, fs_1.existsSync)(tarPath)) {
+                console.log('app.tar.gz file exists');
+            }
+            else {
+                console.log('app.tar.gz file does not exist');
+            }
             console.log(`Artifact tar path: ${tarPath}`);
             console.log(`Artifact root directory: ${rootDirectory}`);
             console.log(`Artifact file name: ${tarFileName}`);

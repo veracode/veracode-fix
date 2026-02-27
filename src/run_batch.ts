@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs, { existsSync } from 'fs';
 import { createFlawInfo } from './createFlawInfo';
 import { checkCWE } from './check_cwe_support';
 import { uploadBatch, checkFixBatch, pullBatchFixResults, getFilesPartOfPR } from './requests'
@@ -252,6 +252,13 @@ export async function runBatch( options:any, credentials:any){
         const tarPath = `${tempFolder}app.tar.gz`;
         const rootDirectory = path.dirname(tarPath) || process.cwd();
         const tarFileName = path.basename(tarPath);
+
+        if ( existsSync(tarPath) ){
+            console.log('app.tar.gz file exists');
+        }
+        else {
+            console.log('app.tar.gz file does not exist');
+        }
 
         console.log(`Artifact tar path: ${tarPath}`);
         console.log(`Artifact root directory: ${rootDirectory}`);
