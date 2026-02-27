@@ -267,7 +267,7 @@ export async function runBatch( options:any, credentials:any){
         const artifactName = 'veracode-fix-source';
         const artifact = require('@actions/artifact');
         const artifactClient = artifact.default;
-        const filesToUpload = ['app.tar.gz'];
+        const filesToUpload = [tarPath];
         await artifactClient.uploadArtifact(artifactName, filesToUpload, rootDirectory);
         console.log('Source tarball artifact uploaded');
     } catch (e) {
