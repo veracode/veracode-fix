@@ -165,7 +165,12 @@ export async function runBatch( options:any, credentials:any){
 
                                     // Use sourceFileFull for file operations
                                     const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-                                    fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
+
+                                    if (!fullPath || typeof fullPath !== 'string' || !fs.existsSync(fullPath)) {
+                                        console.log('Source file path is invalid or does not exist, skipping copy for this flaw.');
+                                    } else {
+                                        fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
+                                    }
                                 }
                             }
                         }
@@ -208,7 +213,12 @@ export async function runBatch( options:any, credentials:any){
 
                                 // Use sourceFileFull for file operations
                                 const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-                                fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName+flawInfo.sourceFile)
+
+                                if (!fullPath || typeof fullPath !== 'string' || !fs.existsSync(fullPath)) {
+                                    console.log('Source file path is invalid or does not exist, skipping copy for this flaw.');
+                                } else {
+                                    fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName+flawInfo.sourceFile)
+                                }
                             }
                         }
                         else {

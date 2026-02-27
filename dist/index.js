@@ -142122,7 +142122,12 @@ function runBatch(options, credentials) {
                                         }
                                         // Use sourceFileFull for file operations
                                         const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-                                        fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
+                                        if (!fullPath || typeof fullPath !== 'string' || !fs_1.default.existsSync(fullPath)) {
+                                            console.log('Source file path is invalid or does not exist, skipping copy for this flaw.');
+                                        }
+                                        else {
+                                            fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
+                                        }
                                     }
                                 }
                             }
@@ -142162,7 +142167,12 @@ function runBatch(options, credentials) {
                                     }
                                     // Use sourceFileFull for file operations
                                     const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-                                    fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
+                                    if (!fullPath || typeof fullPath !== 'string' || !fs_1.default.existsSync(fullPath)) {
+                                        console.log('Source file path is invalid or does not exist, skipping copy for this flaw.');
+                                    }
+                                    else {
+                                        fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
+                                    }
                                 }
                             }
                             else {
