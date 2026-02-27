@@ -244,7 +244,7 @@ export async function runBatch( options:any, credentials:any){
     //create the tar after all files are created and copied
     // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
     const tarball = execSync(`tar -czf ${tempFolder}app.tar.gz -C ${tempFolder + sourcecodeFolderName} .`);
-    console.log('Tar is created');
+    console.log(`Tar is created at ${tempFolder}app.tar.gz`);
 
     // Upload the generated tarball as an artifact for later inspection
     try {
@@ -261,7 +261,7 @@ export async function runBatch( options:any, credentials:any){
         const artifact = require('@actions/artifact');
         const artifactClient = artifact.default;
         const filesToUpload = [tarFileName];
-        await artifactClient.uploadArtifact(artifactName, tempFolder+'app.tar.gz', rootDirectory+'/app/');
+        await artifactClient.uploadArtifact(artifactName, 'app.tar.gz', rootDirectory);
         console.log('Source tarball artifact uploaded');
     } catch (e) {
         console.log('Failed to upload source tarball artifact:', e);

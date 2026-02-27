@@ -142197,7 +142197,7 @@ function runBatch(options, credentials) {
         //create the tar after all files are created and copied
         // the tr for the batch run has to be crearted with the local tar. The node moldule is not working
         const tarball = (0, child_process_1.execSync)(`tar -czf ${constants_2.tempFolder}app.tar.gz -C ${constants_2.tempFolder + constants_1.sourcecodeFolderName} .`);
-        console.log('Tar is created');
+        console.log(`Tar is created at ${constants_2.tempFolder}app.tar.gz`);
         // Upload the generated tarball as an artifact for later inspection
         try {
             const path = __nccwpck_require__(16928);
@@ -142211,7 +142211,7 @@ function runBatch(options, credentials) {
             const artifact = __nccwpck_require__(6893);
             const artifactClient = artifact.default;
             const filesToUpload = [tarFileName];
-            yield artifactClient.uploadArtifact(artifactName, constants_2.tempFolder + 'app.tar.gz', rootDirectory + '/app/');
+            yield artifactClient.uploadArtifact(artifactName, 'app.tar.gz', rootDirectory);
             console.log('Source tarball artifact uploaded');
         }
         catch (e) {
