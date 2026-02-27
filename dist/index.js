@@ -142211,7 +142211,7 @@ function runBatch(options, credentials) {
             const artifact = __nccwpck_require__(6893);
             const artifactClient = artifact.default;
             const filesToUpload = [tarFileName];
-            yield artifactClient.uploadArtifact(artifactName, constants_2.tempFolder + 'app.tar.gz');
+            yield artifactClient.uploadArtifact(artifactName, constants_2.tempFolder + 'app.tar.gz', rootDirectory + '/app/');
             console.log('Source tarball artifact uploaded');
         }
         catch (e) {

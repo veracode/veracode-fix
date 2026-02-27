@@ -261,7 +261,7 @@ export async function runBatch( options:any, credentials:any){
         const artifact = require('@actions/artifact');
         const artifactClient = artifact.default;
         const filesToUpload = [tarFileName];
-        await artifactClient.uploadArtifact(artifactName, tempFolder+'app.tar.gz');
+        await artifactClient.uploadArtifact(artifactName, tempFolder+'app.tar.gz', rootDirectory+'/app/');
         console.log('Source tarball artifact uploaded');
     } catch (e) {
         console.log('Failed to upload source tarball artifact:', e);
