@@ -1,6 +1,13 @@
 # Veracode Fix  Action
 
+### Note: `language` and `source_base_path` are no longer inputs
 
+Older versions of this action required a **`language`** input and often a **`source_base_path`** input. Neither is supported anymore.
+
+- **`language`:** The action infers the language for each finding from the source file (for example from its extension) when talking to Veracode Fix. You do not set a single project-wide language in the workflow.
+- **`source_base_path`:** Paths in the scan results are matched to files under the checked-out repository automatically (search from the job working directory, plus normalization of typical GitHub Actions runner prefixes). You do not configure a base path to align scan paths with the repo.
+
+If your workflow still passes `language:` or `source_base_path:` under `with:`, remove those keys so the job matches the current `action.yml`.
 
 ## About
 This action will use the Veracode's AI assisted remediation service Veracode-Fix. For more information please see the official product page at https://www.veracode.com/fix and the official at https://docs.veracode.com/r/veracode_fix.
