@@ -1,72 +1,106 @@
-   
-export async function rewritePath(options:any, filename:any){
-   
-    async function replacePath (rewrite:any, path:any){
-        const replaceValues = rewrite.split(":")
-        const newPath = path.replace(replaceValues[0],replaceValues[1])
+import fs from 'fs';
+import path from 'path';
 
-        if (options.DEBUG == 'true'){
-            console.log('#######- DEBUG MODE -#######')
-            console.log('rewritePath.ts')
-            console.log('Value 1:'+replaceValues[0]+' Value 2: '+replaceValues[1]+' old path: '+path)
-            console.log('new Path:'+newPath)
-            console.log('#######- DEBUG MODE -#######')
-        }
+interface Options {
+    DEBUG?: string;
+}
 
-        return newPath
+export async function rewritePath(options: Options, filename: string): Promise<string | undefined> {
+    // Legacy function - now just returns the original filename
+    // Auto-detection is handled in createFlawInfo.ts
+    return filename;
+}
+
+export async function searchFile(dir: string, filename: string, options: Options): Promise<string> {
+    if (options.DEBUG === 'true') {
+        console.log('#######- DEBUG MODE -#######');
+        console.log('rewritePath.ts');
+        console.log(`Searching for file: ${filename} in directory: ${dir}`);
+        console.log('#######- DEBUG MODE -#######');
     }
 
-    let filepath
+    let result: string | null = null;
+    const files = fs.readdirSync(dir);
 
-    if (options.source_base_path_1 || options.source_base_path_2 || options.source_base_path_3){
-        const orgPath1 = options.source_base_path_1.split(":")
-        const orgPath2 = options.source_base_path_2.split(":")
-        const orgPath3 = options.source_base_path_3.split(":")
+    for (const file of files) {
+        if (file === '.git' || file === '.metadata' || file === 'app') continue;
+        const fullPath = path.join(dir, file);
+        const stat = fs.statSync(fullPath);
 
-        if (options.DEBUG == 'true'){
-            console.log('#######- DEBUG MODE -#######')
-            console.log('rewritePath.ts')
-            console.log('path1: '+orgPath1[0]+':'+orgPath1[1]+' path2: '+orgPath2[0]+':'+orgPath2[1]+' path3: '+orgPath3[0]+':'+orgPath3[1])
-            console.log('#######- DEBUG MODE -#######')
-        }
-
-
-        if( filename.includes(orgPath1[0])) {
-            filepath = await replacePath(options.source_base_path_1, filename)
-
-            if (options.DEBUG == 'true'){
-                console.log('#######- DEBUG MODE -#######')
-                console.log('rewritePath.ts')
-                console.log('file path1: '+filename)
-                console.log('Filepath rewrite 1: '+filepath);
-                console.log('#######- DEBUG MODE -#######')
+        if (stat.isDirectory()) {
+            result = await searchFile(fullPath, filename, options);
+            // Only stop searching if we actually found the file
+            if (result) {
+                break;
             }
+        } else if (file === filename) {
+            console.log(`File found: ${fullPath}`);
+            result = fullPath;
+            break;
+        } else if (options.DEBUG === 'true') {
+            // Only log non-matching files in debug mode to avoid noisy logs
+            console.log(`File checked and not matched: ${fullPath}`);
         }
-        else if (filename.includes(orgPath2[0])){
-            filepath = await replacePath(options.source_base_path_2, filename)
-
-            if (options.DEBUG == 'true'){
-                console.log('#######- DEBUG MODE -#######')
-                console.log('rewritePath.ts')
-                console.log('file path2: '+filename)
-                console.log('Filepath rewrite 2: '+filepath);
-                console.log('#######- DEBUG MODE -#######')
-            }
-        }
-        else if (filename.includes(orgPath3[0])){
-            filepath = await replacePath(options.source_base_path_3, filename)
-
-            if (options.DEBUG == 'true'){
-                console.log('#######- DEBUG MODE -#######')
-                console.log('rewritePath.ts')
-                console.log('file path3: '+filename)
-                console.log('Filepath rewrite 3: '+filepath);
-                console.log('#######- DEBUG MODE -#######')
-            }
-        }
-        console.log('Rewritten Filepath: '+filepath);
-    } else { // if no source_base_path is provided, return the original path
-        filepath = filename
     }
-    return filepath
+    
+    if (options.DEBUG === 'true') {
+        console.log('#######- DEBUG MODE -#######');
+        console.log('rewritePath.ts');
+        console.log(`Result: ${result}`);
+        console.log('#######- DEBUG MODE -#######');
+    }
+    
+    // If no file was found in the entire directory tree, return empty string
+    if (!result) {
+        if (options.DEBUG === 'true') {
+            console.log('rewritePath.ts');
+            console.log(`File ${filename} not found in directory tree starting at: ${dir}`);
+        }
+        return '';
+    }
+
+    return result;
+}
+
+/**
+ * Normalizes file paths by removing GitHub Actions runner working directory prefix
+ * and returning only the relative path from the repository root
+ */
+export function normalizePathForDisplay(fullPath: string, repositoryRoot?: string): string {
+    if (!fullPath) {
+        return fullPath;
+    }
+
+    // If repositoryRoot is provided, use it as the base
+    if (repositoryRoot) {
+        const relativePath = path.relative(repositoryRoot, fullPath);
+        return relativePath.startsWith('..') ? fullPath : relativePath;
+    }
+
+    // Try to detect GitHub Actions runner paths
+    const githubActionsPatterns = [
+        /^\/home\/runner\/work\/[^\/]+\/[^\/]+\/(.+)$/,  // /home/runner/work/repo-owner/repo-name/...
+        /^\/github\/workspace\/(.+)$/,                   // /github/workspace/...
+        /^\/Users\/[^\/]+\/work\/[^\/]+\/[^\/]+\/(.+)$/ // /Users/username/work/repo-owner/repo-name/...
+    ];
+
+    for (const pattern of githubActionsPatterns) {
+        const match = fullPath.match(pattern);
+        if (match) {
+            return match[1];
+        }
+    }
+
+    // If no pattern matches, try to find the repository root by looking for .git directory
+    let currentDir = path.dirname(fullPath);
+    while (currentDir !== path.dirname(currentDir)) {
+        if (fs.existsSync(path.join(currentDir, '.git'))) {
+            const relativePath = path.relative(currentDir, fullPath);
+            return relativePath;
+        }
+        currentDir = path.dirname(currentDir);
+    }
+
+    // If all else fails, return the original path
+    return fullPath;
 }
