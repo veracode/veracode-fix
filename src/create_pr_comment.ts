@@ -120,7 +120,7 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
         commentBody = commentBody+'***Breaking Flaws identified in code!***\n'
         commentBody = commentBody+'\n'
         commentBody = commentBody+'Fixes for '+keys[i]+':\n'
-        commentBody = commentBody +'Falws found for this file:\n'
+        commentBody = commentBody +'Flaws found for this file:\n'
         const flawsCount = batchFixResults.results[keys[i]].flaws.length
         for (let j = 0; j < flawsCount; j++) {
             const issueId = batchFixResults.results[keys[i]].flaws[j].issueId;
