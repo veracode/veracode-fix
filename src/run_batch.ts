@@ -280,16 +280,21 @@ export async function runBatch( options:any, credentials:any){
     const checkBatchFixStatus = await checkFixBatch(credentials, projectID, options)
 
     if ( checkBatchFixStatus == 1 ){
-        console.log('Batch Fixs are ready to be reviewed')
+        console.log('Batch Fixes are ready to be reviewed')
         const batchFixResults = await pullBatchFixResults(credentials, projectID, options)
-        
-        
-        filterEmptyPatchesFromBatch(batchFixResults, options);
-        if ( batchFixResults == 0 ){
+
+        // Validate response structure
+        if ( batchFixResults == 0 || !batchFixResults ){
             console.log('Something went wrong, no fixes generated')
         }
+        else if (!batchFixResults.results || typeof batchFixResults.results !== 'object') {
+            console.log('Invalid batch results structure received');
+            console.log('Expected structure: { results: {...} }');
+            console.log('Received:', batchFixResults);
+        }
         else {
-            console.log('Fixs pulled from batch fix')
+            filterEmptyPatchesFromBatch(batchFixResults, options);
+            console.log('Fixes pulled from batch fix')
 
             if (options.DEBUG == 'true'){
                 console.log('#######- DEBUG MODE -#######')
@@ -299,13 +304,26 @@ export async function runBatch( options:any, credentials:any){
                 console.log('#######- DEBUG MODE -#######')
             }
 
+            // Count files and fixes for logging
+            let filesWithFixes = 0;
+            let totalFixes = 0;
+            if (batchFixResults.results) {
+                filesWithFixes = Object.keys(batchFixResults.results).length;
+                Object.values(batchFixResults.results).forEach((fileResult: any) => {
+                    if (fileResult.patch && fileResult.patch.length > 0) {
+                        totalFixes++;
+                    }
+                });
+            }
+            console.log(`📊 Batch Results Summary: ${filesWithFixes} files with ${totalFixes} fixes`);
+
             // Check if we should use GitHub App mode (declare at broader scope)
             let shouldUseGitHubApp = false
             let owner: string | undefined
             let repo: string | undefined
             let prNumber: number | undefined
             let token: string | undefined
-            
+
             if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
                 const useGitHubApp = options.useGitHubApp || 'auto'
                 const context = github.context
@@ -314,7 +332,7 @@ export async function runBatch( options:any, credentials:any){
                 repo = repository[1]
                 prNumber = context.payload.pull_request?.number
                 token = options.token
-                
+
                 if (useGitHubApp === 'true') {
                     // Force GitHub App mode
                     console.log('GitHub App mode enabled')
@@ -344,7 +362,7 @@ export async function runBatch( options:any, credentials:any){
 
                 if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
                     console.log('This is a PR - using GitHub App mode check from above')
-                    
+
                     if (shouldUseGitHubApp) {
                         // Use GitHub App mode - create app comment with fix suggestions
                         console.log('Creating GitHub App comment with fix suggestions...')
@@ -353,16 +371,12 @@ export async function runBatch( options:any, credentials:any){
                             let totalFixSuggestions = 0;
                             if (batchFixResults.results) {
                                 Object.values(batchFixResults.results).forEach((fileResult: any) => {
-                                    if (fileResult.flaws) {
-                                        fileResult.flaws.forEach((flaw: any) => {
-                                            if (flaw.patches && flaw.patches.length > 0) {
-                                                totalFixSuggestions++;
-                                            }
-                                        });
+                                    if (fileResult.patch && fileResult.patch.length > 0) {
+                                        totalFixSuggestions++;
                                     }
                                 });
                             }
-                            
+
                             if (owner && repo && prNumber && token) {
                                 await createVeracodeAppComment(token, owner, repo, prNumber, jsonFindings.length, totalFixSuggestions, options.file, options, batchFixResults)
                             } else {
@@ -379,8 +393,8 @@ export async function runBatch( options:any, credentials:any){
                         console.log('Using traditional PR comments')
                         createPRCommentBatch(batchFixResults, options, flawArray)
                     }
-                    
-                    console.log('This is a PR - create a check annotations')
+
+                    console.log('This is a PR - create check annotations')
                     //create a check run
                     let checkRunID = await createCheckRun(options)
                     options['checkRunID'] = checkRunID
@@ -389,7 +403,7 @@ export async function runBatch( options:any, credentials:any){
                     const checkRun = await updateCheckRunClose(options, options.checkRunID)
                 }
                 else {
-                    console.log('... but wea are not running on a pull request')
+                    console.log('... but we are not running on a pull request')
                 }
             }
 
