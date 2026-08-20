@@ -20,6 +20,7 @@ The action will also automatically use the first code suggested provied by Verac
 
 Veracode Fix supports the a few languagess and CWE's right now, please review the official documentation at https://docs.veracode.com/r/About_Veracode_Fix.
 
+
 ## Usage
 
 * Required
