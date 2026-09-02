@@ -388,6 +388,18 @@ export async function runBatch( options:any, credentials:any){
                                     }
                                 });
                             }
+                            // Handle both 'results' and 'batchResults' property names
+                            if (!totalFixSuggestions && batchFixResults.batchResults) {
+                                Object.values(batchFixResults.batchResults).forEach((fileResult: any) => {
+                                    if (fileResult.flaws) {
+                                        fileResult.flaws.forEach((flaw: any) => {
+                                            if (flaw.patches && flaw.patches.length > 0) {
+                                                totalFixSuggestions++;
+                                            }
+                                        });
+                                    }
+                                });
+                            }
                             
                             if (owner && repo && prNumber && token) {
                                 await createVeracodeAppComment(token, owner, repo, prNumber, jsonFindings.length, totalFixSuggestions, options.file, options, batchFixResults)
@@ -422,10 +434,11 @@ export async function runBatch( options:any, credentials:any){
             if ( options.codeSuggestion == 'true' ){
                 console.log('Code suggestion is enabled')
 
-                if (!batchFixResults || !batchFixResults.results || typeof batchFixResults.results !== 'object') {
+                const resultsObj = batchFixResults.results || batchFixResults.batchResults;
+                if (!batchFixResults || !resultsObj || typeof resultsObj !== 'object') {
                     console.log('No results found in batch fix results, skipping code suggestions')
                 } else {
-                    const resultsKeys = Object.keys(batchFixResults.results).filter(key => key !== null && key !== undefined);
+                    const resultsKeys = Object.keys(resultsObj).filter(key => key !== null && key !== undefined);
                     const batchFixResultsCount = resultsKeys.length;
 
                     console.log('Number of files with fixes: '+batchFixResultsCount)
@@ -441,7 +454,7 @@ export async function runBatch( options:any, credentials:any){
             // Skip PR creation when using GitHub App mode
             if ( options.createPR == 'true' && !shouldUseGitHubApp ){
                 console.log('Creating PRs is enabled')
-                if (batchFixResults && batchFixResults.results && typeof batchFixResults.results === 'object') {
+                if (batchFixResults && (batchFixResults.results || batchFixResults.batchResults) && typeof (batchFixResults.results || batchFixResults.batchResults) === 'object') {
                     const createPr = await createPR(batchFixResults, options, flawArray)
                 } else {
                     console.log('No valid batch fix results to create PR from')
@@ -457,7 +470,8 @@ export async function runBatch( options:any, credentials:any){
 
     }
     function filterEmptyPatchesFromBatch(batchFixResults: any, options: any): void {
-        if (!batchFixResults || !batchFixResults.results || typeof batchFixResults.results !== 'object') {
+        const resultsObj = batchFixResults.results || batchFixResults.batchResults;
+        if (!batchFixResults || !resultsObj || typeof resultsObj !== 'object') {
             if (options.DEBUG == 'true') {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('No results to filter');
@@ -466,16 +480,16 @@ export async function runBatch( options:any, credentials:any){
             return;
         }
 
-        for (let key in batchFixResults.results) {
-            if (batchFixResults.results.hasOwnProperty(key)) {
-                const result = batchFixResults.results[key];
+        for (let key in resultsObj) {
+            if (resultsObj.hasOwnProperty(key)) {
+                const result = resultsObj[key];
                 if (result && result.patch && Array.isArray(result.patch) && result.patch.length === 0) {
                     if (options.DEBUG == 'true') {
                         console.log('#######- DEBUG MODE -#######');
                         console.log('Removing files with empty patch from batchfix results');
                         console.log('#######- DEBUG MODE -#######');
                     }
-                    delete batchFixResults.results[key];
+                    delete resultsObj[key];
                 }
             }
         }

@@ -18,9 +18,12 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
         baseRef = process.env.GITHUB_HEAD_REF
     }
     else {
-        baseRef = process.env.GITHUB_REF_NAME 
+        baseRef = process.env.GITHUB_REF_NAME
     }
     const baseSha:any = process.env.GITHUB_SHA
+
+    // Handle both 'results' and 'batchResults' property names
+    const resultsObj = fixResults.results || fixResults.batchResults;
 
     if (options.DEBUG == 'true'){
         console.log('#######- DEBUG MODE -#######')
@@ -81,16 +84,16 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
     prCommentBody = prCommentBody+'\n'
     
 
-    const batchFixResultsCount = Object.keys(fixResults.results).length;
+    const batchFixResultsCount = Object.keys(resultsObj).length;
 
     console.log('Number of files with fixes: '+batchFixResultsCount)
     
     for (let i = 0; i < batchFixResultsCount; i++) {
-        let keys = Object.keys(fixResults.results);
+        let keys = Object.keys(resultsObj);
         console.log('Patching file: '+keys[i])
 
         const originalContent = await fs.readFile(keys[i], 'utf-8');
-        const patch = fixResults.results[keys[i]].patch[0]
+        const patch = resultsObj[keys[i]].patch[0]
 
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
@@ -147,9 +150,9 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
         //PR body content for each file
         prCommentBody = prCommentBody+'Fixes for '+keys[i]+':\n'
         prCommentBody = prCommentBody +'Flaws found for this file:\n'
-        const flawsCount = fixResults.results[keys[i]].flaws.length
+        const flawsCount = resultsObj[keys[i]].flaws.length
         for (let j = 0; j < flawsCount; j++) {
-            const issueId = fixResults.results[keys[i]].flaws[j].issueId;
+            const issueId = resultsObj[keys[i]].flaws[j].issueId;
             let flaw;
             for (let key in flawArray) {
                 flaw = flawArray[key].find((flaw: any) => flaw.issue_id === issueId);
@@ -162,7 +165,7 @@ export async function createPR(fixResults:any, options:any, flawArray:any){
                 issue_type = flaw.issue_type;
                 severity = flaw.severity;
             } 
-            prCommentBody = prCommentBody +'CWE '+fixResults.results[keys[i]].flaws[j].CWEId+' - '+issue_type+' - Severity '+severity+' on line '+fixResults.results[keys[i]].flaws[j].line+' for issue '+fixResults.results[keys[i]].flaws[j].issueId+'\n'
+            prCommentBody = prCommentBody +'CWE '+resultsObj[keys[i]].flaws[j].CWEId+' - '+issue_type+' - Severity '+severity+' on line '+resultsObj[keys[i]].flaws[j].line+' for issue '+resultsObj[keys[i]].flaws[j].issueId+'\n'
         }
 
         if (options.DEBUG == 'true'){

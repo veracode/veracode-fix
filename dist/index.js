@@ -139885,6 +139885,8 @@ function createPR(fixResults, options, flawArray) {
             baseRef = process.env.GITHUB_REF_NAME;
         }
         const baseSha = process.env.GITHUB_SHA;
+        // Handle both 'results' and 'batchResults' property names
+        const resultsObj = fixResults.results || fixResults.batchResults;
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('create_pr.ts - createPR()');
@@ -139934,13 +139936,13 @@ function createPR(fixResults, options, flawArray) {
         prCommentBody = prCommentBody + '> [!CAUTION]\n';
         prCommentBody = prCommentBody + '***Breaking Flaws identified in code!***\n';
         prCommentBody = prCommentBody + '\n';
-        const batchFixResultsCount = Object.keys(fixResults.results).length;
+        const batchFixResultsCount = Object.keys(resultsObj).length;
         console.log('Number of files with fixes: ' + batchFixResultsCount);
         for (let i = 0; i < batchFixResultsCount; i++) {
-            let keys = Object.keys(fixResults.results);
+            let keys = Object.keys(resultsObj);
             console.log('Patching file: ' + keys[i]);
             const originalContent = yield fs.readFile(keys[i], 'utf-8');
-            const patch = fixResults.results[keys[i]].patch[0];
+            const patch = resultsObj[keys[i]].patch[0];
             if (options.DEBUG == 'true') {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('create_pr.ts - apply patch');
@@ -139988,9 +139990,9 @@ function createPR(fixResults, options, flawArray) {
             //PR body content for each file
             prCommentBody = prCommentBody + 'Fixes for ' + keys[i] + ':\n';
             prCommentBody = prCommentBody + 'Flaws found for this file:\n';
-            const flawsCount = fixResults.results[keys[i]].flaws.length;
+            const flawsCount = resultsObj[keys[i]].flaws.length;
             for (let j = 0; j < flawsCount; j++) {
-                const issueId = fixResults.results[keys[i]].flaws[j].issueId;
+                const issueId = resultsObj[keys[i]].flaws[j].issueId;
                 let flaw;
                 for (let key in flawArray) {
                     flaw = flawArray[key].find((flaw) => flaw.issue_id === issueId);
@@ -140003,7 +140005,7 @@ function createPR(fixResults, options, flawArray) {
                     issue_type = flaw.issue_type;
                     severity = flaw.severity;
                 }
-                prCommentBody = prCommentBody + 'CWE ' + fixResults.results[keys[i]].flaws[j].CWEId + ' - ' + issue_type + ' - Severity ' + severity + ' on line ' + fixResults.results[keys[i]].flaws[j].line + ' for issue ' + fixResults.results[keys[i]].flaws[j].issueId + '\n';
+                prCommentBody = prCommentBody + 'CWE ' + resultsObj[keys[i]].flaws[j].CWEId + ' - ' + issue_type + ' - Severity ' + severity + ' on line ' + resultsObj[keys[i]].flaws[j].line + ' for issue ' + resultsObj[keys[i]].flaws[j].issueId + '\n';
             }
             if (options.DEBUG == 'true') {
                 console.log('#######- DEBUG MODE -#######');
@@ -142387,6 +142389,18 @@ function runBatch(options, credentials) {
                                         }
                                     });
                                 }
+                                // Handle both 'results' and 'batchResults' property names
+                                if (!totalFixSuggestions && batchFixResults.batchResults) {
+                                    Object.values(batchFixResults.batchResults).forEach((fileResult) => {
+                                        if (fileResult.flaws) {
+                                            fileResult.flaws.forEach((flaw) => {
+                                                if (flaw.patches && flaw.patches.length > 0) {
+                                                    totalFixSuggestions++;
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
                                 if (owner && repo && prNumber && token) {
                                     yield (0, pr_comment_handler_1.createVeracodeAppComment)(token, owner, repo, prNumber, jsonFindings.length, totalFixSuggestions, options.file, options, batchFixResults);
                                 }
@@ -142420,11 +142434,12 @@ function runBatch(options, credentials) {
                 }
                 if (options.codeSuggestion == 'true') {
                     console.log('Code suggestion is enabled');
-                    if (!batchFixResults || !batchFixResults.results || typeof batchFixResults.results !== 'object') {
+                    const resultsObj = batchFixResults.results || batchFixResults.batchResults;
+                    if (!batchFixResults || !resultsObj || typeof resultsObj !== 'object') {
                         console.log('No results found in batch fix results, skipping code suggestions');
                     }
                     else {
-                        const resultsKeys = Object.keys(batchFixResults.results).filter(key => key !== null && key !== undefined);
+                        const resultsKeys = Object.keys(resultsObj).filter(key => key !== null && key !== undefined);
                         const batchFixResultsCount = resultsKeys.length;
                         console.log('Number of files with fixes: ' + batchFixResultsCount);
                         let commentBody;
@@ -142437,7 +142452,7 @@ function runBatch(options, credentials) {
                 // Skip PR creation when using GitHub App mode
                 if (options.createPR == 'true' && !shouldUseGitHubApp) {
                     console.log('Creating PRs is enabled');
-                    if (batchFixResults && batchFixResults.results && typeof batchFixResults.results === 'object') {
+                    if (batchFixResults && (batchFixResults.results || batchFixResults.batchResults) && typeof (batchFixResults.results || batchFixResults.batchResults) === 'object') {
                         const createPr = yield (0, create_pr_1.createPR)(batchFixResults, options, flawArray);
                     }
                     else {
@@ -142453,7 +142468,8 @@ function runBatch(options, credentials) {
             console.log('Batch Fix failed');
         }
         function filterEmptyPatchesFromBatch(batchFixResults, options) {
-            if (!batchFixResults || !batchFixResults.results || typeof batchFixResults.results !== 'object') {
+            const resultsObj = batchFixResults.results || batchFixResults.batchResults;
+            if (!batchFixResults || !resultsObj || typeof resultsObj !== 'object') {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
                     console.log('No results to filter');
@@ -142461,16 +142477,16 @@ function runBatch(options, credentials) {
                 }
                 return;
             }
-            for (let key in batchFixResults.results) {
-                if (batchFixResults.results.hasOwnProperty(key)) {
-                    const result = batchFixResults.results[key];
+            for (let key in resultsObj) {
+                if (resultsObj.hasOwnProperty(key)) {
+                    const result = resultsObj[key];
                     if (result && result.patch && Array.isArray(result.patch) && result.patch.length === 0) {
                         if (options.DEBUG == 'true') {
                             console.log('#######- DEBUG MODE -#######');
                             console.log('Removing files with empty patch from batchfix results');
                             console.log('#######- DEBUG MODE -#######');
                         }
-                        delete batchFixResults.results[key];
+                        delete resultsObj[key];
                     }
                 }
             }
