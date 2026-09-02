@@ -142414,24 +142414,29 @@ function runBatch(options, credentials) {
                 }
                 if (options.codeSuggestion == 'true') {
                     console.log('Code suggestion is enabled');
-                    if (!batchFixResults || !batchFixResults.results) {
+                    if (!batchFixResults || !batchFixResults.results || typeof batchFixResults.results !== 'object') {
                         console.log('No results found in batch fix results, skipping code suggestions');
                     }
                     else {
-                        const batchFixResultsCount = Object.keys(batchFixResults.results).length;
+                        const resultsKeys = Object.keys(batchFixResults.results).filter(key => key !== null && key !== undefined);
+                        const batchFixResultsCount = resultsKeys.length;
                         console.log('Number of files with fixes: ' + batchFixResultsCount);
                         let commentBody;
                         for (let i = 0; i < batchFixResultsCount; i++) {
-                            let keys = Object.keys(batchFixResults.results);
-                            console.log('Creating suggestions for ' + keys[i]);
-                            //const codeSuggestion = addCodeSuggestion(batchFixResults, keys[i], options)
+                            console.log('Creating suggestions for ' + resultsKeys[i]);
+                            //const codeSuggestion = addCodeSuggestion(batchFixResults, resultsKeys[i], options)
                         }
                     }
                 }
                 // Skip PR creation when using GitHub App mode
                 if (options.createPR == 'true' && !shouldUseGitHubApp) {
                     console.log('Creating PRs is enabled');
-                    const createPr = yield (0, create_pr_1.createPR)(batchFixResults, options, flawArray);
+                    if (batchFixResults && batchFixResults.results && typeof batchFixResults.results === 'object') {
+                        const createPr = yield (0, create_pr_1.createPR)(batchFixResults, options, flawArray);
+                    }
+                    else {
+                        console.log('No valid batch fix results to create PR from');
+                    }
                 }
                 else if (options.createPR == 'true' && shouldUseGitHubApp) {
                     console.log('Skipping PR creation - using GitHub App mode');
@@ -142442,7 +142447,7 @@ function runBatch(options, credentials) {
             console.log('Batch Fix failed');
         }
         function filterEmptyPatchesFromBatch(batchFixResults, options) {
-            if (!batchFixResults || !batchFixResults.results) {
+            if (!batchFixResults || !batchFixResults.results || typeof batchFixResults.results !== 'object') {
                 if (options.DEBUG == 'true') {
                     console.log('#######- DEBUG MODE -#######');
                     console.log('No results to filter');
@@ -142451,14 +142456,16 @@ function runBatch(options, credentials) {
                 return;
             }
             for (let key in batchFixResults.results) {
-                let patch = batchFixResults.results[key].patch;
-                if (patch.length == 0) {
-                    if (options.DEBUG == 'true') {
-                        console.log('#######- DEBUG MODE -#######');
-                        console.log('Removing files with empty patch from batchfix results');
-                        console.log('#######- DEBUG MODE -#######');
+                if (batchFixResults.results.hasOwnProperty(key)) {
+                    const result = batchFixResults.results[key];
+                    if (result && result.patch && Array.isArray(result.patch) && result.patch.length === 0) {
+                        if (options.DEBUG == 'true') {
+                            console.log('#######- DEBUG MODE -#######');
+                            console.log('Removing files with empty patch from batchfix results');
+                            console.log('#######- DEBUG MODE -#######');
+                        }
+                        delete batchFixResults.results[key];
                     }
-                    delete batchFixResults.results[key];
                 }
             }
         }
