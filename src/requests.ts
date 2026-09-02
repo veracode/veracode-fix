@@ -448,6 +448,10 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any, pre
 
             await new Promise(resolve => setTimeout(resolve, 10000));
             return await makeRequestBatch(credentials, projectId, options, currentProcessedResults, nextStagnantIterations);
+        } else if (response.data.resultsJson === true || response.data.results?.json === true) {
+            // Final results.json is ready (regardless of resultsCount which may be 0 due to final merge)
+            console.log('Final results.json is available. Proceeding to fetch results.');
+            return 1;
         } else {
             // hasMore is false: normal completion
             return 1;

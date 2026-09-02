@@ -141631,6 +141631,7 @@ function checkFixBatch(platform, projectId, options) {
 }
 function makeRequestBatch(credentials_1, projectId_1, options_1) {
     return __awaiter(this, arguments, void 0, function* (credentials, projectId, options, previousProcessedResults = 0, stagnantIterations = 0) {
+        var _a;
         const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
         const authHeader = (0, auth_1.calculateAuthorizationHeader)({
             id: platform.cleanedID,
@@ -141748,6 +141749,11 @@ function makeRequestBatch(credentials_1, projectId_1, options_1) {
                 }
                 yield new Promise(resolve => setTimeout(resolve, 10000));
                 return yield makeRequestBatch(credentials, projectId, options, currentProcessedResults, nextStagnantIterations);
+            }
+            else if (response.data.resultsJson === true || ((_a = response.data.results) === null || _a === void 0 ? void 0 : _a.json) === true) {
+                // Final results.json is ready (regardless of resultsCount which may be 0 due to final merge)
+                console.log('Final results.json is available. Proceeding to fetch results.');
+                return 1;
             }
             else {
                 // hasMore is false: normal completion
