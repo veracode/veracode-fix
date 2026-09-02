@@ -142370,7 +142370,7 @@ function runBatch(options, credentials) {
                             try {
                                 // Calculate actual fix suggestions count from batch results
                                 let totalFixSuggestions = 0;
-                                if (batchFixResults.results) {
+                                if (batchFixResults && batchFixResults.results) {
                                     Object.values(batchFixResults.results).forEach((fileResult) => {
                                         if (fileResult.flaws) {
                                             fileResult.flaws.forEach((flaw) => {
@@ -142414,13 +142414,18 @@ function runBatch(options, credentials) {
                 }
                 if (options.codeSuggestion == 'true') {
                     console.log('Code suggestion is enabled');
-                    const batchFixResultsCount = Object.keys(batchFixResults.results).length;
-                    console.log('Number of files with fixes: ' + batchFixResultsCount);
-                    let commentBody;
-                    for (let i = 0; i < batchFixResultsCount; i++) {
-                        let keys = Object.keys(batchFixResults.results);
-                        console.log('Creating suggestions for ' + keys[i]);
-                        //const codeSuggestion = addCodeSuggestion(batchFixResults, keys[i], options)
+                    if (!batchFixResults || !batchFixResults.results) {
+                        console.log('No results found in batch fix results, skipping code suggestions');
+                    }
+                    else {
+                        const batchFixResultsCount = Object.keys(batchFixResults.results).length;
+                        console.log('Number of files with fixes: ' + batchFixResultsCount);
+                        let commentBody;
+                        for (let i = 0; i < batchFixResultsCount; i++) {
+                            let keys = Object.keys(batchFixResults.results);
+                            console.log('Creating suggestions for ' + keys[i]);
+                            //const codeSuggestion = addCodeSuggestion(batchFixResults, keys[i], options)
+                        }
                     }
                 }
                 // Skip PR creation when using GitHub App mode
@@ -142437,6 +142442,14 @@ function runBatch(options, credentials) {
             console.log('Batch Fix failed');
         }
         function filterEmptyPatchesFromBatch(batchFixResults, options) {
+            if (!batchFixResults || !batchFixResults.results) {
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('No results to filter');
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                return;
+            }
             for (let key in batchFixResults.results) {
                 let patch = batchFixResults.results[key].patch;
                 if (patch.length == 0) {
