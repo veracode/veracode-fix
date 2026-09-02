@@ -23,7 +23,7 @@ export async function searchFile(dir: string, filename: string, options: Options
     const files = fs.readdirSync(dir);
 
     for (const file of files) {
-        if (file === '.git' || file === '.metadata' || file === 'app') continue;
+        if (file === '.git' || file === '.metadata') continue;
         const fullPath = path.join(dir, file);
         const stat = fs.statSync(fullPath);
 

@@ -141901,7 +141901,7 @@ function searchFile(dir, filename, options) {
         let result = null;
         const files = fs_1.default.readdirSync(dir);
         for (const file of files) {
-            if (file === '.git' || file === '.metadata' || file === 'app')
+            if (file === '.git' || file === '.metadata')
                 continue;
             const fullPath = path_1.default.join(dir, file);
             const stat = fs_1.default.statSync(fullPath);
