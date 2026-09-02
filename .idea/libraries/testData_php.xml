@@ -1,0 +1,20 @@
+<component name="libraryTable">
+  <library name="testData-php">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/cd-gap.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/class-trailing-null.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/looks-like-zip64.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/class.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/split.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/nosig.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/trail.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/cd-truncated.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/wrong-cd-start-disk.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/class-trailing-slash.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/empty.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-php/wrong-central-entry-sig.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

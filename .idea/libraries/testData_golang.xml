@@ -1,0 +1,20 @@
+<component name="libraryTable">
+  <library name="testData-golang">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/winxp.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/test.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/symlink.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/go-no-datadesc-sig.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/go-with-datadesc-sig.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/zip64-2.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/test-trailing-junk.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/zip64.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/readme.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/unix.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/crc32-not-streamed.zip!/" />
+      <root url="jar://$PROJECT_DIR$/node_modules/unzip-stream/testData-golang/dd.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

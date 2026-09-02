@@ -5,7 +5,7 @@ import { uploadBatch, checkFixBatch, pullBatchFixResults, getFilesPartOfPR } fro
 import { createPRCommentBatch } from './create_pr_comment'
 import { execSync }  from 'child_process';
 import { createCheckRun, updateCheckRunClose, updateCheckRunUpdateBatch } from './checkRun';
-import { rewritePath } from './rewritePath'
+import { rewritePath, searchFile } from './rewritePath'
 import { createPR } from './create_pr'
 import { detectLanguageFromFile, isLanguageSupported } from './languageDetection';
 
@@ -147,9 +147,9 @@ export async function runBatch( options:any, credentials:any){
                                 //write flaw info and source file
                                 const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
                                 const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
-                                console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}`+flawFoldername+'/'+flawFilenane)
+                                console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}flaws/`+flawFoldername+'/'+flawFilenane)
                                 fs.mkdirSync(tempFolder + sourcecodeFolderName + 'flaws/'+flawFoldername, { recursive: true });
-                                fs.writeFileSync(tempFolder + sourcecodeFolderName + '/flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
+                                fs.writeFileSync(tempFolder + sourcecodeFolderName + 'flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
 
                                 if (fs.existsSync(tempFolder + sourcecodeFolderName + flawInfo.sourceFile)) {
                                     console.log('File exists nothing to do');
@@ -166,8 +166,21 @@ export async function runBatch( options:any, credentials:any){
                                     // Use sourceFileFull for file operations
                                     const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
 
-                                    if (!fullPath || typeof fullPath !== 'string' || !fs.existsSync(fullPath)) {
-                                        console.log('Source file path is invalid or does not exist, skipping copy for this flaw.');
+                                    if (!fullPath || typeof fullPath !== 'string') {
+                                        console.log('Source file path is invalid, skipping copy for this flaw.');
+                                    } else if (!fs.existsSync(fullPath)) {
+                                        console.log(`Source file does not exist at: ${fullPath}, attempting to locate it...`);
+                                        // Try searching from current working directory if the full path doesn't exist
+                                        const filename = flawInfo.sourceFile.split('/').pop();
+                                        if (filename) {
+                                            const searchPath = await searchFile(process.cwd(), filename, options);
+                                            if (searchPath && fs.existsSync(searchPath)) {
+                                                console.log(`Found file at alternative location: ${searchPath}`);
+                                                fs.copyFileSync(searchPath, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
+                                            } else {
+                                                console.log(`Could not find file ${filename} in repository`);
+                                            }
+                                        }
                                     } else {
                                         fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
                                     }
@@ -191,11 +204,11 @@ export async function runBatch( options:any, credentials:any){
 
                     if (await checkCWE(initialFlawInfo, options, true) == true){
                         if (typeof flawInfo !== 'string') {
-                        
+
                             //write flaw info and source file
                             const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
                             const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
-                            console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}`+flawFoldername+'/'+flawFilenane)
+                            console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}flaws/`+flawFoldername+'/'+flawFilenane)
                             fs.mkdirSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername, { recursive: true });
                             fs.writeFileSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
 
@@ -214,8 +227,21 @@ export async function runBatch( options:any, credentials:any){
                                 // Use sourceFileFull for file operations
                                 const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
 
-                                if (!fullPath || typeof fullPath !== 'string' || !fs.existsSync(fullPath)) {
-                                    console.log('Source file path is invalid or does not exist, skipping copy for this flaw.');
+                                if (!fullPath || typeof fullPath !== 'string') {
+                                    console.log('Source file path is invalid, skipping copy for this flaw.');
+                                } else if (!fs.existsSync(fullPath)) {
+                                    console.log(`Source file does not exist at: ${fullPath}, attempting to locate it...`);
+                                    // Try searching from current working directory if the full path doesn't exist
+                                    const filename = flawInfo.sourceFile.split('/').pop();
+                                    if (filename) {
+                                        const searchPath = await searchFile(process.cwd(), filename, options);
+                                        if (searchPath && fs.existsSync(searchPath)) {
+                                            console.log(`Found file at alternative location: ${searchPath}`);
+                                            fs.copyFileSync(searchPath, tempFolder + sourcecodeFolderName+flawInfo.sourceFile);
+                                        } else {
+                                            console.log(`Could not find file ${filename} in repository`);
+                                        }
+                                    }
                                 } else {
                                     fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName+flawInfo.sourceFile)
                                 }
