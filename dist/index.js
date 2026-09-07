@@ -139887,6 +139887,11 @@ function createPR(fixResults, options, flawArray) {
         const baseSha = process.env.GITHUB_SHA;
         // Handle both 'results' and 'batchResults' property names
         const resultsObj = fixResults.results || fixResults.batchResults;
+        // Validate that there are fixes to apply
+        if (!resultsObj || typeof resultsObj !== 'object' || Object.keys(resultsObj).length === 0) {
+            console.log('No valid fixes to create PR from - aborting PR creation');
+            return;
+        }
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('create_pr.ts - createPR()');
@@ -139908,145 +139913,166 @@ function createPR(fixResults, options, flawArray) {
         const timestamp = new Date().getTime();
         const branchName = 'Veracode-fix-bot-' + baseSha + '-' + timestamp;
         console.log('Branch Name: ' + branchName);
-        const createBranch = yield octokit.request('POST /repos/' + (owner) + '/' + (repoName) + '/git/refs', {
-            owner: owner,
-            repo: repoName,
-            ref: 'refs/heads/' + branchName,
-            sha: baseSha,
-            headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
-        });
-        const branchSha = createBranch.data.object.sha;
-        if (options.DEBUG == 'true') {
-            console.log('#######- DEBUG MODE -#######');
-            console.log('create_pr.ts - createPR()');
-            console.log('Branch created: ');
-            console.log(createBranch);
-            console.log('Branch SHA: ');
-            console.log(branchSha);
-            console.log('Fix Results: ');
-            console.log(fixResults);
-            console.log('#######- DEBUG MODE -#######');
-        }
-        //start body of PR comment
-        let prCommentBody;
-        prCommentBody = '![](https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg)\n';
-        prCommentBody = prCommentBody + 'VERACODE FIX CODE SUGGESTIONS\n';
-        prCommentBody = prCommentBody + '> [!CAUTION]\n';
-        prCommentBody = prCommentBody + '***Breaking Flaws identified in code!***\n';
-        prCommentBody = prCommentBody + '\n';
-        const batchFixResultsCount = Object.keys(resultsObj).length;
-        console.log('Number of files with fixes: ' + batchFixResultsCount);
-        for (let i = 0; i < batchFixResultsCount; i++) {
-            let keys = Object.keys(resultsObj);
-            console.log('Patching file: ' + keys[i]);
-            const originalContent = yield fs.readFile(keys[i], 'utf-8');
-            const patch = resultsObj[keys[i]].patch[0];
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('create_pr.ts - apply patch');
-                console.log('Patch to be applied: ');
-                console.log(patch);
-                console.log('#######- DEBUG MODE -#######');
-            }
-            const patches = Diff.parsePatch(patch);
-            let updatedContent = originalContent;
-            patches.forEach((patch) => __awaiter(this, void 0, void 0, function* () {
-                updatedContent = Diff.applyPatch(updatedContent, patch);
-            }));
-            const getFileSha = yield octokit.request('GET /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
-                owner: owner,
-                repo: repoName,
-                path: keys[i],
-                ref: 'refs/heads/' + branchName,
-                headers: {
-                    'X-GitHub-Api-Version': '2022-11-28'
-                }
-            });
-            const fileSha = getFileSha.data.sha;
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('create_pr.ts - createPR()');
-                console.log('File SHA: ' + fileSha);
-                console.log('#######- DEBUG MODE -#######');
-            }
-            const updateFile = yield octokit.request('PUT /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
-                owner: owner,
-                repo: repoName,
-                path: keys[i],
-                message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
-                committer: {
-                    name: 'Veracode Fix Bot',
-                    email: options.emailForCommits
-                },
-                content: Buffer.from(updatedContent).toString('base64'),
-                sha: fileSha,
-                branch: branchName,
-                headers: {
-                    'X-GitHub-Api-Version': '2022-11-28'
-                }
-            });
-            //PR body content for each file
-            prCommentBody = prCommentBody + 'Fixes for ' + keys[i] + ':\n';
-            prCommentBody = prCommentBody + 'Flaws found for this file:\n';
-            const flawsCount = resultsObj[keys[i]].flaws.length;
-            for (let j = 0; j < flawsCount; j++) {
-                const issueId = resultsObj[keys[i]].flaws[j].issueId;
-                let flaw;
-                for (let key in flawArray) {
-                    flaw = flawArray[key].find((flaw) => flaw.issue_id === issueId);
-                    if (flaw)
-                        break;
-                }
-                let issue_type = '';
-                let severity = '';
-                if (flaw) {
-                    issue_type = flaw.issue_type;
-                    severity = flaw.severity;
-                }
-                prCommentBody = prCommentBody + 'CWE ' + resultsObj[keys[i]].flaws[j].CWEId + ' - ' + issue_type + ' - Severity ' + severity + ' on line ' + resultsObj[keys[i]].flaws[j].line + ' for issue ' + resultsObj[keys[i]].flaws[j].issueId + '\n';
-            }
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('create_pr.ts - createPR()');
-                console.log('Update file response: ');
-                console.log(updateFile);
-                console.log('#######- DEBUG MODE -#######');
-            }
-        }
-        //end body of PR comment
-        prCommentBody = prCommentBody + '\nThis PR is created by the Veracode-Fix bot to help fix security defects on your code\n\n';
-        prCommentBody = prCommentBody + '\nThe base branch is <b>' + baseRef + '</b> the base commit sha is ' + baseSha + '\n\n';
-        prCommentBody = prCommentBody + '\nPlease reach out to your Veracode team if anything in question\n\n';
-        //once everything is pushed to the new branch, create a PR from the new branch to the base branch
-        const createPR = yield octokit.request('POST /repos/' + (owner) + '/' + (repoName) + '/pulls', {
-            owner: owner,
-            repo: repoName,
-            title: 'Veracode Batch Fix',
-            head: branchName,
-            base: baseRef,
-            body: prCommentBody,
-            headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
-        });
-        if (options.DEBUG == 'true') {
-            console.log('#######- DEBUG MODE -#######');
-            console.log('create_pr.ts - createPR()');
-            console.log('Create PR response: ');
-            console.log(createPR);
-            console.log('#######- DEBUG MODE -#######');
-        }
-        // Create check run annotations for the newly created PR
         try {
-            console.log('Creating check run annotations for PR #' + createPR.data.number);
-            yield (0, checkRun_1.createCheckRunAnnotationsForPR)(options, createPR, fixResults, flawArray);
-            console.log('✅ Check run annotations created successfully for PR #' + createPR.data.number);
+            const createBranch = yield octokit.request('POST /repos/' + (owner) + '/' + (repoName) + '/git/refs', {
+                owner: owner,
+                repo: repoName,
+                ref: 'refs/heads/' + branchName,
+                sha: baseSha,
+                headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            });
+            const branchSha = createBranch.data.object.sha;
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('create_pr.ts - createPR()');
+                console.log('Branch created: ');
+                console.log(createBranch);
+                console.log('Branch SHA: ');
+                console.log(branchSha);
+                console.log('Fix Results: ');
+                console.log(fixResults);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            //start body of PR comment
+            let prCommentBody;
+            prCommentBody = '![](https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg)\n';
+            prCommentBody = prCommentBody + 'VERACODE FIX CODE SUGGESTIONS\n';
+            prCommentBody = prCommentBody + '> [!CAUTION]\n';
+            prCommentBody = prCommentBody + '***Breaking Flaws identified in code!***\n';
+            prCommentBody = prCommentBody + '\n';
+            const batchFixResultsCount = Object.keys(resultsObj).length;
+            console.log('Number of files with fixes: ' + batchFixResultsCount);
+            for (let i = 0; i < batchFixResultsCount; i++) {
+                let keys = Object.keys(resultsObj);
+                console.log('Patching file: ' + keys[i]);
+                const originalContent = yield fs.readFile(keys[i], 'utf-8');
+                const patch = resultsObj[keys[i]].patch[0];
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('create_pr.ts - apply patch');
+                    console.log('Patch to be applied: ');
+                    console.log(patch);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                const patches = Diff.parsePatch(patch);
+                let updatedContent = originalContent;
+                patches.forEach((patch) => __awaiter(this, void 0, void 0, function* () {
+                    updatedContent = Diff.applyPatch(updatedContent, patch);
+                }));
+                const getFileSha = yield octokit.request('GET /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
+                    owner: owner,
+                    repo: repoName,
+                    path: keys[i],
+                    ref: 'refs/heads/' + branchName,
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                const fileSha = getFileSha.data.sha;
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('create_pr.ts - createPR()');
+                    console.log('File SHA: ' + fileSha);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                const updateFile = yield octokit.request('PUT /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
+                    owner: owner,
+                    repo: repoName,
+                    path: keys[i],
+                    message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
+                    committer: {
+                        name: 'Veracode Fix Bot',
+                        email: options.emailForCommits
+                    },
+                    content: Buffer.from(updatedContent).toString('base64'),
+                    sha: fileSha,
+                    branch: branchName,
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                //PR body content for each file
+                prCommentBody = prCommentBody + 'Fixes for ' + keys[i] + ':\n';
+                prCommentBody = prCommentBody + 'Flaws found for this file:\n';
+                const flawsCount = resultsObj[keys[i]].flaws.length;
+                for (let j = 0; j < flawsCount; j++) {
+                    const issueId = resultsObj[keys[i]].flaws[j].issueId;
+                    let flaw;
+                    for (let key in flawArray) {
+                        flaw = flawArray[key].find((flaw) => flaw.issue_id === issueId);
+                        if (flaw)
+                            break;
+                    }
+                    let issue_type = '';
+                    let severity = '';
+                    if (flaw) {
+                        issue_type = flaw.issue_type;
+                        severity = flaw.severity;
+                    }
+                    prCommentBody = prCommentBody + 'CWE ' + resultsObj[keys[i]].flaws[j].CWEId + ' - ' + issue_type + ' - Severity ' + severity + ' on line ' + resultsObj[keys[i]].flaws[j].line + ' for issue ' + resultsObj[keys[i]].flaws[j].issueId + '\n';
+                }
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('create_pr.ts - createPR()');
+                    console.log('Update file response: ');
+                    console.log(updateFile);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+            }
+            //end body of PR comment
+            prCommentBody = prCommentBody + '\nThis PR is created by the Veracode-Fix bot to help fix security defects on your code\n\n';
+            prCommentBody = prCommentBody + '\nThe base branch is <b>' + baseRef + '</b> the base commit sha is ' + baseSha + '\n\n';
+            prCommentBody = prCommentBody + '\nPlease reach out to your Veracode team if anything in question\n\n';
+            //once everything is pushed to the new branch, create a PR from the new branch to the base branch
+            const createPRResponse = yield octokit.request('POST /repos/' + (owner) + '/' + (repoName) + '/pulls', {
+                owner: owner,
+                repo: repoName,
+                title: 'Veracode Batch Fix',
+                head: branchName,
+                base: baseRef,
+                body: prCommentBody,
+                headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            });
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('create_pr.ts - createPR()');
+                console.log('Create PR response: ');
+                console.log(createPRResponse);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            // Create check run annotations for the newly created PR
+            try {
+                console.log('Creating check run annotations for PR #' + createPRResponse.data.number);
+                yield (0, checkRun_1.createCheckRunAnnotationsForPR)(options, createPRResponse, fixResults, flawArray);
+                console.log('✅ Check run annotations created successfully for PR #' + createPRResponse.data.number);
+            }
+            catch (error) {
+                console.log('⚠️ Failed to create check run annotations for PR:', error.message || error);
+                // Don't fail the entire process if annotations fail
+            }
         }
         catch (error) {
-            console.log('⚠️ Failed to create check run annotations for PR:', error.message || error);
-            // Don't fail the entire process if annotations fail
+            console.error('Error creating PR:', error.message || error);
+            // Try to cleanup the branch if PR creation failed
+            try {
+                console.log('Attempting to cleanup branch due to PR creation failure...');
+                yield octokit.request('DELETE /repos/' + (owner) + '/' + (repoName) + '/git/refs/heads/' + branchName, {
+                    owner: owner,
+                    repo: repoName,
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                console.log('Branch cleaned up successfully');
+            }
+            catch (cleanupError) {
+                console.log('Failed to cleanup branch:', cleanupError.message || cleanupError);
+            }
+            throw error;
         }
     });
 }
@@ -142449,14 +142475,17 @@ function runBatch(options, credentials) {
                         }
                     }
                 }
+                // Check if there are actual fixes before creating PR
+                const resultsObj = batchFixResults.results || batchFixResults.batchResults;
+                const hasValidFixes = resultsObj && typeof resultsObj === 'object' && Object.keys(resultsObj).length > 0;
                 // Skip PR creation when using GitHub App mode
                 if (options.createPR == 'true' && !shouldUseGitHubApp) {
                     console.log('Creating PRs is enabled');
-                    if (batchFixResults && (batchFixResults.results || batchFixResults.batchResults) && typeof (batchFixResults.results || batchFixResults.batchResults) === 'object') {
+                    if (hasValidFixes) {
                         const createPr = yield (0, create_pr_1.createPR)(batchFixResults, options, flawArray);
                     }
                     else {
-                        console.log('No valid batch fix results to create PR from');
+                        console.log('No valid batch fix results to create PR from - skipping PR creation');
                     }
                 }
                 else if (options.createPR == 'true' && shouldUseGitHubApp) {

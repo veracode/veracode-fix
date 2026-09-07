@@ -451,13 +451,17 @@ export async function runBatch( options:any, credentials:any){
                 }
             }
 
+            // Check if there are actual fixes before creating PR
+            const resultsObj = batchFixResults.results || batchFixResults.batchResults;
+            const hasValidFixes = resultsObj && typeof resultsObj === 'object' && Object.keys(resultsObj).length > 0;
+
             // Skip PR creation when using GitHub App mode
             if ( options.createPR == 'true' && !shouldUseGitHubApp ){
                 console.log('Creating PRs is enabled')
-                if (batchFixResults && (batchFixResults.results || batchFixResults.batchResults) && typeof (batchFixResults.results || batchFixResults.batchResults) === 'object') {
+                if (hasValidFixes) {
                     const createPr = await createPR(batchFixResults, options, flawArray)
                 } else {
-                    console.log('No valid batch fix results to create PR from')
+                    console.log('No valid batch fix results to create PR from - skipping PR creation')
                 }
             } else if (options.createPR == 'true' && shouldUseGitHubApp) {
                 console.log('Skipping PR creation - using GitHub App mode')
