@@ -14,6 +14,51 @@ import * as github from '@actions/github'
 
 import { sourcecodeFolderName } from './constants';
 import {tempFolder} from './constants'
+
+async function processFlawAndCopyFile(flawInfo: any, options: any): Promise<void> {
+    const flawFoldername = `cwe-${flawInfo.CWEId}-line-${flawInfo.line}-issue-${flawInfo.issueId}`;
+    const flawFilename = `flaw_${flawInfo.issueId}.json`;
+    const flawPath = `${tempFolder}${sourcecodeFolderName}flaws/${flawFoldername}`;
+
+    console.log(`Writing flaw to: ${flawPath}/${flawFilename}`);
+    fs.mkdirSync(flawPath, { recursive: true });
+    fs.writeFileSync(`${flawPath}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
+
+    const sourceFilePath = `${tempFolder}${sourcecodeFolderName}${flawInfo.sourceFile}`;
+    if (fs.existsSync(sourceFilePath)) {
+        console.log('File exists nothing to do');
+    } else {
+        console.log('File does not exist, copying file');
+        const lastSlashIndex = flawInfo.sourceFile.lastIndexOf('/');
+        const strBeforeLastSlash = flawInfo.sourceFile.substring(0, lastSlashIndex);
+        const destDir = `${tempFolder}${sourcecodeFolderName}${strBeforeLastSlash}`;
+
+        if (!fs.existsSync(destDir)) {
+            console.log('Destination directory does not exist, creating it');
+            fs.mkdirSync(destDir, { recursive: true });
+        }
+
+        const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
+        if (!fullPath || typeof fullPath !== 'string') {
+            console.log('Source file path is invalid, skipping copy for this flaw.');
+        } else if (!fs.existsSync(fullPath)) {
+            console.log(`Source file does not exist at: ${fullPath}, attempting to locate it...`);
+            const filename = flawInfo.sourceFile.split('/').pop();
+            if (filename) {
+                const searchPath = await searchFile(process.cwd(), filename, options);
+                if (searchPath && fs.existsSync(searchPath)) {
+                    console.log(`Found file at alternative location: ${searchPath}`);
+                    fs.copyFileSync(searchPath, sourceFilePath);
+                } else {
+                    console.log(`Could not find file ${filename} in repository`);
+                }
+            }
+        } else {
+            fs.copyFileSync(fullPath, sourceFilePath);
+        }
+    }
+}
+
 export async function runBatch( options:any, credentials:any){
 
     //read json file
@@ -21,7 +66,7 @@ export async function runBatch( options:any, credentials:any){
     const jsonData = JSON.parse(jsonRead);
     const jsonFindings = jsonData.findings
     const flawCount = jsonFindings.length
-    console.log('Number of flaws: '+flawCount)
+    console.log(`Number of flaws: ${flawCount}`)
 
     let filesPartOfPR:any = {}
     if (process.env.GITHUB_EVENT_NAME == 'pull_request'){
@@ -54,7 +99,7 @@ export async function runBatch( options:any, credentials:any){
     //loop through the new array per source file and find fixable flaws, supported CWE's and CWE's to be fixed
     let sourceFiles = Object.keys(flawArray);
     const sourceFilesCount = sourceFiles.length
-    console.log('Number of source files with flaws: '+sourceFilesCount)
+    console.log(`Number of source files with flaws: ${sourceFilesCount}`)
     for (let i = 0; i < sourceFilesCount; i++) {
 
         console.log('#############################\n\n')
@@ -64,7 +109,7 @@ export async function runBatch( options:any, credentials:any){
 
         let j = 0
         let flawCount = flawArray[sourceFile].length
-        console.log('Number of flaws for '+sourceFile+': '+flawCount)
+        console.log(`Number of flaws for ${sourceFile}: ${flawCount}`)
 
         for (j = 0; j < flawCount; j++) {
 
@@ -101,7 +146,6 @@ export async function runBatch( options:any, credentials:any){
                     for (let key in filesPartOfPR) {
                         if (filesPartOfPR[key].filename === filepath) {
                             include = 1
-                            //console.log('File is part of PR')
                             break;
                         }
                     }
@@ -113,16 +157,14 @@ export async function runBatch( options:any, credentials:any){
             }
 
             if ( include == 0 && options.files == 'changed' ){
-                console.log('File is not part of PR, and only changed files should be fixed. -> Parameter "files" is set to "changed"')
+                console.log('File is not part of PR, and only changed files should be fixed. -> Parameter "files" is set to "changed"');
             }
             else {
-                console.log('File is part of PR, either all files should be fixed or this file is part of changed files to be fixed')
+                console.log('File is part of PR, either all files should be fixed or this file is part of changed files to be fixed');
 
                 if (options.cwe != '') {
+                    console.log(`Fix only for CWE: ${options.cwe}`);
 
-                    console.log('Fix only for CWE: '+options.cwe)
-
-                    //get CWE list input
                     let cweList = [];
                     if (options.cwe.includes(',')) {
                         cweList = options.cwe.split(',');
@@ -131,131 +173,50 @@ export async function runBatch( options:any, credentials:any){
                     }
 
                     if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
-                        console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is in the list of CWEs to fix, creating flaw info')
-                        
-                        const flawInfo = await createFlawInfo(initialFlawInfo,options)
+                        console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is in the list of CWEs to fix, creating flaw info`);
+
+                        const flawInfo = await createFlawInfo(initialFlawInfo, options);
 
                         if (await checkCWE(initialFlawInfo, options, true) == true){
                             if (options.DEBUG == 'true'){
-                                console.log('#######- DEBUG MODE -#######')
-                                console.log('run_batch.ts - runBatch()')
-                                console.log('Flaw Info:',flawInfo)
-                                console.log('#######- DEBUG MODE -#######')
+                                console.log('#######- DEBUG MODE -#######');
+                                console.log('run_batch.ts - runBatch()');
+                                console.log('Flaw Info:', flawInfo);
+                                console.log('#######- DEBUG MODE -#######');
                             }
 
                             if (typeof flawInfo !== 'string') {
-                                //write flaw info and source file
-                                const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
-                                const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
-                                console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}flaws/`+flawFoldername+'/'+flawFilenane)
-                                fs.mkdirSync(tempFolder + sourcecodeFolderName + 'flaws/'+flawFoldername, { recursive: true });
-                                fs.writeFileSync(tempFolder + sourcecodeFolderName + 'flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
-
-                                if (fs.existsSync(tempFolder + sourcecodeFolderName + flawInfo.sourceFile)) {
-                                    console.log('File exists nothing to do');
-                                } else {
-                                    console.log('File does not exist, copying file');
-                                    let str = flawInfo.sourceFile;
-                                    let lastSlashIndex = str.lastIndexOf('/');
-                                    let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                    if (!fs.existsSync(tempFolder + sourcecodeFolderName + strBeforeLastSlash)) {
-                                        console.log('Destination directory does not exist lest create it');
-                                        fs.mkdirSync(tempFolder + sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
-                                    }
-
-                                    // Use sourceFileFull for file operations
-                                    const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-
-                                    if (!fullPath || typeof fullPath !== 'string') {
-                                        console.log('Source file path is invalid, skipping copy for this flaw.');
-                                    } else if (!fs.existsSync(fullPath)) {
-                                        console.log(`Source file does not exist at: ${fullPath}, attempting to locate it...`);
-                                        // Try searching from current working directory if the full path doesn't exist
-                                        const filename = flawInfo.sourceFile.split('/').pop();
-                                        if (filename) {
-                                            const searchPath = await searchFile(process.cwd(), filename, options);
-                                            if (searchPath && fs.existsSync(searchPath)) {
-                                                console.log(`Found file at alternative location: ${searchPath}`);
-                                                fs.copyFileSync(searchPath, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
-                                            } else {
-                                                console.log(`Could not find file ${filename} in repository`);
-                                            }
-                                        }
-                                    } else {
-                                        fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName + flawInfo.sourceFile);
-                                    }
-                                }
+                                await processFlawAndCopyFile(flawInfo, options);
                             }
                         }
                         else if (typeof flawInfo === 'string') {
-                            console.log('File not found on this repository, skipping CWE '+flawArray[sourceFile][j].cwe_id)
+                            console.log(`File not found on this repository, skipping CWE ${flawArray[sourceFile][j].cwe_id}`);
                         }
                         else {
-                            console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is not supported for '+detectedLanguage)
+                            console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is not supported for ${detectedLanguage}`);
                         }
                     }
                     else {
-                        console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is not in the list of CWEs to fix')
+                        console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is not in the list of CWEs to fix`);
                     }
                 }
                 else {
-                    console.log('Fix for all CWEs')
-                    const flawInfo = await createFlawInfo(initialFlawInfo,options)
+                    console.log('Fix for all CWEs');
+                    const flawInfo = await createFlawInfo(initialFlawInfo, options);
 
                     if (await checkCWE(initialFlawInfo, options, true) == true){
                         if (typeof flawInfo !== 'string') {
-
-                            //write flaw info and source file
-                            const flawFoldername = 'cwe-'+flawInfo.CWEId+'-line-'+flawInfo.line+'-issue-'+flawInfo.issueId
-                            const flawFilenane = 'flaw_'+flawInfo.issueId+'.json'
-                            console.log(`Writing flaw to: ${tempFolder + sourcecodeFolderName}flaws/`+flawFoldername+'/'+flawFilenane)
-                            fs.mkdirSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername, { recursive: true });
-                            fs.writeFileSync(tempFolder + sourcecodeFolderName+'flaws/'+flawFoldername+'/'+flawFilenane, JSON.stringify(flawInfo, null, 2))
-
-                            if (fs.existsSync(tempFolder + sourcecodeFolderName+flawInfo.sourceFile)) {
-                                console.log('File exists nothing to do');
-                            } else {
-                                console.log('File does not exist, copying file');
-                                let str = flawInfo.sourceFile;
-                                let lastSlashIndex = str.lastIndexOf('/');
-                                let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                if (!fs.existsSync(tempFolder + sourcecodeFolderName+strBeforeLastSlash)) {
-                                    console.log('Destination directory does not exist lest create it');
-                                    fs.mkdirSync(tempFolder + sourcecodeFolderName+strBeforeLastSlash, { recursive: true });
-                                }
-
-                                // Use sourceFileFull for file operations
-                                const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-
-                                if (!fullPath || typeof fullPath !== 'string') {
-                                    console.log('Source file path is invalid, skipping copy for this flaw.');
-                                } else if (!fs.existsSync(fullPath)) {
-                                    console.log(`Source file does not exist at: ${fullPath}, attempting to locate it...`);
-                                    // Try searching from current working directory if the full path doesn't exist
-                                    const filename = flawInfo.sourceFile.split('/').pop();
-                                    if (filename) {
-                                        const searchPath = await searchFile(process.cwd(), filename, options);
-                                        if (searchPath && fs.existsSync(searchPath)) {
-                                            console.log(`Found file at alternative location: ${searchPath}`);
-                                            fs.copyFileSync(searchPath, tempFolder + sourcecodeFolderName+flawInfo.sourceFile);
-                                        } else {
-                                            console.log(`Could not find file ${filename} in repository`);
-                                        }
-                                    }
-                                } else {
-                                    fs.copyFileSync(fullPath, tempFolder + sourcecodeFolderName+flawInfo.sourceFile)
-                                }
-                            }
+                            await processFlawAndCopyFile(flawInfo, options);
                         }
                         else {
-                            console.log('File not found on this repository, skipping CWE '+flawArray[sourceFile][j].cwe_id)
+                            console.log(`File not found on this repository, skipping CWE ${flawArray[sourceFile][j].cwe_id}`);
                         }
                     }
                     else if (typeof flawInfo === 'string') {
-                        console.log('File not found on this repository, skipping CWE '+flawArray[sourceFile][j].cwe_id)
+                        console.log(`File not found on this repository, skipping CWE ${flawArray[sourceFile][j].cwe_id}`);
                     }
                     else {
-                        console.log('CWE '+flawArray[sourceFile][j].cwe_id+' is not supported for '+detectedLanguage)
+                        console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is not supported for ${detectedLanguage}`);
                     }
                 }
             }
@@ -300,8 +261,8 @@ export async function runBatch( options:any, credentials:any){
         console.log('Failed to upload source tarball artifact:', e);
     }
 
-    const projectID = await uploadBatch(credentials, (tempFolder+'app.tar.gz'), options)
-    console.log('Project ID is: '+projectID)
+    const projectID = await uploadBatch(credentials, `${tempFolder}app.tar.gz`, options);
+    console.log(`Project ID is: ${projectID}`)
 
     const checkBatchFixStatus = await checkFixBatch(credentials, projectID, options)
 
@@ -318,11 +279,11 @@ export async function runBatch( options:any, credentials:any){
             console.log('Fixs pulled from batch fix')
 
             if (options.DEBUG == 'true'){
-                console.log('#######- DEBUG MODE -#######')
-                console.log('run_batch.ts - runBatch()')
-                console.log('Batch Fix Results:')
-                console.log(batchFixResults)
-                console.log('#######- DEBUG MODE -#######')
+                console.log('#######- DEBUG MODE -#######');
+                console.log('run_batch.ts - runBatch()');
+                console.log('Batch Fix Results:');
+                console.log(batchFixResults);
+                console.log('#######- DEBUG MODE -#######');
             }
 
             // Check if we should use GitHub App mode (declare at broader scope)
@@ -422,12 +383,12 @@ export async function runBatch( options:any, credentials:any){
                     //create a check run
                     let checkRunID = await createCheckRun(options)
                     options['checkRunID'] = checkRunID
-                    console.log('Check Run ID is: '+checkRunID)
-                    const checkRunUpate = await updateCheckRunUpdateBatch(options, batchFixResults, flawArray)
-                    const checkRun = await updateCheckRunClose(options, options.checkRunID)
+                    console.log(`Check Run ID is: ${checkRunID}`);
+                    const checkRunUpate = await updateCheckRunUpdateBatch(options, batchFixResults, flawArray);
+                    const checkRun = await updateCheckRunClose(options, options.checkRunID);
                 }
                 else {
-                    console.log('... but wea are not running on a pull request')
+                    console.log('... but we are not running on a pull request');
                 }
             }
 
@@ -441,10 +402,10 @@ export async function runBatch( options:any, credentials:any){
                     const resultsKeys = Object.keys(resultsObj).filter(key => key !== null && key !== undefined);
                     const batchFixResultsCount = resultsKeys.length;
 
-                    console.log('Number of files with fixes: '+batchFixResultsCount)
-                    let commentBody:any
+                    console.log(`Number of files with fixes: ${batchFixResultsCount}`);
+                    let commentBody:any;
                     for (let i = 0; i < batchFixResultsCount; i++) {
-                        console.log('Creating suggestions for '+resultsKeys[i])
+                        console.log(`Creating suggestions for ${resultsKeys[i]}`)
 
                         //const codeSuggestion = addCodeSuggestion(batchFixResults, resultsKeys[i], options)
                     }
