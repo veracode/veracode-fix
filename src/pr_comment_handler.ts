@@ -54,8 +54,8 @@ export async function isVeracodeAppInstalled(token: string, owner: string, repo:
             const { data: appData } = await octokit.rest.apps.getBySlug({
                 app_slug: 'veracode-fix-for-github' // This should match your app's slug
             });
-            
-            if (appData.id.toString() === appId) {
+
+            if (appData && appData.id.toString() === appId) {
                 core.info('✅ Veracode app found by slug');
                 return true;
             }
