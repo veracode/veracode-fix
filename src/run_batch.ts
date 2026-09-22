@@ -15,6 +15,11 @@ import * as github from '@actions/github'
 import { sourcecodeFolderName } from './constants';
 import {tempFolder} from './constants'
 
+/**
+ * Persists flaw metadata and copies the associated source file to a temporary folder.
+ * Creates a structured directory hierarchy by CWE/line/issue for organized flaw tracking,
+ * and copies the source file from its original location to enable batch processing.
+ */
 async function processFlawAndCopyFile(flawInfo: any, options: any): Promise<void> {
     const flawFoldername = `cwe-${flawInfo.CWEId}-line-${flawInfo.line}-issue-${flawInfo.issueId}`;
     const flawFilename = `flaw_${flawInfo.issueId}.json`;
@@ -180,7 +185,7 @@ export async function runBatch( options:any, credentials:any){
                         if (await checkCWE(initialFlawInfo, options, true) == true){
                             if (options.DEBUG == 'true'){
                                 console.log('#######- DEBUG MODE -#######');
-                                console.log('run_batch.ts - runBatch()');
+                                console.log('run_batch.ts - runBatch() - CWE validation passed, processing flaw and copying source file');
                                 console.log('Flaw Info:', flawInfo);
                                 console.log('#######- DEBUG MODE -#######');
                             }
@@ -269,10 +274,10 @@ export async function runBatch( options:any, credentials:any){
     if ( checkBatchFixStatus == 1 ){
         console.log('Batch Fixs are ready to be reviewed')
         const batchFixResults = await pullBatchFixResults(credentials, projectID, options)
-        
-        
+
+
         filterEmptyPatchesFromBatch(batchFixResults, options);
-        if ( batchFixResults == 0 ){
+        if ( !batchFixResults?.results && !batchFixResults?.batchResults ){
             console.log('Something went wrong, no fixes generated')
         }
         else {
@@ -338,7 +343,7 @@ export async function runBatch( options:any, credentials:any){
                         try {
                             // Calculate actual fix suggestions count from batch results
                             let totalFixSuggestions = 0;
-                            if (batchFixResults && batchFixResults.results) {
+                            if (batchFixResults?.results) {
                                 Object.values(batchFixResults.results).forEach((fileResult: any) => {
                                     if (fileResult.flaws) {
                                         fileResult.flaws.forEach((flaw: any) => {
@@ -350,7 +355,7 @@ export async function runBatch( options:any, credentials:any){
                                 });
                             }
                             // Handle both 'results' and 'batchResults' property names
-                            if (!totalFixSuggestions && batchFixResults.batchResults) {
+                            if (!totalFixSuggestions && batchFixResults?.batchResults) {
                                 Object.values(batchFixResults.batchResults).forEach((fileResult: any) => {
                                     if (fileResult.flaws) {
                                         fileResult.flaws.forEach((flaw: any) => {
@@ -395,11 +400,11 @@ export async function runBatch( options:any, credentials:any){
             if ( options.codeSuggestion == 'true' ){
                 console.log('Code suggestion is enabled')
 
-                const resultsObj = batchFixResults.results || batchFixResults.batchResults;
-                if (!batchFixResults || !resultsObj || typeof resultsObj !== 'object') {
+                const resultsObj = batchFixResults?.results || batchFixResults?.batchResults;
+                if (!resultsObj || typeof resultsObj !== 'object') {
                     console.log('No results found in batch fix results, skipping code suggestions')
                 } else {
-                    const resultsKeys = Object.keys(resultsObj).filter(key => key !== null && key !== undefined);
+                    const resultsKeys = Object.keys(resultsObj);
                     const batchFixResultsCount = resultsKeys.length;
 
                     console.log(`Number of files with fixes: ${batchFixResultsCount}`);
@@ -413,7 +418,7 @@ export async function runBatch( options:any, credentials:any){
             }
 
             // Check if there are actual fixes before creating PR
-            const resultsObj = batchFixResults.results || batchFixResults.batchResults;
+            const resultsObj = batchFixResults?.results || batchFixResults?.batchResults;
             const hasValidFixes = resultsObj && typeof resultsObj === 'object' && Object.keys(resultsObj).length > 0;
 
             // Skip PR creation when using GitHub App mode
@@ -435,8 +440,8 @@ export async function runBatch( options:any, credentials:any){
 
     }
     function filterEmptyPatchesFromBatch(batchFixResults: any, options: any): void {
-        const resultsObj = batchFixResults.results || batchFixResults.batchResults;
-        if (!batchFixResults || !resultsObj || typeof resultsObj !== 'object') {
+        const resultsObj = batchFixResults?.results || batchFixResults?.batchResults;
+        if (!resultsObj || typeof resultsObj !== 'object') {
             if (options.DEBUG == 'true') {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('No results to filter');
@@ -448,7 +453,7 @@ export async function runBatch( options:any, credentials:any){
         for (let key in resultsObj) {
             if (resultsObj.hasOwnProperty(key)) {
                 const result = resultsObj[key];
-                if (result && result.patch && Array.isArray(result.patch) && result.patch.length === 0) {
+                if (result?.patch && Array.isArray(result.patch) && result.patch.length === 0) {
                     if (options.DEBUG == 'true') {
                         console.log('#######- DEBUG MODE -#######');
                         console.log('Removing files with empty patch from batchfix results');
