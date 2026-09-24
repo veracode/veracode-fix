@@ -139537,6 +139537,7 @@ const path_1 = __importDefault(__nccwpck_require__(16928));
 const rewritePath_1 = __nccwpck_require__(31417);
 function createFlawInfo(flawInfo, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        var _a;
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('createFlawInfo.ts');
@@ -139564,7 +139565,7 @@ function createFlawInfo(flawInfo, options) {
         if (resultArray.stack_dumps.stack_dump) {
             //console.log('StackDumbs length: '+resultArray.stack_dumps.stack_dump.length)
             if (resultArray.stack_dumps.stack_dump.length > 0) {
-                const flowArray = resultArray.stack_dumps.stack_dump[0].Frame;
+                const flowArray = (_a = resultArray.stack_dumps.stack_dump[0].Frame) !== null && _a !== void 0 ? _a : [];
                 flowArray.forEach((element) => __awaiter(this, void 0, void 0, function* () {
                     if (element.SourceFile == sourceFile && element.VarNames != undefined) {
                         if (options.DEBUG == 'true') {
@@ -139884,6 +139885,13 @@ function createPR(fixResults, options, flawArray) {
             baseRef = process.env.GITHUB_REF_NAME;
         }
         const baseSha = process.env.GITHUB_SHA;
+        // Handle both 'results' and 'batchResults' property names
+        const resultsObj = fixResults.results || fixResults.batchResults;
+        // Validate that there are fixes to apply
+        if (!resultsObj || typeof resultsObj !== 'object' || Object.keys(resultsObj).length === 0) {
+            console.log('No valid fixes to create PR from - aborting PR creation');
+            return;
+        }
         if (options.DEBUG == 'true') {
             console.log('#######- DEBUG MODE -#######');
             console.log('create_pr.ts - createPR()');
@@ -139903,147 +139911,167 @@ function createPR(fixResults, options, flawArray) {
         });
         //create a new branch from base branch
         const timestamp = new Date().getTime();
-        const branchName = 'Veracode-fix-bot-' + baseSha + '-' + timestamp;
-        console.log('Branch Name: ' + branchName);
-        const createBranch = yield octokit.request('POST /repos/' + (owner) + '/' + (repoName) + '/git/refs', {
-            owner: owner,
-            repo: repoName,
-            ref: 'refs/heads/' + branchName,
-            sha: baseSha,
-            headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
-        });
-        const branchSha = createBranch.data.object.sha;
-        if (options.DEBUG == 'true') {
-            console.log('#######- DEBUG MODE -#######');
-            console.log('create_pr.ts - createPR()');
-            console.log('Branch created: ');
-            console.log(createBranch);
-            console.log('Branch SHA: ');
-            console.log(branchSha);
-            console.log('Fix Results: ');
-            console.log(fixResults);
-            console.log('#######- DEBUG MODE -#######');
-        }
-        //start body of PR comment
-        let prCommentBody;
-        prCommentBody = '![](https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg)\n';
-        prCommentBody = prCommentBody + 'VERACODE FIX CODE SUGGESTIONS\n';
-        prCommentBody = prCommentBody + '> [!CAUTION]\n';
-        prCommentBody = prCommentBody + '***Breaking Flaws identified in code!***\n';
-        prCommentBody = prCommentBody + '\n';
-        const batchFixResultsCount = Object.keys(fixResults.results).length;
-        console.log('Number of files with fixes: ' + batchFixResultsCount);
-        for (let i = 0; i < batchFixResultsCount; i++) {
-            let keys = Object.keys(fixResults.results);
-            console.log('Patching file: ' + keys[i]);
-            const originalContent = yield fs.readFile(keys[i], 'utf-8');
-            const patch = fixResults.results[keys[i]].patch[0];
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('create_pr.ts - apply patch');
-                console.log('Patch to be applied: ');
-                console.log(patch);
-                console.log('#######- DEBUG MODE -#######');
-            }
-            const patches = Diff.parsePatch(patch);
-            let updatedContent = originalContent;
-            patches.forEach((patch) => __awaiter(this, void 0, void 0, function* () {
-                updatedContent = Diff.applyPatch(updatedContent, patch);
-            }));
-            const getFileSha = yield octokit.request('GET /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
-                owner: owner,
-                repo: repoName,
-                path: keys[i],
-                ref: 'refs/heads/' + branchName,
-                headers: {
-                    'X-GitHub-Api-Version': '2022-11-28'
-                }
-            });
-            const fileSha = getFileSha.data.sha;
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('create_pr.ts - createPR()');
-                console.log('File SHA: ' + fileSha);
-                console.log('#######- DEBUG MODE -#######');
-            }
-            const updateFile = yield octokit.request('PUT /repos/' + (owner) + '/' + (repoName) + '/contents/' + keys[i], {
-                owner: owner,
-                repo: repoName,
-                path: keys[i],
-                message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
-                committer: {
-                    name: 'Veracode Fix Bot',
-                    email: options.emailForCommits
-                },
-                content: Buffer.from(updatedContent).toString('base64'),
-                sha: fileSha,
-                branch: branchName,
-                headers: {
-                    'X-GitHub-Api-Version': '2022-11-28'
-                }
-            });
-            //PR body content for each file
-            prCommentBody = prCommentBody + 'Fixes for ' + keys[i] + ':\n';
-            prCommentBody = prCommentBody + 'Falws found for this file:\n';
-            const flawsCount = fixResults.results[keys[i]].flaws.length;
-            for (let j = 0; j < flawsCount; j++) {
-                const issueId = fixResults.results[keys[i]].flaws[j].issueId;
-                let flaw;
-                for (let key in flawArray) {
-                    flaw = flawArray[key].find((flaw) => flaw.issue_id === issueId);
-                    if (flaw)
-                        break;
-                }
-                let issue_type = '';
-                let severity = '';
-                if (flaw) {
-                    issue_type = flaw.issue_type;
-                    severity = flaw.severity;
-                }
-                prCommentBody = prCommentBody + 'CWE ' + fixResults.results[keys[i]].flaws[j].CWEId + ' - ' + issue_type + ' - Severity ' + severity + ' on line ' + fixResults.results[keys[i]].flaws[j].line + ' for issue ' + fixResults.results[keys[i]].flaws[j].issueId + '\n';
-            }
-            if (options.DEBUG == 'true') {
-                console.log('#######- DEBUG MODE -#######');
-                console.log('create_pr.ts - createPR()');
-                console.log('Update file response: ');
-                console.log(updateFile);
-                console.log('#######- DEBUG MODE -#######');
-            }
-        }
-        //end body of PR comment
-        prCommentBody = prCommentBody + '\nThis PR is created by the Veracode-Fix bot to help fix security defects on your code\n\n';
-        prCommentBody = prCommentBody + '\nThe base branch is <b>' + baseRef + '</b> the base commit sha is ' + baseSha + '\n\n';
-        prCommentBody = prCommentBody + '\nPlease reach out to your Veracode team if anything in question\n\n';
-        //once everything is pushed to the new branch, create a PR from the new branch to the base branch
-        const createPR = yield octokit.request('POST /repos/' + (owner) + '/' + (repoName) + '/pulls', {
-            owner: owner,
-            repo: repoName,
-            title: 'Veracode Batch Fix',
-            head: branchName,
-            base: baseRef,
-            body: prCommentBody,
-            headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
-        });
-        if (options.DEBUG == 'true') {
-            console.log('#######- DEBUG MODE -#######');
-            console.log('create_pr.ts - createPR()');
-            console.log('Create PR response: ');
-            console.log(createPR);
-            console.log('#######- DEBUG MODE -#######');
-        }
-        // Create check run annotations for the newly created PR
+        const branchName = `Veracode-fix-bot-${baseSha}-${timestamp}`;
+        console.log(`Branch Name: ${branchName}`);
         try {
-            console.log('Creating check run annotations for PR #' + createPR.data.number);
-            yield (0, checkRun_1.createCheckRunAnnotationsForPR)(options, createPR, fixResults, flawArray);
-            console.log('✅ Check run annotations created successfully for PR #' + createPR.data.number);
+            const createBranch = yield octokit.request(`POST /repos/${owner}/${repoName}/git/refs`, {
+                owner: owner,
+                repo: repoName,
+                ref: `refs/heads/${branchName}`,
+                sha: baseSha,
+                headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            });
+            const branchSha = createBranch.data.object.sha;
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('create_pr.ts - createPR()');
+                console.log('Branch created: ');
+                console.log(createBranch);
+                console.log('Branch SHA: ');
+                console.log(branchSha);
+                console.log('Fix Results: ');
+                console.log(fixResults);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            //start body of PR comment
+            let prCommentBody = '![](https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg)\n';
+            prCommentBody += 'VERACODE FIX CODE SUGGESTIONS\n';
+            prCommentBody += '> [!CAUTION]\n';
+            prCommentBody += '***Breaking Flaws identified in code!***\n';
+            prCommentBody += '\n';
+            const batchFixResultsCount = Object.keys(resultsObj).length;
+            console.log(`Number of files with fixes: ${batchFixResultsCount}`);
+            for (let i = 0; i < batchFixResultsCount; i++) {
+                let keys = Object.keys(resultsObj);
+                console.log(`Patching file: ${keys[i]}`);
+                const originalContent = yield fs.readFile(keys[i], 'utf-8');
+                const patch = resultsObj[keys[i]].patch[0];
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('create_pr.ts - apply patch');
+                    console.log('Patch to be applied: ');
+                    console.log(patch);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                const patches = Diff.parsePatch(patch);
+                let updatedContent = originalContent;
+                patches.forEach((patch) => __awaiter(this, void 0, void 0, function* () {
+                    updatedContent = Diff.applyPatch(updatedContent, patch);
+                }));
+                const getFileSha = yield octokit.request(`GET /repos/${owner}/${repoName}/contents/${keys[i]}`, {
+                    owner: owner,
+                    repo: repoName,
+                    path: keys[i],
+                    ref: `refs/heads/${branchName}`,
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                const fileSha = getFileSha.data.sha;
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('create_pr.ts - createPR()');
+                    console.log(`File SHA: ${fileSha}`);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                const updateFile = yield octokit.request(`PUT /repos/${owner}/${repoName}/contents/${keys[i]}`, {
+                    owner: owner,
+                    repo: repoName,
+                    path: keys[i],
+                    message: `Veracode-Fix-Bot - update ${keys[i]} with patch`,
+                    committer: {
+                        name: 'Veracode Fix Bot',
+                        email: options.emailForCommits
+                    },
+                    content: Buffer.from(updatedContent).toString('base64'),
+                    sha: fileSha,
+                    branch: branchName,
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                //PR body content for each file
+                prCommentBody += `Fixes for ${keys[i]}:\n`;
+                prCommentBody += 'Flaws found for this file:\n';
+                const flawsCount = resultsObj[keys[i]].flaws.length;
+                for (let j = 0; j < flawsCount; j++) {
+                    const issueId = resultsObj[keys[i]].flaws[j].issueId;
+                    let flaw;
+                    for (let key in flawArray) {
+                        flaw = flawArray[key].find((flaw) => flaw.issue_id === issueId);
+                        if (flaw)
+                            break;
+                    }
+                    let issue_type = '';
+                    let severity = '';
+                    if (flaw) {
+                        issue_type = flaw.issue_type;
+                        severity = flaw.severity;
+                    }
+                    prCommentBody += `CWE ${resultsObj[keys[i]].flaws[j].CWEId} - ${issue_type} - Severity ${severity} on line ${resultsObj[keys[i]].flaws[j].line} for issue ${resultsObj[keys[i]].flaws[j].issueId}\n`;
+                }
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('create_pr.ts - createPR()');
+                    console.log('Update file response: ');
+                    console.log(updateFile);
+                    console.log('#######- DEBUG MODE -#######');
+                }
+            }
+            //end body of PR comment
+            prCommentBody += '\nThis PR is created by the Veracode-Fix bot to help fix security defects on your code\n\n';
+            prCommentBody += `\nThe base branch is <b>${baseRef}</b> the base commit sha is ${baseSha}\n\n`;
+            prCommentBody += '\nPlease reach out to your Veracode team if anything in question\n\n';
+            //once everything is pushed to the new branch, create a PR from the new branch to the base branch
+            const createPRResponse = yield octokit.request(`POST /repos/${owner}/${repoName}/pulls`, {
+                owner: owner,
+                repo: repoName,
+                title: 'Veracode Batch Fix',
+                head: branchName,
+                base: baseRef,
+                body: prCommentBody,
+                headers: {
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            });
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('create_pr.ts - createPR()');
+                console.log('Create PR response: ');
+                console.log(createPRResponse);
+                console.log('#######- DEBUG MODE -#######');
+            }
+            // Create check run annotations for the newly created PR
+            try {
+                console.log(`Creating check run annotations for PR #${createPRResponse.data.number}`);
+                yield (0, checkRun_1.createCheckRunAnnotationsForPR)(options, createPRResponse, fixResults, flawArray);
+                console.log(`✅ Check run annotations created successfully for PR #${createPRResponse.data.number}`);
+            }
+            catch (error) {
+                console.log('⚠️ Failed to create check run annotations for PR:', error.message || error);
+                // Don't fail the entire process if annotations fail
+            }
         }
         catch (error) {
-            console.log('⚠️ Failed to create check run annotations for PR:', error.message || error);
-            // Don't fail the entire process if annotations fail
+            console.error('Error creating PR:', error.message || error);
+            // Try to cleanup the branch if PR creation failed
+            try {
+                console.log('Attempting to cleanup branch due to PR creation failure...');
+                yield octokit.request(`DELETE /repos/${owner}/${repoName}/git/refs/heads/${branchName}`, {
+                    owner: owner,
+                    repo: repoName,
+                    headers: {
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    }
+                });
+                console.log('Branch cleaned up successfully');
+            }
+            catch (cleanupError) {
+                console.log('Failed to cleanup branch:', cleanupError.message || cleanupError);
+            }
+            throw error;
         }
     });
 }
@@ -140213,7 +140241,7 @@ function createPRCommentBatch(batchFixResults, options, flawArray) {
             commentBody = commentBody + '***Breaking Flaws identified in code!***\n';
             commentBody = commentBody + '\n';
             commentBody = commentBody + 'Fixes for ' + keys[i] + ':\n';
-            commentBody = commentBody + 'Falws found for this file:\n';
+            commentBody = commentBody + 'Flaws found for this file:\n';
             const flawsCount = batchFixResults.results[keys[i]].flaws.length;
             for (let j = 0; j < flawsCount; j++) {
                 const issueId = batchFixResults.results[keys[i]].flaws[j].issueId;
@@ -140629,6 +140657,7 @@ Process process = pb.start();`;
  */
 function isVeracodeAppInstalled(token, owner, repo) {
     return __awaiter(this, void 0, void 0, function* () {
+        var _a;
         try {
             const octokit = github.getOctokit(token);
             // The app ID is the same across all installations - it's the unique identifier for the GitHub App
@@ -140638,7 +140667,7 @@ function isVeracodeAppInstalled(token, owner, repo) {
                 const { data: appData } = yield octokit.rest.apps.getBySlug({
                     app_slug: 'veracode-fix-for-github' // This should match your app's slug
                 });
-                if (appData.id.toString() === appId) {
+                if (((_a = appData === null || appData === void 0 ? void 0 : appData.id) === null || _a === void 0 ? void 0 : _a.toString()) === appId) {
                     core.info('✅ Veracode app found by slug');
                     return true;
                 }
@@ -141630,6 +141659,7 @@ function checkFixBatch(platform, projectId, options) {
 }
 function makeRequestBatch(credentials_1, projectId_1, options_1) {
     return __awaiter(this, arguments, void 0, function* (credentials, projectId, options, previousProcessedResults = 0, stagnantIterations = 0) {
+        var _a;
         const platform = yield (0, select_platform_1.selectPlatfrom)(credentials);
         const authHeader = (0, auth_1.calculateAuthorizationHeader)({
             id: platform.cleanedID,
@@ -141747,6 +141777,11 @@ function makeRequestBatch(credentials_1, projectId_1, options_1) {
                 }
                 yield new Promise(resolve => setTimeout(resolve, 10000));
                 return yield makeRequestBatch(credentials, projectId, options, currentProcessedResults, nextStagnantIterations);
+            }
+            else if (response.data.resultsJson === true || ((_a = response.data.results) === null || _a === void 0 ? void 0 : _a.json) === true) {
+                // Final results.json is ready (regardless of resultsCount which may be 0 due to final merge)
+                console.log('Final results.json is available. Proceeding to fetch results.');
+                return 1;
             }
             else {
                 // hasMore is false: normal completion
@@ -141900,7 +141935,7 @@ function searchFile(dir, filename, options) {
         let result = null;
         const files = fs_1.default.readdirSync(dir);
         for (const file of files) {
-            if (file === '.git' || file === '.metadata' || file === 'app')
+            if (file === '.git' || file === '.metadata')
                 continue;
             const fullPath = path_1.default.join(dir, file);
             const stat = fs_1.default.statSync(fullPath);
@@ -142042,6 +142077,56 @@ const pr_comment_handler_1 = __nccwpck_require__(4863);
 const github = __importStar(__nccwpck_require__(37752));
 const constants_1 = __nccwpck_require__(52699);
 const constants_2 = __nccwpck_require__(52699);
+/**
+ * Persists flaw metadata and copies the associated source file to a temporary folder.
+ * Creates a structured directory hierarchy by CWE/line/issue for organized flaw tracking,
+ * and copies the source file from its original location to enable batch processing.
+ */
+function processFlawAndCopyFile(flawInfo, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const flawFoldername = `cwe-${flawInfo.CWEId}-line-${flawInfo.line}-issue-${flawInfo.issueId}`;
+        const flawFilename = `flaw_${flawInfo.issueId}.json`;
+        const flawPath = `${constants_2.tempFolder}${constants_1.sourcecodeFolderName}flaws/${flawFoldername}`;
+        console.log(`Writing flaw to: ${flawPath}/${flawFilename}`);
+        fs_1.default.mkdirSync(flawPath, { recursive: true });
+        fs_1.default.writeFileSync(`${flawPath}/${flawFilename}`, JSON.stringify(flawInfo, null, 2));
+        const sourceFilePath = `${constants_2.tempFolder}${constants_1.sourcecodeFolderName}${flawInfo.sourceFile}`;
+        if (fs_1.default.existsSync(sourceFilePath)) {
+            console.log('File exists nothing to do');
+        }
+        else {
+            console.log('File does not exist, copying file');
+            const lastSlashIndex = flawInfo.sourceFile.lastIndexOf('/');
+            const strBeforeLastSlash = flawInfo.sourceFile.substring(0, lastSlashIndex);
+            const destDir = `${constants_2.tempFolder}${constants_1.sourcecodeFolderName}${strBeforeLastSlash}`;
+            if (!fs_1.default.existsSync(destDir)) {
+                console.log('Destination directory does not exist, creating it');
+                fs_1.default.mkdirSync(destDir, { recursive: true });
+            }
+            const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
+            if (!fullPath || typeof fullPath !== 'string') {
+                console.log('Source file path is invalid, skipping copy for this flaw.');
+            }
+            else if (!fs_1.default.existsSync(fullPath)) {
+                console.log(`Source file does not exist at: ${fullPath}, attempting to locate it...`);
+                const filename = flawInfo.sourceFile.split('/').pop();
+                if (filename) {
+                    const searchPath = yield (0, rewritePath_1.searchFile)(process.cwd(), filename, options);
+                    if (searchPath && fs_1.default.existsSync(searchPath)) {
+                        console.log(`Found file at alternative location: ${searchPath}`);
+                        fs_1.default.copyFileSync(searchPath, sourceFilePath);
+                    }
+                    else {
+                        console.log(`Could not find file ${filename} in repository`);
+                    }
+                }
+            }
+            else {
+                fs_1.default.copyFileSync(fullPath, sourceFilePath);
+            }
+        }
+    });
+}
 function runBatch(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b;
@@ -142050,7 +142135,7 @@ function runBatch(options, credentials) {
         const jsonData = JSON.parse(jsonRead);
         const jsonFindings = jsonData.findings;
         const flawCount = jsonFindings.length;
-        console.log('Number of flaws: ' + flawCount);
+        console.log(`Number of flaws: ${flawCount}`);
         let filesPartOfPR = {};
         if (process.env.GITHUB_EVENT_NAME == 'pull_request') {
             filesPartOfPR = yield (0, requests_1.getFilesPartOfPR)(options);
@@ -142076,14 +142161,14 @@ function runBatch(options, credentials) {
         //loop through the new array per source file and find fixable flaws, supported CWE's and CWE's to be fixed
         let sourceFiles = Object.keys(flawArray);
         const sourceFilesCount = sourceFiles.length;
-        console.log('Number of source files with flaws: ' + sourceFilesCount);
+        console.log(`Number of source files with flaws: ${sourceFilesCount}`);
         for (let i = 0; i < sourceFilesCount; i++) {
             console.log('#############################\n\n');
             let sourceFile = sourceFiles[i];
             console.log('Source file with flaws:', sourceFile);
             let j = 0;
             let flawCount = flawArray[sourceFile].length;
-            console.log('Number of flaws for ' + sourceFile + ': ' + flawCount);
+            console.log(`Number of flaws for ${sourceFile}: ${flawCount}`);
             for (j = 0; j < flawCount; j++) {
                 // Auto-detect language from source file
                 const detectedLanguage = (0, languageDetection_1.detectLanguageFromFile)(sourceFile);
@@ -142113,7 +142198,6 @@ function runBatch(options, credentials) {
                         for (let key in filesPartOfPR) {
                             if (filesPartOfPR[key].filename === filepath) {
                                 include = 1;
-                                //console.log('File is part of PR')
                                 break;
                             }
                         }
@@ -142129,8 +142213,7 @@ function runBatch(options, credentials) {
                 else {
                     console.log('File is part of PR, either all files should be fixed or this file is part of changed files to be fixed');
                     if (options.cwe != '') {
-                        console.log('Fix only for CWE: ' + options.cwe);
-                        //get CWE list input
+                        console.log(`Fix only for CWE: ${options.cwe}`);
                         let cweList = [];
                         if (options.cwe.includes(',')) {
                             cweList = options.cwe.split(',');
@@ -142139,54 +142222,28 @@ function runBatch(options, credentials) {
                             cweList = [options.cwe];
                         }
                         if (cweList.includes(flawArray[sourceFile][j].cwe_id)) {
-                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is in the list of CWEs to fix, creating flaw info');
+                            console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is in the list of CWEs to fix, creating flaw info`);
                             const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                             if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options, true)) == true) {
                                 if (options.DEBUG == 'true') {
                                     console.log('#######- DEBUG MODE -#######');
-                                    console.log('run_batch.ts - runBatch()');
+                                    console.log('run_batch.ts - runBatch() - CWE validation passed, processing flaw and copying source file');
                                     console.log('Flaw Info:', flawInfo);
                                     console.log('#######- DEBUG MODE -#######');
                                 }
                                 if (typeof flawInfo !== 'string') {
-                                    //write flaw info and source file
-                                    const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
-                                    const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
-                                    console.log(`Writing flaw to: ${constants_2.tempFolder + constants_1.sourcecodeFolderName}` + flawFoldername + '/' + flawFilenane);
-                                    fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername, { recursive: true });
-                                    fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + '/flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
-                                    if (fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile)) {
-                                        console.log('File exists nothing to do');
-                                    }
-                                    else {
-                                        console.log('File does not exist, copying file');
-                                        let str = flawInfo.sourceFile;
-                                        let lastSlashIndex = str.lastIndexOf('/');
-                                        let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                        if (!fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash)) {
-                                            console.log('Destination directory does not exist lest create it');
-                                            fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
-                                        }
-                                        // Use sourceFileFull for file operations
-                                        const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-                                        if (!fullPath || typeof fullPath !== 'string' || !fs_1.default.existsSync(fullPath)) {
-                                            console.log('Source file path is invalid or does not exist, skipping copy for this flaw.');
-                                        }
-                                        else {
-                                            fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
-                                        }
-                                    }
+                                    yield processFlawAndCopyFile(flawInfo, options);
                                 }
                             }
                             else if (typeof flawInfo === 'string') {
-                                console.log('File not found on this repository, skipping CWE ' + flawArray[sourceFile][j].cwe_id);
+                                console.log(`File not found on this repository, skipping CWE ${flawArray[sourceFile][j].cwe_id}`);
                             }
                             else {
-                                console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + detectedLanguage);
+                                console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is not supported for ${detectedLanguage}`);
                             }
                         }
                         else {
-                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not in the list of CWEs to fix');
+                            console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is not in the list of CWEs to fix`);
                         }
                     }
                     else {
@@ -142194,43 +142251,17 @@ function runBatch(options, credentials) {
                         const flawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                         if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options, true)) == true) {
                             if (typeof flawInfo !== 'string') {
-                                //write flaw info and source file
-                                const flawFoldername = 'cwe-' + flawInfo.CWEId + '-line-' + flawInfo.line + '-issue-' + flawInfo.issueId;
-                                const flawFilenane = 'flaw_' + flawInfo.issueId + '.json';
-                                console.log(`Writing flaw to: ${constants_2.tempFolder + constants_1.sourcecodeFolderName}` + flawFoldername + '/' + flawFilenane);
-                                fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername, { recursive: true });
-                                fs_1.default.writeFileSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + 'flaws/' + flawFoldername + '/' + flawFilenane, JSON.stringify(flawInfo, null, 2));
-                                if (fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile)) {
-                                    console.log('File exists nothing to do');
-                                }
-                                else {
-                                    console.log('File does not exist, copying file');
-                                    let str = flawInfo.sourceFile;
-                                    let lastSlashIndex = str.lastIndexOf('/');
-                                    let strBeforeLastSlash = str.substring(0, lastSlashIndex);
-                                    if (!fs_1.default.existsSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash)) {
-                                        console.log('Destination directory does not exist lest create it');
-                                        fs_1.default.mkdirSync(constants_2.tempFolder + constants_1.sourcecodeFolderName + strBeforeLastSlash, { recursive: true });
-                                    }
-                                    // Use sourceFileFull for file operations
-                                    const fullPath = flawInfo.sourceFileFull || flawInfo.sourceFile;
-                                    if (!fullPath || typeof fullPath !== 'string' || !fs_1.default.existsSync(fullPath)) {
-                                        console.log('Source file path is invalid or does not exist, skipping copy for this flaw.');
-                                    }
-                                    else {
-                                        fs_1.default.copyFileSync(fullPath, constants_2.tempFolder + constants_1.sourcecodeFolderName + flawInfo.sourceFile);
-                                    }
-                                }
+                                yield processFlawAndCopyFile(flawInfo, options);
                             }
                             else {
-                                console.log('File not found on this repository, skipping CWE ' + flawArray[sourceFile][j].cwe_id);
+                                console.log(`File not found on this repository, skipping CWE ${flawArray[sourceFile][j].cwe_id}`);
                             }
                         }
                         else if (typeof flawInfo === 'string') {
-                            console.log('File not found on this repository, skipping CWE ' + flawArray[sourceFile][j].cwe_id);
+                            console.log(`File not found on this repository, skipping CWE ${flawArray[sourceFile][j].cwe_id}`);
                         }
                         else {
-                            console.log('CWE ' + flawArray[sourceFile][j].cwe_id + ' is not supported for ' + detectedLanguage);
+                            console.log(`CWE ${flawArray[sourceFile][j].cwe_id} is not supported for ${detectedLanguage}`);
                         }
                     }
                 }
@@ -142270,14 +142301,14 @@ function runBatch(options, credentials) {
         catch (e) {
             console.log('Failed to upload source tarball artifact:', e);
         }
-        const projectID = yield (0, requests_1.uploadBatch)(credentials, (constants_2.tempFolder + 'app.tar.gz'), options);
-        console.log('Project ID is: ' + projectID);
+        const projectID = yield (0, requests_1.uploadBatch)(credentials, `${constants_2.tempFolder}app.tar.gz`, options);
+        console.log(`Project ID is: ${projectID}`);
         const checkBatchFixStatus = yield (0, requests_1.checkFixBatch)(credentials, projectID, options);
         if (checkBatchFixStatus == 1) {
             console.log('Batch Fixs are ready to be reviewed');
             const batchFixResults = yield (0, requests_1.pullBatchFixResults)(credentials, projectID, options);
             filterEmptyPatchesFromBatch(batchFixResults, options);
-            if (batchFixResults == 0) {
+            if (!(batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.results) && !(batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.batchResults)) {
                 console.log('Something went wrong, no fixes generated');
             }
             else {
@@ -142339,8 +142370,20 @@ function runBatch(options, credentials) {
                             try {
                                 // Calculate actual fix suggestions count from batch results
                                 let totalFixSuggestions = 0;
-                                if (batchFixResults.results) {
+                                if (batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.results) {
                                     Object.values(batchFixResults.results).forEach((fileResult) => {
+                                        if (fileResult.flaws) {
+                                            fileResult.flaws.forEach((flaw) => {
+                                                if (flaw.patches && flaw.patches.length > 0) {
+                                                    totalFixSuggestions++;
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                                // Handle both 'results' and 'batchResults' property names
+                                if (!totalFixSuggestions && (batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.batchResults)) {
+                                    Object.values(batchFixResults.batchResults).forEach((fileResult) => {
                                         if (fileResult.flaws) {
                                             fileResult.flaws.forEach((flaw) => {
                                                 if (flaw.patches && flaw.patches.length > 0) {
@@ -142373,29 +142416,43 @@ function runBatch(options, credentials) {
                         //create a check run
                         let checkRunID = yield (0, checkRun_1.createCheckRun)(options);
                         options['checkRunID'] = checkRunID;
-                        console.log('Check Run ID is: ' + checkRunID);
+                        console.log(`Check Run ID is: ${checkRunID}`);
                         const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdateBatch)(options, batchFixResults, flawArray);
                         const checkRun = yield (0, checkRun_1.updateCheckRunClose)(options, options.checkRunID);
                     }
                     else {
-                        console.log('... but wea are not running on a pull request');
+                        console.log('... but we are not running on a pull request');
                     }
                 }
                 if (options.codeSuggestion == 'true') {
                     console.log('Code suggestion is enabled');
-                    const batchFixResultsCount = Object.keys(batchFixResults.results).length;
-                    console.log('Number of files with fixes: ' + batchFixResultsCount);
-                    let commentBody;
-                    for (let i = 0; i < batchFixResultsCount; i++) {
-                        let keys = Object.keys(batchFixResults.results);
-                        console.log('Creating suggestions for ' + keys[i]);
-                        //const codeSuggestion = addCodeSuggestion(batchFixResults, keys[i], options)
+                    const resultsObj = (batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.results) || (batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.batchResults);
+                    if (!resultsObj || typeof resultsObj !== 'object') {
+                        console.log('No results found in batch fix results, skipping code suggestions');
+                    }
+                    else {
+                        const resultsKeys = Object.keys(resultsObj);
+                        const batchFixResultsCount = resultsKeys.length;
+                        console.log(`Number of files with fixes: ${batchFixResultsCount}`);
+                        let commentBody;
+                        for (let i = 0; i < batchFixResultsCount; i++) {
+                            console.log(`Creating suggestions for ${resultsKeys[i]}`);
+                            //const codeSuggestion = addCodeSuggestion(batchFixResults, resultsKeys[i], options)
+                        }
                     }
                 }
+                // Check if there are actual fixes before creating PR
+                const resultsObj = (batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.results) || (batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.batchResults);
+                const hasValidFixes = resultsObj && typeof resultsObj === 'object' && Object.keys(resultsObj).length > 0;
                 // Skip PR creation when using GitHub App mode
                 if (options.createPR == 'true' && !shouldUseGitHubApp) {
                     console.log('Creating PRs is enabled');
-                    const createPr = yield (0, create_pr_1.createPR)(batchFixResults, options, flawArray);
+                    if (hasValidFixes) {
+                        const createPr = yield (0, create_pr_1.createPR)(batchFixResults, options, flawArray);
+                    }
+                    else {
+                        console.log('No valid batch fix results to create PR from - skipping PR creation');
+                    }
                 }
                 else if (options.createPR == 'true' && shouldUseGitHubApp) {
                     console.log('Skipping PR creation - using GitHub App mode');
@@ -142406,15 +142463,26 @@ function runBatch(options, credentials) {
             console.log('Batch Fix failed');
         }
         function filterEmptyPatchesFromBatch(batchFixResults, options) {
-            for (let key in batchFixResults.results) {
-                let patch = batchFixResults.results[key].patch;
-                if (patch.length == 0) {
-                    if (options.DEBUG == 'true') {
-                        console.log('#######- DEBUG MODE -#######');
-                        console.log('Removing files with empty patch from batchfix results');
-                        console.log('#######- DEBUG MODE -#######');
+            const resultsObj = (batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.results) || (batchFixResults === null || batchFixResults === void 0 ? void 0 : batchFixResults.batchResults);
+            if (!resultsObj || typeof resultsObj !== 'object') {
+                if (options.DEBUG == 'true') {
+                    console.log('#######- DEBUG MODE -#######');
+                    console.log('No results to filter');
+                    console.log('#######- DEBUG MODE -#######');
+                }
+                return;
+            }
+            for (let key in resultsObj) {
+                if (resultsObj.hasOwnProperty(key)) {
+                    const result = resultsObj[key];
+                    if ((result === null || result === void 0 ? void 0 : result.patch) && Array.isArray(result.patch) && result.patch.length === 0) {
+                        if (options.DEBUG == 'true') {
+                            console.log('#######- DEBUG MODE -#######');
+                            console.log('Removing files with empty patch from batchfix results');
+                            console.log('#######- DEBUG MODE -#######');
+                        }
+                        delete resultsObj[key];
                     }
-                    delete batchFixResults.results[key];
                 }
             }
         }
@@ -147235,8 +147303,7 @@ module.exports = /*#__PURE__*/JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/compat */
-/******/ 	
+/******/ 	/* webpack/runtime/asset-relocator-loader */
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
