@@ -1,7 +1,7 @@
 import { upload, checkFix } from './requests'
 import { createFlawInfo } from './createFlawInfo';
 import fs from 'fs';
-import tarModule from 'tar';
+import { execSync } from 'child_process';
 import { checkCWE } from './check_cwe_support';
 import { createPRComment } from './create_pr_comment';
 import { selectPlatfrom } from './select_platform';
@@ -247,12 +247,12 @@ async function createTar(initialFlawInfo:any, options:any){
         console.log(JSON.stringify(flawInfo))
         console.log('#######- DEBUG MODE -#######')
     }
-    
+
     if (typeof flawInfo === 'string') {
         console.log('File not found on this repository, skipping CWE '+initialFlawInfo.cweID)
         return;
     }
-    
+
     // Use sourceFileFull for file operations, fallback to sourceFile for backward compatibility
     const filepath = flawInfo.sourceFileFull || flawInfo.sourceFile
 
@@ -264,15 +264,12 @@ async function createTar(initialFlawInfo:any, options:any){
         console.log('File '+filepath+' exists');
         console.log('#######- DEBUG MODE -#######')
     }
-    
+
     fs.writeFileSync('flawInfo', JSON.stringify(flawInfo))
 
     try {
         console.log('Attempting to create tarball with files: flawInfo, '+filepath)
-        await tarModule.create({
-            gzip: true,
-            file: 'data.tar.gz'
-        }, ['flawInfo', filepath]);
+        execSync(`tar -czf data.tar.gz flawInfo "${filepath}"`);
         console.log('Tar is created successfully');
 
         return 'data.tar.gz'
