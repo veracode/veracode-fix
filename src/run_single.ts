@@ -260,13 +260,13 @@ async function createTar(initialFlawInfo:any, options:any){
     fs.writeFileSync('flawInfo', JSON.stringify(flawInfo))
 
     try {
-        const tarball = tarModule.create({ 
+        await tarModule.create({
             gzip: true,
             file: 'data.tar.gz'
         }, ['flawInfo', filepath]);
         console.error('Tar is created');
 
-        return tarball
+        return 'data.tar.gz'
     } catch (err) {
         // File does not exist
         console.error('Tar cannot be created');
