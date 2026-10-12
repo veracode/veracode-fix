@@ -108,6 +108,10 @@ export async function runSingle(options: any, credentials: any) {
 
                             const choosePlatform = await selectPlatfrom(credentials)
                             const tar = await createTar(initialFlawInfo,options)
+                            if (!tar) {
+                                console.log('Tarball creation failed, skipping this issue')
+                                continue
+                            }
                             const uploadTar = await upload(choosePlatform, tar, options)
                             const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
 
@@ -166,6 +170,10 @@ export async function runSingle(options: any, credentials: any) {
                     console.log('CWE '+initialFlawInfo.cweID+' is supported for '+detectedLanguage)
                     const choosePlatform = await selectPlatfrom(credentials)
                     const tar = await createTar(initialFlawInfo,options)
+                    if (!tar) {
+                        console.log('Tarball creation failed, skipping this issue')
+                        continue
+                    }
                     const uploadTar = await upload(choosePlatform, tar, options)
                     const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
 
@@ -260,15 +268,17 @@ async function createTar(initialFlawInfo:any, options:any){
     fs.writeFileSync('flawInfo', JSON.stringify(flawInfo))
 
     try {
+        console.log('Attempting to create tarball with files: flawInfo, '+filepath)
         await tarModule.create({
             gzip: true,
             file: 'data.tar.gz'
         }, ['flawInfo', filepath]);
-        console.error('Tar is created');
+        console.log('Tar is created successfully');
 
         return 'data.tar.gz'
     } catch (err) {
-        // File does not exist
-        console.error('Tar cannot be created');
+        console.error('Tar cannot be created - Error:', err);
+        console.error('Filepath attempted:', filepath);
+        return;
     }
 }

@@ -117402,6 +117402,10 @@ function runSingle(options, credentials) {
                             if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
                                 const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
                                 const tar = yield createTar(initialFlawInfo, options);
+                                if (!tar) {
+                                    console.log('Tarball creation failed, skipping this issue');
+                                    continue;
+                                }
                                 const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                                 const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
                                 if (!checkFixResults) {
@@ -117457,6 +117461,10 @@ function runSingle(options, credentials) {
                         console.log('CWE ' + initialFlawInfo.cweID + ' is supported for ' + detectedLanguage);
                         const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
                         const tar = yield createTar(initialFlawInfo, options);
+                        if (!tar) {
+                            console.log('Tarball creation failed, skipping this issue');
+                            continue;
+                        }
                         const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                         const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
                         if (!checkFixResults) {
@@ -117543,16 +117551,18 @@ function createTar(initialFlawInfo, options) {
         }
         fs_1.default.writeFileSync('flawInfo', JSON.stringify(flawInfo));
         try {
+            console.log('Attempting to create tarball with files: flawInfo, ' + filepath);
             yield tar_1.default.create({
                 gzip: true,
                 file: 'data.tar.gz'
             }, ['flawInfo', filepath]);
-            console.error('Tar is created');
+            console.log('Tar is created successfully');
             return 'data.tar.gz';
         }
         catch (err) {
-            // File does not exist
-            console.error('Tar cannot be created');
+            console.error('Tar cannot be created - Error:', err);
+            console.error('Filepath attempted:', filepath);
+            return;
         }
     });
 }
