@@ -110,7 +110,12 @@ export async function runSingle(options: any, credentials: any) {
                             const tar = await createTar(initialFlawInfo,options)
                             const uploadTar = await upload(choosePlatform, tar, options)
                             const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
-                            
+
+                            if (!checkFixResults) {
+                                console.log('Failed to fetch fix results after max retries, skipping this issue')
+                                continue
+                            }
+
                             // Save the actual Veracode API response as artifact for debugging
                             try {
                                 await saveFixResultsArtifact(checkFixResults, 'single_fix_results', {
@@ -143,7 +148,7 @@ export async function runSingle(options: any, credentials: any) {
                                 if (typeof newFlawInfo !== 'string') {
                                     const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
                                 }
-                            }   
+                            }
                         }
                         else {
                             console.log('CWE '+initialFlawInfo.cweID+' is not supported for '+detectedLanguage)
@@ -163,38 +168,42 @@ export async function runSingle(options: any, credentials: any) {
                     const tar = await createTar(initialFlawInfo,options)
                     const uploadTar = await upload(choosePlatform, tar, options)
                     const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
-                    
-                    // Save the actual Veracode API response as artifact for debugging
-                    try {
-                        await saveFixResultsArtifact(checkFixResults, 'single_fix_results', {
-                            flawInfo: initialFlawInfo,
-                            platform: choosePlatform,
-                            options: options
-                        })
-                        console.log('📁 Veracode single fix results artifact saved for debugging')
-                    } catch (error) {
-                        console.log('Warning: Failed to save single fix results artifact:', error)
-                    }
-                    
-                    if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
-                        console.log('PR commenting is enabled')
-                        const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
-                        //need flawinfo again
-                        const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
-                        console.log('Check Run ID is: '+options.checkRunID)
-                        console.log('Update Check Run with PR Comment')
-                        if (typeof newFlawInfo !== 'string') {
-                            const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+
+                    if (!checkFixResults) {
+                        console.log('Failed to fetch fix results after max retries, skipping this issue')
+                    } else {
+                        // Save the actual Veracode API response as artifact for debugging
+                        try {
+                            await saveFixResultsArtifact(checkFixResults, 'single_fix_results', {
+                                flawInfo: initialFlawInfo,
+                                platform: choosePlatform,
+                                options: options
+                            })
+                            console.log('📁 Veracode single fix results artifact saved for debugging')
+                        } catch (error) {
+                            console.log('Warning: Failed to save single fix results artifact:', error)
                         }
-                    }
-                    else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
-                        console.log('PR commenting is enabled')
-                        const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
-                        console.log('Code Suggestions are enabled')
-                        //need flawinfo again
-                        const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
-                        if (typeof newFlawInfo !== 'string') {
-                            const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
+
+                        if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
+                            console.log('PR commenting is enabled')
+                            const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
+                            //need flawinfo again
+                            const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                            console.log('Check Run ID is: '+options.checkRunID)
+                            console.log('Update Check Run with PR Comment')
+                            if (typeof newFlawInfo !== 'string') {
+                                const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                            }
+                        }
+                        else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
+                            console.log('PR commenting is enabled')
+                            const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
+                            console.log('Code Suggestions are enabled')
+                            //need flawinfo again
+                            const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                            if (typeof newFlawInfo !== 'string') {
+                                const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
+                            }
                         }
                     }
                 }

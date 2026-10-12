@@ -265,7 +265,7 @@ export async function checkFix(platform:any, projectId:any, options:any) {
     return results;
 }
 
-async function makeRequest(platform:any, projectId:any, options:any) {
+async function makeRequest(platform:any, projectId:any, options:any, retryCount: number = 0, maxRetries: number = 60) {
     const authHeader = calculateAuthorizationHeader({
         id: platform.cleanedID,
         key: platform.cleanedKEY,
@@ -298,9 +298,14 @@ async function makeRequest(platform:any, projectId:any, options:any) {
     const response = await makeHttpsRequest(reqOptions);
 
     if (!response.data) {
-        console.log('Response is empty. Retrying in 10 seconds.');
+        retryCount++;
+        if (retryCount > maxRetries) {
+            console.log(`Response is empty after ${maxRetries} retries. Giving up.`);
+            return null;
+        }
+        console.log(`Response is empty. Retrying in 10 seconds (attempt ${retryCount}/${maxRetries}).`);
         await new Promise(resolve => setTimeout(resolve, 10000));
-        return await makeRequest(platform, projectId, options);
+        return await makeRequest(platform, projectId, options, retryCount, maxRetries);
     } else {
         console.log('Fixes fetched successfully');
         if (options.DEBUG == 'true'){
