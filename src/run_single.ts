@@ -1,7 +1,7 @@
 import { upload, checkFix } from './requests'
 import { createFlawInfo } from './createFlawInfo';
 import fs from 'fs';
-import { execSync } from 'child_process';
+import tarModule from 'tar';
 import { checkCWE } from './check_cwe_support';
 import { createPRComment } from './create_pr_comment';
 import { selectPlatfrom } from './select_platform';
@@ -9,8 +9,6 @@ import { createCheckRun, updateCheckRunClose, updateCheckRunUpdate } from './che
 import { getFilesPartOfPR } from './requests';
 import { rewritePath } from './rewritePath'
 import { createCodeSuggestion } from './create_code_suggestion';
-import { detectLanguageFromFile, isLanguageSupported } from './languageDetection';
-import { saveFixResultsArtifact } from './artifactStorage';
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -42,26 +40,17 @@ export async function runSingle(options: any, credentials: any) {
     let i = 0
     for (i = 0; i < flawCount; i++) {
 
-        // Auto-detect language from source file
-        const detectedLanguage = detectLanguageFromFile(jsonFindings[i].files.source_file.file);
-        
-        if (!isLanguageSupported(detectedLanguage)) {
-            console.log(`Skipping issue ${jsonFindings[i].issue_id}: Language '${detectedLanguage}' is not supported for file ${jsonFindings[i].files.source_file.file}`);
-            continue;
-        }
-
         const initialFlawInfo = {
             resultsFile: options.file,
             issuedID: jsonFindings[i].issue_id,
             cweID: parseInt(jsonFindings[i].cwe_id),
-            language: detectedLanguage,
+            language: options.language,
             sourceFile: jsonFindings[i].files.source_file.file,
         }
 
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
             console.log('run_single.ts - runSingle()')
-            console.log('Detected Language: ' + detectedLanguage)
             console.log('Initial Flaw Info')
             console.log(initialFlawInfo)
             console.log('#######- DEBUG MODE -#######')
@@ -108,29 +97,8 @@ export async function runSingle(options: any, credentials: any) {
 
                             const choosePlatform = await selectPlatfrom(credentials)
                             const tar = await createTar(initialFlawInfo,options)
-                            if (!tar) {
-                                console.log('Tarball creation failed, skipping this issue')
-                                continue
-                            }
                             const uploadTar = await upload(choosePlatform, tar, options)
                             const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
-
-                            if (!checkFixResults) {
-                                console.log('Failed to fetch fix results after max retries, skipping this issue')
-                                continue
-                            }
-
-                            // Save the actual Veracode API response as artifact for debugging
-                            try {
-                                await saveFixResultsArtifact(checkFixResults, 'single_fix_results', {
-                                    flawInfo: initialFlawInfo,
-                                    platform: choosePlatform,
-                                    options: options
-                                })
-                                console.log('📁 Veracode single fix results artifact saved for debugging')
-                            } catch (error) {
-                                console.log('Warning: Failed to save single fix results artifact:', error)
-                            }
 
                             if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
                                 console.log('PR commenting is enabled')
@@ -139,9 +107,7 @@ export async function runSingle(options: any, credentials: any) {
                                 const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
                                 console.log('Check Run ID is: '+options.checkRunID)
                                 console.log('Update Check Run with PR Comment')
-                                if (typeof newFlawInfo !== 'string') {
-                                    const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
-                                }
+                                const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
                             }
                             else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
                                 console.log('PR commenting is enabled')
@@ -149,13 +115,11 @@ export async function runSingle(options: any, credentials: any) {
                                 console.log('Code Suggestions are enabled')
                                 //need flawinfo again
                                 const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
-                                if (typeof newFlawInfo !== 'string') {
-                                    const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
-                                }
+                                const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
                             }
                         }
                         else {
-                            console.log('CWE '+initialFlawInfo.cweID+' is not supported for '+detectedLanguage)
+                            console.log('CWE '+initialFlawInfo.cweID+' is not supported '+options.language)
                         }
                     }
                     else {
@@ -167,56 +131,32 @@ export async function runSingle(options: any, credentials: any) {
             else {
                 console.log('Run Fix for all CWEs')
                 if (await checkCWE(initialFlawInfo, options) == true){
-                    console.log('CWE '+initialFlawInfo.cweID+' is supported for '+detectedLanguage)
+                    console.log('CWE '+initialFlawInfo.cweID+' is supported for '+options.language)
                     const choosePlatform = await selectPlatfrom(credentials)
                     const tar = await createTar(initialFlawInfo,options)
-                    if (!tar) {
-                        console.log('Tarball creation failed, skipping this issue')
-                        continue
-                    }
                     const uploadTar = await upload(choosePlatform, tar, options)
                     const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
 
-                    if (!checkFixResults) {
-                        console.log('Failed to fetch fix results after max retries, skipping this issue')
-                    } else {
-                        // Save the actual Veracode API response as artifact for debugging
-                        try {
-                            await saveFixResultsArtifact(checkFixResults, 'single_fix_results', {
-                                flawInfo: initialFlawInfo,
-                                platform: choosePlatform,
-                                options: options
-                            })
-                            console.log('📁 Veracode single fix results artifact saved for debugging')
-                        } catch (error) {
-                            console.log('Warning: Failed to save single fix results artifact:', error)
-                        }
-
-                        if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
-                            console.log('PR commenting is enabled')
-                            const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
-                            //need flawinfo again
-                            const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
-                            console.log('Check Run ID is: '+options.checkRunID)
-                            console.log('Update Check Run with PR Comment')
-                            if (typeof newFlawInfo !== 'string') {
-                                const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
-                            }
-                        }
-                        else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
-                            console.log('PR commenting is enabled')
-                            const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
-                            console.log('Code Suggestions are enabled')
-                            //need flawinfo again
-                            const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
-                            if (typeof newFlawInfo !== 'string') {
-                                const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
-                            }
-                        }
+                    if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
+                        console.log('PR commenting is enabled')
+                        const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
+                        //need flawinfo again
+                        const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                        console.log('Check Run ID is: '+options.checkRunID)
+                        console.log('Update Check Run with PR Comment')
+                        const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                    }
+                    else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
+                        console.log('PR commenting is enabled')
+                        const prComment = await createPRComment(checkFixResults, options, initialFlawInfo)
+                        console.log('Code Suggestions are enabled')
+                        //need flawinfo again
+                        const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
+                        const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
                     }
                 }
                 else {
-                    console.log('CWE '+initialFlawInfo.cweID+' is NOT supported for '+detectedLanguage)
+                    console.log('CWE '+initialFlawInfo.cweID+' is NOT supported for '+options.language)
                 }
             }
         }
@@ -248,13 +188,7 @@ async function createTar(initialFlawInfo:any, options:any){
         console.log('#######- DEBUG MODE -#######')
     }
 
-    if (typeof flawInfo === 'string') {
-        console.log('File not found on this repository, skipping CWE '+initialFlawInfo.cweID)
-        return;
-    }
-
-    // Use sourceFileFull for file operations, fallback to sourceFile for backward compatibility
-    const filepath = flawInfo.sourceFileFull || flawInfo.sourceFile
+    const filepath = flawInfo.sourceFile
 
     fs.accessSync(filepath, fs.constants.F_OK);
 
@@ -268,14 +202,15 @@ async function createTar(initialFlawInfo:any, options:any){
     fs.writeFileSync('flawInfo', JSON.stringify(flawInfo))
 
     try {
-        console.log('Attempting to create tarball with files: flawInfo, '+filepath)
-        execSync(`tar -czf data.tar.gz flawInfo "${filepath}"`);
-        console.log('Tar is created successfully');
+        const tarball = tarModule.create({
+            gzip: true,
+            file: 'data.tar.gz'
+        }, ['flawInfo', filepath]);
+        console.error('Tar is created');
 
-        return 'data.tar.gz'
+        return tarball
     } catch (err) {
-        console.error('Tar cannot be created - Error:', err);
-        console.error('Filepath attempted:', filepath);
-        return;
+        // File does not exist
+        console.error('Tar cannot be created');
     }
 }
