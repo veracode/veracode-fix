@@ -116520,7 +116520,7 @@ function getFilesPartOfPR(options) {
             });
             if (!response.data) {
                 console.log('Response is empty. Something went wrong. No files identified. ');
-                return 0;
+                return [];
             }
             files = files.concat(response.data);
             if (!response.headers.link || !response.headers.link.includes('rel="next"')) {
@@ -117303,7 +117303,6 @@ function runSingle(options, credentials) {
                     }
                 }
             }
-            i++;
         }
         //if prComment is true and we run on a PR we need to close the check run
         if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {

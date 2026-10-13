@@ -160,7 +160,6 @@ export async function runSingle(options: any, credentials: any) {
                 }
             }
         }
-        i++
     }
 
     //if prComment is true and we run on a PR we need to close the check run

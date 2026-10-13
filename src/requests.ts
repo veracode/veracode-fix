@@ -594,7 +594,7 @@ export async function getFilesPartOfPR(options:any) {
 
         if (!response.data) {
             console.log('Response is empty. Something went wrong. No files identified. ');
-            return 0
+            return []
         }
 
         files = files.concat(response.data);
