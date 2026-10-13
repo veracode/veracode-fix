@@ -55,16 +55,16 @@ async function main() {
     }
 
 
-    if (!findingsCount){ 
+    if (!findingsCount){
         console.log('No findings in results.json, nothing to fix')
     }
     else if ( options.fixType == 'batch' ){
         console.log('Running Batch Fix')
-        runBatch(options, credentials)
+        await runBatch(options, credentials)
     }
     else if ( options.fixType == 'single' ){
         console.log('Running Single Fix')
-        runSingle(options, credentials)
+        await runSingle(options, credentials)
     }
     else {
         console.log('no Fix Type selected')
