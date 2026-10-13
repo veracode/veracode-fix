@@ -113306,6 +113306,174 @@ ZipStream.prototype.finalize = function() {
 
 /***/ }),
 
+/***/ 46000:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.saveFindingsArtifact = saveFindingsArtifact;
+exports.saveFixResultsArtifact = saveFixResultsArtifact;
+const core = __importStar(__nccwpck_require__(37484));
+const artifact_1 = __importDefault(__nccwpck_require__(76846));
+const fs_1 = __importDefault(__nccwpck_require__(79896));
+const path_1 = __importDefault(__nccwpck_require__(16928));
+/**
+ * Save findings data as artifact for debugging
+ */
+function saveFindingsArtifact(findings, prChanges, matches, additionalData) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const artifactData = {
+                timestamp: new Date().toISOString(),
+                totalFindings: findings.length,
+                prChanges: prChanges || [],
+                matches: matches || [],
+                additionalData: additionalData || {},
+                findings: findings.map(finding => {
+                    var _a;
+                    return ({
+                        issue_id: finding.issue_id,
+                        cwe_id: finding.cwe_id,
+                        severity: finding.severity,
+                        issue_type: finding.issue_type,
+                        availableFields: Object.keys(finding),
+                        sourceFile: (_a = finding.files) === null || _a === void 0 ? void 0 : _a.source_file,
+                        fixResults: finding.fix_results,
+                        fixSuggestions: finding.fix_suggestions,
+                        recommendations: finding.recommendations,
+                        // Include the full finding for detailed analysis
+                        fullFinding: finding
+                    });
+                })
+            };
+            const artifactPath = path_1.default.join(process.cwd(), 'veracode-findings.json');
+            fs_1.default.writeFileSync(artifactPath, JSON.stringify(artifactData, null, 2));
+            core.info(`📁 Saved findings data to: ${artifactPath}`);
+            core.info(`📊 Artifact contains ${findings.length} findings and ${(matches === null || matches === void 0 ? void 0 : matches.length) || 0} matches`);
+            // Also save individual findings for easier analysis
+            findings.forEach((finding, index) => {
+                const findingPath = path_1.default.join(process.cwd(), `finding-${finding.issue_id || index}.json`);
+                fs_1.default.writeFileSync(findingPath, JSON.stringify(finding, null, 2));
+            });
+            core.info(`📁 Saved ${findings.length} individual finding files for detailed analysis`);
+            // Upload as GitHub Actions artifact
+            try {
+                const artifactClient = artifact_1.default;
+                const artifactName = 'veracode-findings';
+                const rootDirectory = process.cwd();
+                const filesToUpload = [
+                    'veracode-findings.json',
+                    ...findings.map((_, index) => `finding-${findings[index].issue_id || index}.json`)
+                ];
+                const uploadResult = yield artifactClient.uploadArtifact(artifactName, filesToUpload, rootDirectory, {
+                    retentionDays: 30,
+                    compressionLevel: 6
+                });
+                core.info(`📦 Uploaded findings artifact: ${artifactName}`);
+                core.setOutput('findings-artifact-name', artifactName);
+                core.setOutput('findings-artifact-uploaded', 'true');
+            }
+            catch (uploadError) {
+                core.warning(`Failed to upload findings artifact: ${uploadError}`);
+                core.setOutput('findings-artifact-uploaded', 'false');
+            }
+        }
+        catch (error) {
+            core.error(`Failed to save findings artifact: ${error}`);
+        }
+    });
+}
+/**
+ * Save fix results as artifact for debugging
+ */
+function saveFixResultsArtifact(fixResults, sourceFile, additionalData) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const artifactData = {
+                timestamp: new Date().toISOString(),
+                sourceFile: sourceFile,
+                totalFixResults: fixResults.length,
+                additionalData: additionalData || {},
+                fixResults: fixResults
+            };
+            const artifactPath = path_1.default.join(process.cwd(), 'veracode-fix-results.json');
+            fs_1.default.writeFileSync(artifactPath, JSON.stringify(artifactData, null, 2));
+            core.info(`📁 Saved fix results data to: ${artifactPath}`);
+            core.info(`📊 Artifact contains ${fixResults.length} fix results`);
+            // Upload as GitHub Actions artifact
+            try {
+                const artifactClient = artifact_1.default;
+                const artifactName = 'veracode-fix-results';
+                const rootDirectory = process.cwd();
+                const filesToUpload = ['veracode-fix-results.json'];
+                const uploadResult = yield artifactClient.uploadArtifact(artifactName, filesToUpload, rootDirectory, {
+                    retentionDays: 30,
+                    compressionLevel: 6
+                });
+                core.info(`📦 Uploaded fix results artifact: ${artifactName}`);
+                core.setOutput('fix-results-artifact-name', artifactName);
+                core.setOutput('fix-results-artifact-uploaded', 'true');
+            }
+            catch (uploadError) {
+                core.warning(`Failed to upload fix results artifact: ${uploadError}`);
+                core.setOutput('fix-results-artifact-uploaded', 'false');
+            }
+        }
+        catch (error) {
+            core.error(`Failed to save fix results artifact: ${error}`);
+        }
+    });
+}
+
+
+/***/ }),
+
 /***/ 29081:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -117170,6 +117338,8 @@ const checkRun_1 = __nccwpck_require__(67338);
 const requests_2 = __nccwpck_require__(45109);
 const rewritePath_1 = __nccwpck_require__(55512);
 const create_code_suggestion_1 = __nccwpck_require__(64926);
+const languageDetection_1 = __nccwpck_require__(95474);
+const artifactStorage_1 = __nccwpck_require__(46000);
 function runSingle(options, credentials) {
     return __awaiter(this, void 0, void 0, function* () {
         //read json file
@@ -117194,16 +117364,23 @@ function runSingle(options, credentials) {
         //loop through json file
         let i = 0;
         for (i = 0; i < flawCount; i++) {
+            // Auto-detect language from source file
+            const detectedLanguage = (0, languageDetection_1.detectLanguageFromFile)(jsonFindings[i].files.source_file.file);
+            if (!(0, languageDetection_1.isLanguageSupported)(detectedLanguage)) {
+                console.log(`Skipping issue ${jsonFindings[i].issue_id}: Language '${detectedLanguage}' is not supported for file ${jsonFindings[i].files.source_file.file}`);
+                continue;
+            }
             const initialFlawInfo = {
                 resultsFile: options.file,
                 issuedID: jsonFindings[i].issue_id,
                 cweID: parseInt(jsonFindings[i].cwe_id),
-                language: options.language,
+                language: detectedLanguage,
                 sourceFile: jsonFindings[i].files.source_file.file,
             };
             if (options.DEBUG == 'true') {
                 console.log('#######- DEBUG MODE -#######');
                 console.log('run_single.ts - runSingle()');
+                console.log('Detected Language: ' + detectedLanguage);
                 console.log('Initial Flaw Info');
                 console.log(initialFlawInfo);
                 console.log('#######- DEBUG MODE -#######');
@@ -117243,8 +117420,28 @@ function runSingle(options, credentials) {
                             if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
                                 const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
                                 const tar = yield createTar(initialFlawInfo, options);
+                                if (!tar) {
+                                    console.log('Tarball creation failed, skipping this issue');
+                                    continue;
+                                }
                                 const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
                                 const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                                if (!checkFixResults) {
+                                    console.log('Failed to fetch fix results after max retries, skipping this issue');
+                                    continue;
+                                }
+                                // Save the actual Veracode API response as artifact for debugging
+                                try {
+                                    yield (0, artifactStorage_1.saveFixResultsArtifact)(checkFixResults, 'single_fix_results', {
+                                        flawInfo: initialFlawInfo,
+                                        platform: choosePlatform,
+                                        options: options
+                                    });
+                                    console.log('📁 Veracode single fix results artifact saved for debugging');
+                                }
+                                catch (error) {
+                                    console.log('Warning: Failed to save single fix results artifact:', error);
+                                }
                                 if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
                                     console.log('PR commenting is enabled');
                                     const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
@@ -117252,7 +117449,9 @@ function runSingle(options, credentials) {
                                     const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
                                     console.log('Check Run ID is: ' + options.checkRunID);
                                     console.log('Update Check Run with PR Comment');
-                                    const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                    if (typeof newFlawInfo !== 'string') {
+                                        const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                    }
                                 }
                                 else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
                                     console.log('PR commenting is enabled');
@@ -117260,7 +117459,9 @@ function runSingle(options, credentials) {
                                     console.log('Code Suggestions are enabled');
                                     //need flawinfo again
                                     const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                                    const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
+                                    if (typeof newFlawInfo !== 'string') {
+                                        const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
+                                    }
                                 }
                             }
                             else {

@@ -9,6 +9,8 @@ import { createCheckRun, updateCheckRunClose, updateCheckRunUpdate } from './che
 import { getFilesPartOfPR } from './requests';
 import { rewritePath } from './rewritePath'
 import { createCodeSuggestion } from './create_code_suggestion';
+import { detectLanguageFromFile, isLanguageSupported } from './languageDetection';
+import { saveFixResultsArtifact } from './artifactStorage';
 
 export async function runSingle(options: any, credentials: any) {
 
@@ -40,17 +42,26 @@ export async function runSingle(options: any, credentials: any) {
     let i = 0
     for (i = 0; i < flawCount; i++) {
 
+        // Auto-detect language from source file
+        const detectedLanguage = detectLanguageFromFile(jsonFindings[i].files.source_file.file);
+
+        if (!isLanguageSupported(detectedLanguage)) {
+            console.log(`Skipping issue ${jsonFindings[i].issue_id}: Language '${detectedLanguage}' is not supported for file ${jsonFindings[i].files.source_file.file}`);
+            continue;
+        }
+
         const initialFlawInfo = {
             resultsFile: options.file,
             issuedID: jsonFindings[i].issue_id,
             cweID: parseInt(jsonFindings[i].cwe_id),
-            language: options.language,
+            language: detectedLanguage,
             sourceFile: jsonFindings[i].files.source_file.file,
         }
 
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
             console.log('run_single.ts - runSingle()')
+            console.log('Detected Language: ' + detectedLanguage)
             console.log('Initial Flaw Info')
             console.log(initialFlawInfo)
             console.log('#######- DEBUG MODE -#######')
@@ -97,8 +108,29 @@ export async function runSingle(options: any, credentials: any) {
 
                             const choosePlatform = await selectPlatfrom(credentials)
                             const tar = await createTar(initialFlawInfo,options)
+                            if (!tar) {
+                                console.log('Tarball creation failed, skipping this issue')
+                                continue
+                            }
                             const uploadTar = await upload(choosePlatform, tar, options)
                             const checkFixResults = await checkFix(choosePlatform, uploadTar, options)
+
+                            if (!checkFixResults) {
+                                console.log('Failed to fetch fix results after max retries, skipping this issue')
+                                continue
+                            }
+
+                            // Save the actual Veracode API response as artifact for debugging
+                            try {
+                                await saveFixResultsArtifact(checkFixResults, 'single_fix_results', {
+                                    flawInfo: initialFlawInfo,
+                                    platform: choosePlatform,
+                                    options: options
+                                })
+                                console.log('📁 Veracode single fix results artifact saved for debugging')
+                            } catch (error) {
+                                console.log('Warning: Failed to save single fix results artifact:', error)
+                            }
 
                             if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')){
                                 console.log('PR commenting is enabled')
@@ -107,7 +139,9 @@ export async function runSingle(options: any, credentials: any) {
                                 const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
                                 console.log('Check Run ID is: '+options.checkRunID)
                                 console.log('Update Check Run with PR Comment')
-                                const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                                if (typeof newFlawInfo !== 'string') {
+                                    const checkRunUpate = await updateCheckRunUpdate(options, prComment, checkFixResults, newFlawInfo)
+                                }
                             }
                             else if ( options.prComment == 'true' && options.codeSuggestion == 'true'){
                                 console.log('PR commenting is enabled')
@@ -115,7 +149,9 @@ export async function runSingle(options: any, credentials: any) {
                                 console.log('Code Suggestions are enabled')
                                 //need flawinfo again
                                 const newFlawInfo = await createFlawInfo(initialFlawInfo,options)
-                                const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
+                                if (typeof newFlawInfo !== 'string') {
+                                    const codeSuggestion = await createCodeSuggestion(options, checkFixResults, newFlawInfo)
+                                }
                             }
                         }
                         else {
