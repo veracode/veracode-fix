@@ -117338,16 +117338,16 @@ function createTar(initialFlawInfo, options) {
         }
         fs_1.default.writeFileSync('flawInfo', JSON.stringify(flawInfo));
         try {
-            const tarball = tar_1.default.create({
+            yield tar_1.default.create({
                 gzip: true,
                 file: 'data.tar.gz'
             }, ['flawInfo', filepath]);
-            console.error('Tar is created');
-            return tarball;
+            console.log('Tar is created');
+            return 'data.tar.gz';
         }
         catch (err) {
-            // File does not exist
-            console.error('Tar cannot be created');
+            console.error('Tar cannot be created:', err);
+            throw err;
         }
     });
 }
