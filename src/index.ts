@@ -39,31 +39,43 @@ options['codeSuggestion'] = getInputOrEnv('codeSuggestion',false);
 options['token'] = getInputOrEnv('token',false);
 options['emailForCommits'] = getInputOrEnv('emailForCommits',false);
 
-const resultsFile = fs.readFileSync(options.file, 'utf8')
+async function main() {
+    try {
+        const resultsFile = fs.readFileSync(options.file, 'utf8')
 
-if (options.DEBUG == 'true'){
-    console.log('#######- DEBUG MODE -#######')
-    console.log('process.env.RUNNER_TEMP= ' +process.env.RUNNER_TEMP)
-    console.log('source folder = ' + sourcecodeFolderName)
-    console.log('temp folder = ' + tempFolder)
-    console.log('results.json: '+resultsFile)
-    console.log('checking if items are present to fix: ')
-    console.log('#######- DEBUG MODE -#######')
+        if (options.DEBUG == 'true'){
+            console.log('#######- DEBUG MODE -#######')
+            console.log('process.env.RUNNER_TEMP= ' +process.env.RUNNER_TEMP)
+            console.log('source folder = ' + sourcecodeFolderName)
+            console.log('temp folder = ' + tempFolder)
+            console.log('results.json: '+resultsFile)
+            console.log('checking if items are present to fix: ')
+            console.log('#######- DEBUG MODE -#######')
+        }
+
+        const findings = JSON.parse(resultsFile).findings
+        if (!findings || !findings.length){
+            console.log('No findings in results.json, nothing to fix')
+        }
+        else if ( options.fixType == 'batch' ){
+            console.log('Running Batch Fix')
+            await runBatch(options, credentials)
+        }
+        else if ( options.fixType == 'single' ){
+            console.log('Running Single Fix')
+            await runSingle(options, credentials)
+        }
+        else {
+            console.log('no Fix Type selected')
+        }
+    } catch (error: any) {
+        console.error('Fatal error in main function:', error.message)
+        core.setFailed(`Action failed: ${error.message}`)
+        process.exit(1)
+    }
 }
-if (!JSON.parse(resultsFile).findings.length){
-    console.log('No findings in results.json, nothing to fix')
-}
-else if ( options.fixType == 'batch' ){
-    console.log('Running Batch Fix')
-    runBatch(options, credentials)
-}
-else if ( options.fixType == 'single' ){
-    console.log('Running Single Fix')
-    runSingle(options, credentials)
-}
-else {
-    console.log('no Fix Type selected')
-}
+
+main()
 
 
 

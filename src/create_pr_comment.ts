@@ -45,9 +45,11 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     commentBody = commentBody+'\n'
     if (options.codeSuggestion == 'false' || options.codeSuggestion == ''){
         commentBody = commentBody+'```diff\n'
-        //commentBody = commentBody+'<br>'
-        commentBody = commentBody+results[0]+'\n'
-        //commentBody = commentBody+'<br>'
+        if (results && results.length > 0) {
+            commentBody = commentBody+results[0]+'\n'
+        } else {
+            commentBody = commentBody+'No code suggestions available\n'
+        }
         commentBody = commentBody+'\n```'
     }
 

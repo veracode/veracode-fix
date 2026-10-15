@@ -114965,9 +114965,12 @@ function createPRComment(results, options, flawInfo) {
         commentBody = commentBody + '\n';
         if (options.codeSuggestion == 'false' || options.codeSuggestion == '') {
             commentBody = commentBody + '```diff\n';
-            //commentBody = commentBody+'<br>'
-            commentBody = commentBody + results[0] + '\n';
-            //commentBody = commentBody+'<br>'
+            if (results && results.length > 0) {
+                commentBody = commentBody + results[0] + '\n';
+            }
+            else {
+                commentBody = commentBody + 'No code suggestions available\n';
+            }
             commentBody = commentBody + '\n```';
         }
         if (options.DEBUG == 'true') {
@@ -115130,6 +115133,15 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -115168,30 +115180,43 @@ options['files'] = getInputOrEnv('files', false);
 options['codeSuggestion'] = getInputOrEnv('codeSuggestion', false);
 options['token'] = getInputOrEnv('token', false);
 options['emailForCommits'] = getInputOrEnv('emailForCommits', false);
-const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
-if (options.DEBUG == 'true') {
-    console.log('#######- DEBUG MODE -#######');
-    console.log('process.env.RUNNER_TEMP= ' + process.env.RUNNER_TEMP);
-    console.log('source folder = ' + constants_1.sourcecodeFolderName);
-    console.log('temp folder = ' + constants_2.tempFolder);
-    console.log('results.json: ' + resultsFile);
-    console.log('checking if items are present to fix: ');
-    console.log('#######- DEBUG MODE -#######');
+function main() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const resultsFile = fs_1.default.readFileSync(options.file, 'utf8');
+            if (options.DEBUG == 'true') {
+                console.log('#######- DEBUG MODE -#######');
+                console.log('process.env.RUNNER_TEMP= ' + process.env.RUNNER_TEMP);
+                console.log('source folder = ' + constants_1.sourcecodeFolderName);
+                console.log('temp folder = ' + constants_2.tempFolder);
+                console.log('results.json: ' + resultsFile);
+                console.log('checking if items are present to fix: ');
+                console.log('#######- DEBUG MODE -#######');
+            }
+            const findings = JSON.parse(resultsFile).findings;
+            if (!findings || !findings.length) {
+                console.log('No findings in results.json, nothing to fix');
+            }
+            else if (options.fixType == 'batch') {
+                console.log('Running Batch Fix');
+                yield (0, run_batch_1.runBatch)(options, credentials);
+            }
+            else if (options.fixType == 'single') {
+                console.log('Running Single Fix');
+                yield (0, run_single_1.runSingle)(options, credentials);
+            }
+            else {
+                console.log('no Fix Type selected');
+            }
+        }
+        catch (error) {
+            console.error('Fatal error in main function:', error.message);
+            core.setFailed(`Action failed: ${error.message}`);
+            process.exit(1);
+        }
+    });
 }
-if (!JSON.parse(resultsFile).findings.length) {
-    console.log('No findings in results.json, nothing to fix');
-}
-else if (options.fixType == 'batch') {
-    console.log('Running Batch Fix');
-    (0, run_batch_1.runBatch)(options, credentials);
-}
-else if (options.fixType == 'single') {
-    console.log('Running Single Fix');
-    (0, run_single_1.runSingle)(options, credentials);
-}
-else {
-    console.log('no Fix Type selected');
-}
+main();
 
 
 /***/ }),
@@ -117451,50 +117476,57 @@ function runSingle(options, credentials) {
                     for (j = 0; j < cweListLength; j++) {
                         if (parseInt(cweList[j]) == initialFlawInfo.cweID) {
                             if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
-                                const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
-                                const tar = yield createTar(initialFlawInfo, options);
-                                if (!tar) {
-                                    console.log('Tarball creation failed, skipping this issue');
-                                    continue;
-                                }
-                                const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
-                                const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                                if (!checkFixResults) {
-                                    console.log('Failed to fetch fix results after max retries, skipping this issue');
-                                    continue;
-                                }
-                                // Save the actual Veracode API response as artifact for debugging
                                 try {
-                                    yield (0, artifactStorage_1.saveFixResultsArtifact)(checkFixResults, 'single_fix_results', {
-                                        flawInfo: initialFlawInfo,
-                                        platform: choosePlatform,
-                                        options: options
-                                    });
-                                    console.log('📁 Veracode single fix results artifact saved for debugging');
-                                }
-                                catch (error) {
-                                    console.log('Warning: Failed to save single fix results artifact:', error);
-                                }
-                                if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
-                                    console.log('PR commenting is enabled');
-                                    const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
-                                    //need flawinfo again
-                                    const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                                    console.log('Check Run ID is: ' + options.checkRunID);
-                                    console.log('Update Check Run with PR Comment');
-                                    if (typeof newFlawInfo !== 'string') {
-                                        const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                    const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
+                                    const tar = yield createTar(initialFlawInfo, options);
+                                    if (!tar) {
+                                        console.log('Tarball creation failed, skipping this issue');
+                                    }
+                                    else {
+                                        const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
+                                        const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                                        if (!checkFixResults) {
+                                            console.log('Failed to fetch fix results after max retries, skipping this issue');
+                                        }
+                                        else {
+                                            // Save the actual Veracode API response as artifact for debugging
+                                            try {
+                                                yield (0, artifactStorage_1.saveFixResultsArtifact)(checkFixResults, 'single_fix_results', {
+                                                    flawInfo: initialFlawInfo,
+                                                    platform: choosePlatform,
+                                                    options: options
+                                                });
+                                                console.log('📁 Veracode single fix results artifact saved for debugging');
+                                            }
+                                            catch (error) {
+                                                console.log('Warning: Failed to save single fix results artifact:', error);
+                                            }
+                                            if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
+                                                console.log('PR commenting is enabled');
+                                                const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                                                //need flawinfo again
+                                                const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                                                console.log('Check Run ID is: ' + options.checkRunID);
+                                                console.log('Update Check Run with PR Comment');
+                                                if (typeof newFlawInfo !== 'string') {
+                                                    yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                                }
+                                            }
+                                            else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
+                                                console.log('PR commenting is enabled');
+                                                const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                                                console.log('Code Suggestions are enabled');
+                                                //need flawinfo again
+                                                const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                                                if (typeof newFlawInfo !== 'string') {
+                                                    yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                                else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
-                                    console.log('PR commenting is enabled');
-                                    const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
-                                    console.log('Code Suggestions are enabled');
-                                    //need flawinfo again
-                                    const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                                    if (typeof newFlawInfo !== 'string') {
-                                        const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
-                                    }
+                                catch (err) {
+                                    console.error(`Failed to process issue ${initialFlawInfo.issuedID}:`, err);
                                 }
                             }
                             else {
@@ -117510,26 +117542,36 @@ function runSingle(options, credentials) {
                     console.log('Run Fix for all CWEs');
                     if ((yield (0, check_cwe_support_1.checkCWE)(initialFlawInfo, options)) == true) {
                         console.log('CWE ' + initialFlawInfo.cweID + ' is supported for ' + options.language);
-                        const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
-                        const tar = yield createTar(initialFlawInfo, options);
-                        const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
-                        const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
-                        if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
-                            console.log('PR commenting is enabled');
-                            const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
-                            //need flawinfo again
-                            const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                            console.log('Check Run ID is: ' + options.checkRunID);
-                            console.log('Update Check Run with PR Comment');
-                            const checkRunUpate = yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                        try {
+                            const choosePlatform = yield (0, select_platform_1.selectPlatfrom)(credentials);
+                            const tar = yield createTar(initialFlawInfo, options);
+                            if (!tar) {
+                                console.log('Tarball creation failed, skipping this issue');
+                            }
+                            else {
+                                const uploadTar = yield (0, requests_1.upload)(choosePlatform, tar, options);
+                                const checkFixResults = yield (0, requests_1.checkFix)(choosePlatform, uploadTar, options);
+                                if (options.prComment == 'true' && (options.codeSuggestion == 'false' || options.codeSuggestion == '')) {
+                                    console.log('PR commenting is enabled');
+                                    const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                                    //need flawinfo again
+                                    const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                                    console.log('Check Run ID is: ' + options.checkRunID);
+                                    console.log('Update Check Run with PR Comment');
+                                    yield (0, checkRun_1.updateCheckRunUpdate)(options, prComment, checkFixResults, newFlawInfo);
+                                }
+                                else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
+                                    console.log('PR commenting is enabled');
+                                    const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
+                                    console.log('Code Suggestions are enabled');
+                                    //need flawinfo again
+                                    const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
+                                    yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
+                                }
+                            }
                         }
-                        else if (options.prComment == 'true' && options.codeSuggestion == 'true') {
-                            console.log('PR commenting is enabled');
-                            const prComment = yield (0, create_pr_comment_1.createPRComment)(checkFixResults, options, initialFlawInfo);
-                            console.log('Code Suggestions are enabled');
-                            //need flawinfo again
-                            const newFlawInfo = yield (0, createFlawInfo_1.createFlawInfo)(initialFlawInfo, options);
-                            const codeSuggestion = yield (0, create_code_suggestion_1.createCodeSuggestion)(options, checkFixResults, newFlawInfo);
+                        catch (err) {
+                            console.error(`Failed to process issue ${initialFlawInfo.issuedID}:`, err);
                         }
                     }
                     else {
