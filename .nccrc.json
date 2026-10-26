@@ -1,0 +1,5 @@
+{
+  "target": "es2021",
+  "minify": false,
+  "v8cache": false
+}

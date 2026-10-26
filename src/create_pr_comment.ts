@@ -45,9 +45,11 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
     commentBody = commentBody+'\n'
     if (options.codeSuggestion == 'false' || options.codeSuggestion == ''){
         commentBody = commentBody+'```diff\n'
-        //commentBody = commentBody+'<br>'
-        commentBody = commentBody+results[0]+'\n'
-        //commentBody = commentBody+'<br>'
+        if (results && results.length > 0) {
+            commentBody = commentBody+results[0]+'\n'
+        } else {
+            commentBody = commentBody+'No code suggestions available\n'
+        }
         commentBody = commentBody+'\n```'
     }
 
@@ -106,24 +108,31 @@ export async function createPRComment(results:any, options:any, flawInfo:any){
 
 
 export async function createPRCommentBatch(batchFixResults:any, options:any, flawArray:any){
-    const batchFixResultsCount = Object.keys(batchFixResults.results).length;
+    const resultsObj = batchFixResults?.results || batchFixResults?.batchResults;
+
+    if (!resultsObj || typeof resultsObj !== 'object') {
+        console.log('No results found in batch fix results, skipping PR comments');
+        return;
+    }
+
+    const batchFixResultsCount = Object.keys(resultsObj).length;
 
     console.log('Number of files with fixes: '+batchFixResultsCount)
     
     for (let i = 0; i < batchFixResultsCount; i++) {
         let commentBody:any
-        let keys = Object.keys(batchFixResults.results);
+        let keys = Object.keys(resultsObj);
         console.log('Creating PR comment for '+keys[i])
-        
+
         commentBody = '![](https://raw.githubusercontent.com/veracode/veracode.github.io/refs/heads/master/assets/images/veracode-black-hires.svg)\n'
         commentBody = commentBody+'> [!CAUTION]\n'
         commentBody = commentBody+'***Breaking Flaws identified in code!***\n'
         commentBody = commentBody+'\n'
         commentBody = commentBody+'Fixes for '+keys[i]+':\n'
         commentBody = commentBody +'Flaws found for this file:\n'
-        const flawsCount = batchFixResults.results[keys[i]].flaws.length
+        const flawsCount = resultsObj[keys[i]].flaws.length
         for (let j = 0; j < flawsCount; j++) {
-            const issueId = batchFixResults.results[keys[i]].flaws[j].issueId;
+            const issueId = resultsObj[keys[i]].flaws[j].issueId;
             let flaw;
             for (let key in flawArray) {
                 flaw = flawArray[key].find((flaw: any) => flaw.issue_id === issueId);
@@ -135,12 +144,12 @@ export async function createPRCommentBatch(batchFixResults:any, options:any, fla
             if (flaw) {
                 issue_type = flaw.issue_type;
                 severity = flaw.severity;
-            } 
-            commentBody = commentBody +'CWE '+batchFixResults.results[keys[i]].flaws[j].CWEId+' - '+issue_type+' - Severity '+severity+' on line '+batchFixResults.results[keys[i]].flaws[j].line+' for issue '+batchFixResults.results[keys[i]].flaws[j].issueId+'\n'
+            }
+            commentBody = commentBody +'CWE '+resultsObj[keys[i]].flaws[j].CWEId+' - '+issue_type+' - Severity '+severity+' on line '+resultsObj[keys[i]].flaws[j].line+' for issue '+resultsObj[keys[i]].flaws[j].issueId+'\n'
         }
         commentBody = commentBody + '\nFix suggestions:\n\n'
         commentBody = commentBody + '```diff\n'
-        commentBody = commentBody + batchFixResults.results[keys[i]].patch[0]
+        commentBody = commentBody + resultsObj[keys[i]].patch[0]
         commentBody = commentBody + '\n```'
 
         //console.log('PR Comment: '+commentBody)

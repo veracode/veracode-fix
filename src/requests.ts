@@ -265,7 +265,7 @@ export async function checkFix(platform:any, projectId:any, options:any) {
     return results;
 }
 
-async function makeRequest(platform:any, projectId:any, options:any) {
+async function makeRequest(platform:any, projectId:any, options:any, retryCount: number = 0, maxRetries: number = 60) {
     const authHeader = calculateAuthorizationHeader({
         id: platform.cleanedID,
         key: platform.cleanedKEY,
@@ -297,11 +297,18 @@ async function makeRequest(platform:any, projectId:any, options:any) {
 
     const response = await makeHttpsRequest(reqOptions);
 
-    if (!response.data) {
-        console.log('Response is empty. Retrying in 10 seconds.');
-        await new Promise(resolve => setTimeout(resolve, 10000));
-        return await makeRequest(platform, projectId, options);
-    } else {
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('requests.ts - checkFix - Response Details')
+        console.log('Status:', response.status);
+        console.log('StatusText:', response.statusText);
+        console.log('Data:', response.data);
+        console.log('Headers:', response.headers);
+        console.log('#######- DEBUG MODE -#######')
+    }
+
+    // Check if we have valid results (status 200 with data)
+    if (response.status === 200 && response.data) {
         console.log('Fixes fetched successfully');
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
@@ -312,6 +319,35 @@ async function makeRequest(platform:any, projectId:any, options:any) {
         }
         return response.data;
     }
+
+    // If status is 202 or 204, results are still processing or not ready yet
+    if (response.status === 202 || response.status === 204 || !response.data) {
+        retryCount++;
+        if (retryCount > maxRetries) {
+            console.log(`Response is not ready after ${maxRetries} retries (final status: ${response.status}). Giving up.`);
+            if (options.DEBUG == 'true'){
+                console.log('#######- DEBUG MODE -#######')
+                console.log('requests.ts - checkFix')
+                console.log('Final response status:', response.status);
+                console.log('Final response data:', response.data);
+                console.log('#######- DEBUG MODE -#######')
+            }
+            return null;
+        }
+        console.log(`Response not ready (status: ${response.status}). Retrying in 10 seconds (attempt ${retryCount}/${maxRetries}).`);
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        return await makeRequest(platform, projectId, options, retryCount, maxRetries);
+    }
+
+    // Handle unexpected status codes
+    console.log(`Unexpected status code: ${response.status}. Treating as not ready and retrying.`);
+    retryCount++;
+    if (retryCount > maxRetries) {
+        console.log(`Failed to get results after ${maxRetries} retries (status: ${response.status}). Giving up.`);
+        return null;
+    }
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    return await makeRequest(platform, projectId, options, retryCount, maxRetries);
 }
 
 export async function checkFixBatch(platform:any, projectId:any, options:any) {
@@ -355,11 +391,20 @@ async function makeRequestBatch(credentials:any, projectId:any, options:any, pre
 
     const response = await makeHttpsRequest(reqOptions);
 
-    if (!response.data) {
-        console.log('Response is empty. Something went wrong. No fixes generarted. ');
+    if (options.DEBUG == 'true'){
+        console.log('#######- DEBUG MODE -#######')
+        console.log('requests.ts - makeRequestBatch - Response Details')
+        console.log('Status:', response.status);
+        console.log('StatusText:', response.statusText);
+        console.log('Data:', response.data);
+        console.log('#######- DEBUG MODE -#######')
+    }
+
+    if (response.status !== 200 || !response.data) {
+        console.log('Response is empty or not ready (status: ' + response.status + '). Something went wrong. No fixes generarted. ');
         return 0
     } else {
-        
+
         console.log('Status fetched successfully');
         if (options.DEBUG == 'true'){
             console.log('#######- DEBUG MODE -#######')
@@ -549,7 +594,7 @@ export async function getFilesPartOfPR(options:any) {
 
         if (!response.data) {
             console.log('Response is empty. Something went wrong. No files identified. ');
-            return 0
+            return []
         }
 
         files = files.concat(response.data);
